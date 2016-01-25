@@ -34,26 +34,36 @@ namespace ItemInfoFinder
 
         internal void FindItemsInZipFiles(string path, string searchPattern, string innerPath, string dataFileExtension)
         {
-            foreach (var dt in Directory.GetFiles(path, searchPattern))
+            foreach (var dt in Directory.GetFiles(path, searchPattern, SearchOption.TopDirectoryOnly))
             {
+                if (!dt.EndsWith(searchPattern.Substring(1)))
+                    continue;
+
                 var addedAnything = false;
-                var archive = ZipFile.OpenRead(dt);
-                foreach (var entry in archive.Entries)
+                try
                 {
-                    if (entry.FullName.StartsWith(innerPath, StringComparison.InvariantCultureIgnoreCase) && entry.FullName.EndsWith(dataFileExtension))
+                    var archive = ZipFile.OpenRead(dt);
+                    foreach (var entry in archive.Entries)
                     {
-                        if (ProcessFile(entry.Open()))
-                            addedAnything = true;
+                        if (entry.FullName.StartsWith(innerPath, StringComparison.InvariantCultureIgnoreCase) && entry.FullName.EndsWith(dataFileExtension))
+                        {
+                            if (ProcessFile(entry.Open()))
+                                addedAnything = true;
+                        }
+                    }
+
+                    if (addedAnything)
+                    {
+                        var file = new FileInfo(dt);
+                        var name = file.Name.Substring(0, file.Name.Length - file.Extension.Length);
+                        long itemId;
+                        if (Int64.TryParse(name, out itemId))
+                            ModIds.Add(itemId);
                     }
                 }
-
-                if (addedAnything)
+                catch (Exception)
                 {
-                    var file = new FileInfo(dt);
-                    var name = file.Name.Substring(0, file.Name.Length - file.Extension.Length);
-                    long itemId;
-                    if (Int64.TryParse(name, out itemId))
-                        ModIds.Add(itemId);
+                    throw;
                 }
             }
         }
@@ -157,7 +167,7 @@ namespace ItemInfoFinder
                     sb.AppendLine();
                 }
 
-                sb.AppendFormat(CultureInfo.InvariantCulture, "AddItemInfo({0}Type, \"{1}\", {2}M, {3}M, {4}, {5});", dt.TypeId,
+                sb.AppendFormat(CultureInfo.InvariantCulture, "AddItemInfo(\"{0}\", \"{1}\", {2}M, {3}M, {4}, {5});", dt.TypeId,
                     dt.SubtypeId, dt.Mass, dt.Volume, dt.IsSingleItem ? "true" : "false", dt.IsStackable ? "true" : "false");
                 sb.AppendLine();
             }

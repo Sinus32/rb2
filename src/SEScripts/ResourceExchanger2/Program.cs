@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Sandbox.ModAPI.Ingame;
 using Sandbox.ModAPI.Interfaces;
+using VRage.Game;
 using VRageMath;
 
 namespace SEScripts.ResourceExchanger2
@@ -514,12 +513,12 @@ private List<List<IMyInventory>> DivideByBlockType(List<IMyInventory> list,
 {
     groupNames = new List<string>();
     var result = new List<List<IMyInventory>>(list.Count);
-    var groupMap = new Dictionary<uint[], int>(_uintArrayComparer);
+    var groupMap = new Dictionary<long[], int>(_longArrayComparer);
 
     for (int i = 0; i < list.Count; ++i)
     {
         string groupName;
-        uint[] acceptedItems = DetermineGroup(list[i], out groupName);
+        long[] acceptedItems = DetermineGroup(list[i], out groupName);
 
         int groupId;
         if (groupMap.TryGetValue(acceptedItems, out groupId))
@@ -544,9 +543,9 @@ public static readonly System.Text.RegularExpressions.Regex COMMON_WORDS
     = new System.Text.RegularExpressions.Regex("(Full|Large|Heavy|Medium|Light|Small|Tiny|Block|Turbo|NoAi|Stack)",
         System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 public const decimal SMALL_NUMBER_THAT_DOES_NOT_MATTER = 0.000003M;
-public static UintArrayComparer _uintArrayComparer = new UintArrayComparer();
+public static LongArrayComparer _longArrayComparer = new LongArrayComparer();
 
-private uint[] DetermineGroup(IMyInventory myInventory, out string groupName)
+private long[] DetermineGroup(IMyInventory myInventory, out string groupName)
 {
     var owner = (IMyCubeBlock)myInventory.Owner;
     var fullType = owner.BlockDefinition.ToString();
@@ -625,7 +624,7 @@ private BlockTypeInfo CreateBlockTypeInfo(string fullType, IMyInventory myInvent
 
     result.GroupName = COMMON_WORDS.Replace(result.GroupName, "").Trim(' ', '-', '_');
     result.BlockDefinition = fullType;
-    result.AcceptedItems = new uint[1 + _itemInfoDict.Count / 32];
+    result.AcceptedItems = new long[1 + _itemInfoDict.Count / 32];
 
     var it = _itemInfoDict.GetEnumerator();
     while (it.MoveNext())
@@ -1169,7 +1168,7 @@ private VRage.MyFixedPoint MoveVolume(IMyInventory from, IMyInventory to,
     _output.AppendLine(((IMyTerminalBlock)to.Owner).CustomName);
     List<IMyInventoryItem> itemsFrom = from.GetItems();
     string groupName;
-    uint[] accepted = DetermineGroup(to, out groupName);
+    long[] accepted = DetermineGroup(to, out groupName);
 
     for (int i = itemsFrom.Count - 1; i >= 0; --i)
     {
@@ -1250,7 +1249,7 @@ private VRage.MyFixedPoint MoveVolume(IMyInventory from, IMyInventory to,
     return volumeAmountToMove;
 }
 
-private bool IsAcceptedItem(uint[] itemId, uint[] acceptedIds)
+private bool IsAcceptedItem(long[] itemId, long[] acceptedIds)
 {
     for (int i = 0; i < itemId.Length && i < acceptedIds.Length; ++i)
     {
@@ -1271,9 +1270,9 @@ private static readonly VRage.ObjectBuilders.MyObjectBuilderType AmmoMagazineTyp
 private static readonly VRage.ObjectBuilders.MyObjectBuilderType PhysicalGunObjectType
     = typeof(Sandbox.Common.ObjectBuilders.MyObjectBuilder_PhysicalGunObject);
 private static readonly VRage.ObjectBuilders.MyObjectBuilderType OxygenContainerObjectType
-    = typeof(Sandbox.Common.ObjectBuilders.Definitions.MyObjectBuilder_OxygenContainerObject);
+    = typeof(Sandbox.Common.ObjectBuilders.MyObjectBuilder_OxygenContainerObject);
 private static readonly VRage.ObjectBuilders.MyObjectBuilderType GasContainerObjectType
-    = typeof(Sandbox.Common.ObjectBuilders.Definitions.MyObjectBuilder_GasContainerObject);
+    = typeof(Sandbox.Common.ObjectBuilders.MyObjectBuilder_GasContainerObject);
 private static readonly VRage.ObjectBuilders.MyObjectBuilderType TreeObjectType
     = typeof(Sandbox.Common.ObjectBuilders.Definitions.MyObjectBuilder_TreeObject);
 
@@ -1324,7 +1323,7 @@ public void BuildItemInfoDict()
     AddItemInfo(AmmoMagazineType, "LargeKlingonCharge", 35M, 16M, true, true);
     AddItemInfo(AmmoMagazineType, "LargeShipShotGunAmmo", 50M, 16M, true, true);
     AddItemInfo(AmmoMagazineType, "LargeShotGunAmmoTracer", 50M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "LaserAmmo", 0.45M, 0.2M, true, true);
+    AddItemInfo(AmmoMagazineType, "LaserAmmo", 0.001M, 0.01M, true, true);
     AddItemInfo(AmmoMagazineType, "LaserArrayFlakMagazine", 45M, 30M, true, true);
     AddItemInfo(AmmoMagazineType, "LaserArrayShellMagazine", 45M, 120M, true, true);
     AddItemInfo(AmmoMagazineType, "MinotaurAmmo", 360M, 128M, true, true);
@@ -1388,6 +1387,7 @@ public void BuildItemInfoDict()
     AddItemInfo(ComponentType, "PowerCell", 25M, 45M, true, true);
     AddItemInfo(ComponentType, "productioncontrolcomponent", 40M, 15M, true, true);
     AddItemInfo(ComponentType, "RadioCommunication", 8M, 140M, true, true);
+    AddItemInfo(ComponentType, "RadioCommunication", 8M, 70M, true, true);
     AddItemInfo(ComponentType, "Reactor", 25M, 8M, true, true);
     AddItemInfo(ComponentType, "SmallTube", 4M, 2M, true, true);
     AddItemInfo(ComponentType, "SolarCell", 8M, 20M, true, true);
@@ -1401,11 +1401,8 @@ public void BuildItemInfoDict()
 
     AddItemInfo(GasContainerObjectType, "HydrogenBottle", 30M, 120M, true, false);
 
-    AddItemInfo(IngotType, "ArcFuel", 200M, 30M, false, true);
-    AddItemInfo(IngotType, "ArcReactorcomponent", 625M, 200M, false, true);
     AddItemInfo(IngotType, "Carbon", 1M, 0.052M, false, true);
     AddItemInfo(IngotType, "Cobalt", 1M, 0.112M, false, true);
-    AddItemInfo(IngotType, "DenseSteelPlate", 400M, 60M, false, true);
     AddItemInfo(IngotType, "Gold", 1M, 0.052M, false, true);
     AddItemInfo(IngotType, "Iron", 1M, 0.127M, false, true);
     AddItemInfo(IngotType, "LiquidHelium", 1M, 4.6M, false, true);
@@ -1441,11 +1438,24 @@ public void BuildItemInfoDict()
 
     AddItemInfo(OxygenContainerObjectType, "OxygenBottle", 30M, 120M, true, false);
 
+    AddItemInfo(PhysicalGunObjectType, "AngleGrinder2Item", 3M, 20M, true, false);
+    AddItemInfo(PhysicalGunObjectType, "AngleGrinder3Item", 3M, 20M, true, false);
+    AddItemInfo(PhysicalGunObjectType, "AngleGrinder4Item", 3M, 20M, true, false);
     AddItemInfo(PhysicalGunObjectType, "AngleGrinderItem", 3M, 20M, true, false);
     AddItemInfo(PhysicalGunObjectType, "AutomaticRifleItem", 3M, 14M, true, false);
     AddItemInfo(PhysicalGunObjectType, "CubePlacerItem", 1M, 1M, true, false);
+    AddItemInfo(PhysicalGunObjectType, "GoodAIRewardPunishmentTool", 0.1M, 1M, true, false);
+    AddItemInfo(PhysicalGunObjectType, "HandDrill2Item", 22M, 25M, true, false);
+    AddItemInfo(PhysicalGunObjectType, "HandDrill3Item", 22M, 25M, true, false);
+    AddItemInfo(PhysicalGunObjectType, "HandDrill4Item", 22M, 25M, true, false);
     AddItemInfo(PhysicalGunObjectType, "HandDrillItem", 22M, 25M, true, false);
     AddItemInfo(PhysicalGunObjectType, "PhysicalConcreteTool", 5M, 15M, true, false);
+    AddItemInfo(PhysicalGunObjectType, "PreciseAutomaticRifleItem", 3M, 14M, true, false);
+    AddItemInfo(PhysicalGunObjectType, "RapidFireAutomaticRifleItem", 3M, 14M, true, false);
+    AddItemInfo(PhysicalGunObjectType, "UltimateAutomaticRifleItem", 3M, 14M, true, false);
+    AddItemInfo(PhysicalGunObjectType, "Welder2Item", 5M, 8M, true, false);
+    AddItemInfo(PhysicalGunObjectType, "Welder3Item", 5M, 8M, true, false);
+    AddItemInfo(PhysicalGunObjectType, "Welder4Item", 5M, 8M, true, false);
     AddItemInfo(PhysicalGunObjectType, "WelderItem", 5M, 8M, true, false);
 
     AddItemInfo(TreeObjectType, "DeadBushMedium", 1300M, 8000M, true, true);
@@ -1472,7 +1482,7 @@ private void AddItemInfo(VRage.ObjectBuilders.MyObjectBuilderType mainType, stri
     var key = new ItemType(mainType, subtype);
     var value = new ItemInfo();
     value.ItemType = key;
-    value.Id = new uint[1 + _itemInfoDict.Count / 32];
+    value.Id = new long[1 + _itemInfoDict.Count / 32];
     value.Id[_itemInfoDict.Count / 32] = 1u << (_itemInfoDict.Count % 32);
     value.Mass = mass;
     value.Volume = volume;
@@ -1484,7 +1494,7 @@ private void AddItemInfo(VRage.ObjectBuilders.MyObjectBuilderType mainType, stri
 public class ItemInfo
 {
     public ItemType ItemType;
-    public uint[] Id;
+    public long[] Id;
     public decimal Mass;
     public decimal Volume;
     public bool IsSingleItem;
@@ -1495,27 +1505,19 @@ public class BlockTypeInfo
 {
     public string BlockDefinition;
     public string GroupName;
-    public uint[] AcceptedItems;
+    public long[] AcceptedItems;
 }
 
-public class UintArrayComparer : IEqualityComparer<uint[]>
+public class LongArrayComparer : IEqualityComparer<long[]>
 {
-    public bool Equals(uint[] x, uint[] y)
+    public bool Equals(long[] x, long[] y)
     {
-        if (x.Length != y.Length)
-            return false;
-        for (int i = 0; i < x.Length; ++i)
-            if (x[i] != y[i])
-                return false;
-        return true;
+        return System.Linq.Enumerable.SequenceEqual<long>(x, y);
     }
 
-    public int GetHashCode(uint[] obj)
+    public int GetHashCode(long[] obj)
     {
-        int result = 0;
-        for (int i = 0; i < obj.Length; ++i)
-            result += (int)obj[i];
-        return result;
+        return (int)System.Linq.Enumerable.Sum(obj);
     }
 }
 
