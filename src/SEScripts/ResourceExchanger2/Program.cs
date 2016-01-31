@@ -10,7 +10,7 @@ namespace SEScripts.ResourceExchanger2
 {
     public class Program : MyGridProgram
     {
-/// Resource Exchanger version 2.0.4 2015-11-08
+/// Resource Exchanger version 2.1.0 2016-01-31
 /// Made by Sinus32
 /// http://steamcommunity.com/sharedfiles/filedetails/546221822
 
@@ -19,12 +19,12 @@ namespace SEScripts.ResourceExchanger2
 /// Optional name of a group of blocks that will be affected by the script.
 /// By default all blocks connected to grid are processed.
 /// You can use this variable to limit the script to affect only certain blocks.
-public const string MANAGED_BLOCKS_GROUP = null;
+public string MANAGED_BLOCKS_GROUP = null;
 
 /// Limit affected blocks to only these that are connected to the same ship/station as the
 /// the programmable block. Set to true if blocks on ships connected by connectors
 /// or rotors should not be affected.
-public const bool MY_GRID_ONLY = false;
+public bool MY_GRID_ONLY = false;
 
 /// Set this variable to false to disable exchanging uranium between reactors.
 public bool ENABLE_BALANCING_REACTORS = true;
@@ -90,14 +90,14 @@ public const int LINES_PER_DEBUG_SCREEN = 17;
 /// Top priority item type to process in refineries and/or arc furnaces.
 /// The script will move an item of this type to the first slot of a refinery or arc
 /// furnace if it find that item in the refinery (or arc furnace) processing queue.
-/// You can find definitions of other materials in line 1267 and below.
+/// You can find definitions of other materials in line 1273 and below.
 /// Set this variable to null to disable this feature
 public readonly string TopRefineryPriority = IRON;
 
 /// Lowest priority item type to process in refineries and/or arc furnaces.
 /// The script will move an item of this type to the last slot of a refinery or arc
 /// furnace if it find that item in the refinery (or arc furnace) processing queue.
-/// You can find definitions of other materials in line 1267 and below.
+/// You can find definitions of other materials in line 1273 and below.
 /// Set this variable to null to disable this feature
 public readonly string LowestRefineryPriority = STONE;
 
@@ -320,11 +320,10 @@ private bool CollectContainer(IMyCargoContainer myCargoContainer)
     if (!myCargoContainer.IsFunctional || MY_GRID_ONLY && myCargoContainer.CubeGrid != Me.CubeGrid)
         return true;
 
-    var inventoryOwner = myCargoContainer as IMyInventoryOwner;
-    if (inventoryOwner == null || inventoryOwner.InventoryCount == 0)
+    if (myCargoContainer.GetInventoryCount() == 0)
         return true;
 
-    var inv = inventoryOwner.GetInventory(0);
+    var inv = myCargoContainer.GetInventory(0);
     if (inv == null || inv.MaxVolume == 0)
         return true;
 
@@ -342,11 +341,10 @@ private bool CollectRefinery(IMyRefinery myRefinery)
     if (!myRefinery.IsFunctional || !myRefinery.UseConveyorSystem || MY_GRID_ONLY && myRefinery.CubeGrid != Me.CubeGrid)
         return true;
 
-    var inventoryOwner = myRefinery as IMyInventoryOwner;
-    if (inventoryOwner == null || inventoryOwner.InventoryCount == 0)
+    if (myRefinery.GetInventoryCount() == 0)
         return true;
 
-    var inv = inventoryOwner.GetInventory(0);
+    var inv = myRefinery.GetInventory(0);
     if (inv == null || inv.MaxVolume == 0)
         return true;
 
@@ -364,11 +362,10 @@ private bool CollectReactor(IMyReactor myReactor)
     if (!myReactor.IsFunctional || !myReactor.UseConveyorSystem || MY_GRID_ONLY && myReactor.CubeGrid != Me.CubeGrid)
         return true;
 
-    var inventoryOwner = myReactor as IMyInventoryOwner;
-    if (inventoryOwner == null || inventoryOwner.InventoryCount == 0)
+    if (myReactor.GetInventoryCount() == 0)
         return true;
 
-    var inv = inventoryOwner.GetInventory(0);
+    var inv = myReactor.GetInventory(0);
     if (inv == null || inv.MaxVolume == 0)
         return true;
 
@@ -386,11 +383,10 @@ private bool CollectDrill(IMyShipDrill myDrill)
     if (!myDrill.IsFunctional || !myDrill.UseConveyorSystem || MY_GRID_ONLY && myDrill.CubeGrid != Me.CubeGrid)
         return true;
 
-    var inventoryOwner = myDrill as IMyInventoryOwner;
-    if (inventoryOwner == null || inventoryOwner.InventoryCount == 0)
+    if (myDrill.GetInventoryCount() == 0)
         return true;
 
-    var inv = inventoryOwner.GetInventory(0);
+    var inv = myDrill.GetInventory(0);
     if (inv == null || inv.MaxVolume == 0)
         return true;
 
@@ -411,11 +407,10 @@ private bool CollectTurret(IMyUserControllableGun myTurret)
     if (!myTurret.IsFunctional || myTurret is IMyLargeInteriorTurret || MY_GRID_ONLY && myTurret.CubeGrid != Me.CubeGrid)
         return true;
 
-    var inventoryOwner = myTurret as IMyInventoryOwner;
-    if (inventoryOwner == null || inventoryOwner.InventoryCount == 0 || !inventoryOwner.UseConveyorSystem)
+    if (myTurret.GetInventoryCount() == 0)
         return true;
 
-    var inv = inventoryOwner.GetInventory(0);
+    var inv = myTurret.GetInventory(0);
     if (inv == null || inv.MaxVolume == 0)
         return true;
 
@@ -433,11 +428,10 @@ private bool CollectOxygenGenerator(IMyOxygenGenerator myOxygenGenerator)
     if (!myOxygenGenerator.IsFunctional || MY_GRID_ONLY && myOxygenGenerator.CubeGrid != Me.CubeGrid)
         return true;
 
-    var inventoryOwner = myOxygenGenerator as IMyInventoryOwner;
-    if (inventoryOwner == null || inventoryOwner.InventoryCount == 0 || !inventoryOwner.UseConveyorSystem)
+    if (myOxygenGenerator.GetInventoryCount() == 0)
         return true;
 
-    var inv = inventoryOwner.GetInventory(0);
+    var inv = myOxygenGenerator.GetInventory(0);
     if (inv == null || inv.MaxVolume == 0)
         return true;
 
@@ -1260,21 +1254,21 @@ private bool IsAcceptedItem(long[] itemId, long[] acceptedIds)
 }
 
 private static readonly VRage.ObjectBuilders.MyObjectBuilderType OreType
-    = typeof(Sandbox.Common.ObjectBuilders.MyObjectBuilder_Ore);
+    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_Ore");
 private static readonly VRage.ObjectBuilders.MyObjectBuilderType IngotType
-    = typeof(Sandbox.Common.ObjectBuilders.MyObjectBuilder_Ingot);
+    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_Ingot");
 private static readonly VRage.ObjectBuilders.MyObjectBuilderType ComponentType
-    = typeof(Sandbox.Common.ObjectBuilders.MyObjectBuilder_Component);
+    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_Component");
 private static readonly VRage.ObjectBuilders.MyObjectBuilderType AmmoMagazineType
-    = typeof(Sandbox.Common.ObjectBuilders.MyObjectBuilder_AmmoMagazine);
+    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_AmmoMagazine");
 private static readonly VRage.ObjectBuilders.MyObjectBuilderType PhysicalGunObjectType
-    = typeof(Sandbox.Common.ObjectBuilders.MyObjectBuilder_PhysicalGunObject);
+    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_PhysicalGunObject");
 private static readonly VRage.ObjectBuilders.MyObjectBuilderType OxygenContainerObjectType
-    = typeof(Sandbox.Common.ObjectBuilders.MyObjectBuilder_OxygenContainerObject);
+    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_OxygenContainerObject");
 private static readonly VRage.ObjectBuilders.MyObjectBuilderType GasContainerObjectType
-    = typeof(Sandbox.Common.ObjectBuilders.MyObjectBuilder_GasContainerObject);
+    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_GasContainerObject");
 private static readonly VRage.ObjectBuilders.MyObjectBuilderType TreeObjectType
-    = typeof(Sandbox.Common.ObjectBuilders.Definitions.MyObjectBuilder_TreeObject);
+    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_TreeObject");
 
 private const string COBALT = "Cobalt";
 private const string GOLD = "Gold";
@@ -1387,7 +1381,6 @@ public void BuildItemInfoDict()
     AddItemInfo(ComponentType, "PowerCell", 25M, 45M, true, true);
     AddItemInfo(ComponentType, "productioncontrolcomponent", 40M, 15M, true, true);
     AddItemInfo(ComponentType, "RadioCommunication", 8M, 140M, true, true);
-    AddItemInfo(ComponentType, "RadioCommunication", 8M, 70M, true, true);
     AddItemInfo(ComponentType, "Reactor", 25M, 8M, true, true);
     AddItemInfo(ComponentType, "SmallTube", 4M, 2M, true, true);
     AddItemInfo(ComponentType, "SolarCell", 8M, 20M, true, true);
