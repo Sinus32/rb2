@@ -167,7 +167,7 @@ namespace ItemInfoFinder
                     sb.AppendLine();
                 }
 
-                sb.AppendFormat(CultureInfo.InvariantCulture, "AddItemInfo(\"{0}\", \"{1}\", {2}M, {3}M, {4}, {5});", dt.TypeId,
+                sb.AppendFormat(CultureInfo.InvariantCulture, "AddItemInfo({0}Type, \"{1}\", {2}M, {3}M, {4}, {5});", dt.TypeId,
                     dt.SubtypeId, dt.Mass, dt.Volume, dt.IsSingleItem ? "true" : "false", dt.IsStackable ? "true" : "false");
                 sb.AppendLine();
             }
