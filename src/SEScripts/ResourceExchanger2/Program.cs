@@ -10,7 +10,7 @@ namespace SEScripts.ResourceExchanger2
 {
     public class Program : MyGridProgram
     {
-/// Resource Exchanger version 2.1.1 2016-02-27
+/// Resource Exchanger version 2.1.2 2016-03-04
 /// Made by Sinus32
 /// http://steamcommunity.com/sharedfiles/filedetails/546221822
 
@@ -1351,6 +1351,8 @@ public void BuildItemInfoDict()
     AddItemInfo(AmmoMagazineType, "TankCannonAmmoSEM4", 35M, 16M, true, true);
     AddItemInfo(AmmoMagazineType, "TelionAF_PMagazine", 35M, 16M, true, true);
     AddItemInfo(AmmoMagazineType, "TelionAMMagazine", 35M, 16M, true, true);
+    AddItemInfo(AmmoMagazineType, "TritiumMissile", 72M, 60M, true, true);
+    AddItemInfo(AmmoMagazineType, "TritiumShot", 3M, 3M, true, true);
     AddItemInfo(AmmoMagazineType, "TungstenBolt", 4812M, 250M, true, true);
 
     AddItemInfo(ComponentType, "AlloyPlate", 30M, 3M, true, true);
@@ -1409,6 +1411,8 @@ public void BuildItemInfoDict()
     AddItemInfo(IngotType, "Stone", 1M, 0.37M, false, true);
     AddItemInfo(IngotType, "Tungsten", 1M, 0.52M, false, true);
     AddItemInfo(IngotType, "Uranium", 1M, 0.052M, false, true);
+    AddItemInfo(IngotType, "v2HydrogenGas", 0.1656M, 0.43M, false, true);
+    AddItemInfo(IngotType, "v2OxygenGas", 2.664M, 0.9M, false, true);
 
     AddItemInfo(OreType, "Carbon", 1M, 0.37M, false, true);
     AddItemInfo(OreType, "Cobalt", 1M, 0.37M, false, true);
@@ -1445,6 +1449,7 @@ public void BuildItemInfoDict()
     AddItemInfo(PhysicalGunObjectType, "PhysicalConcreteTool", 5M, 15M, true, false);
     AddItemInfo(PhysicalGunObjectType, "PreciseAutomaticRifleItem", 3M, 14M, true, false);
     AddItemInfo(PhysicalGunObjectType, "RapidFireAutomaticRifleItem", 3M, 14M, true, false);
+    AddItemInfo(PhysicalGunObjectType, "TritiumAutomaticRifleItem", 3M, 14M, true, false);
     AddItemInfo(PhysicalGunObjectType, "UltimateAutomaticRifleItem", 3M, 14M, true, false);
     AddItemInfo(PhysicalGunObjectType, "Welder2Item", 5M, 8M, true, false);
     AddItemInfo(PhysicalGunObjectType, "Welder3Item", 5M, 8M, true, false);
