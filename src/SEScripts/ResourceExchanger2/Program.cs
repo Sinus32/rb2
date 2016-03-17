@@ -10,7 +10,7 @@ namespace SEScripts.ResourceExchanger2
 {
     public class Program : MyGridProgram
     {
-/// Resource Exchanger version 2.1.0 2016-01-31
+/// Resource Exchanger version 2.1.3 2016-03-17
 /// Made by Sinus32
 /// http://steamcommunity.com/sharedfiles/filedetails/546221822
 
@@ -117,14 +117,14 @@ public Program()
 
 private StringBuilder _output;
 private List<IMyTextPanel> _debugScreen;
-private List<IMyInventory> _reactorsInventories;
-private List<IMyInventory> _oxygenGeneratorsInventories;
-private List<IMyInventory> _refineriesInventories;
-private List<IMyInventory> _drillsInventories;
-private List<IMyInventory> _turretsInventories;
-private List<IMyInventory> _cargoContainersInventories;
-private Dictionary<string, HashSet<IMyInventory>> _groups;
-private HashSet<IMyInventory> _allGroupedInventories;
+private List<VRage.Game.ModAPI.Ingame.IMyInventory> _reactorsInventories;
+private List<VRage.Game.ModAPI.Ingame.IMyInventory> _oxygenGeneratorsInventories;
+private List<VRage.Game.ModAPI.Ingame.IMyInventory> _refineriesInventories;
+private List<VRage.Game.ModAPI.Ingame.IMyInventory> _drillsInventories;
+private List<VRage.Game.ModAPI.Ingame.IMyInventory> _turretsInventories;
+private List<VRage.Game.ModAPI.Ingame.IMyInventory> _cargoContainersInventories;
+private Dictionary<string, HashSet<VRage.Game.ModAPI.Ingame.IMyInventory>> _groups;
+private HashSet<VRage.Game.ModAPI.Ingame.IMyInventory> _allGroupedInventories;
 private List<IMyLightingBlock> _drillsPayloadLights;
 public Dictionary<ItemType, ItemInfo> _itemInfoDict;
 public Dictionary<string, BlockTypeInfo> _blockTypeInfoDict;
@@ -186,14 +186,14 @@ private bool CollectTerminals()
 {
     _output = new StringBuilder();
     _debugScreen = null;
-    _reactorsInventories = new List<IMyInventory>();
-    _oxygenGeneratorsInventories = new List<IMyInventory>();
-    _refineriesInventories = new List<IMyInventory>();
-    _drillsInventories = new List<IMyInventory>();
-    _turretsInventories = new List<IMyInventory>();
-    _cargoContainersInventories = new List<IMyInventory>();
-    _groups = new Dictionary<string, HashSet<IMyInventory>>();
-    _allGroupedInventories = new HashSet<IMyInventory>();
+    _reactorsInventories = new List<VRage.Game.ModAPI.Ingame.IMyInventory>();
+    _oxygenGeneratorsInventories = new List<VRage.Game.ModAPI.Ingame.IMyInventory>();
+    _refineriesInventories = new List<VRage.Game.ModAPI.Ingame.IMyInventory>();
+    _drillsInventories = new List<VRage.Game.ModAPI.Ingame.IMyInventory>();
+    _turretsInventories = new List<VRage.Game.ModAPI.Ingame.IMyInventory>();
+    _cargoContainersInventories = new List<VRage.Game.ModAPI.Ingame.IMyInventory>();
+    _groups = new Dictionary<string, HashSet<VRage.Game.ModAPI.Ingame.IMyInventory>>();
+    _allGroupedInventories = new HashSet<VRage.Game.ModAPI.Ingame.IMyInventory>();
     _drillsPayloadLights = new List<IMyLightingBlock>();
     _drillsMaxVolume = 0;
     _drillsCurrentVolume = 0;
@@ -404,7 +404,7 @@ private bool CollectTurret(IMyUserControllableGun myTurret)
     if (myTurret == null)
         return false;
 
-    if (!myTurret.IsFunctional || myTurret is IMyLargeInteriorTurret || MY_GRID_ONLY && myTurret.CubeGrid != Me.CubeGrid)
+    if (!myTurret.IsFunctional || myTurret is SpaceEngineers.Game.ModAPI.Ingame.IMyLargeInteriorTurret || MY_GRID_ONLY && myTurret.CubeGrid != Me.CubeGrid)
         return true;
 
     if (myTurret.GetInventoryCount() == 0)
@@ -451,17 +451,17 @@ private bool CollectLight(IMyLightingBlock myLightingBlock)
     return true;
 }
 
-private void AddToGroup(IMyTerminalBlock myTerminalBlock, IMyInventory inv)
+private void AddToGroup(IMyTerminalBlock myTerminalBlock, VRage.Game.ModAPI.Ingame.IMyInventory inv)
 {
     var groupNames = GROUP_TAG_PATTERN.Matches(myTerminalBlock.CustomName);
     var it = groupNames.GetEnumerator();
     while (it.MoveNext())
     {
         var dt = (System.Text.RegularExpressions.Match)it.Current;
-        HashSet<IMyInventory> tmp;
+        HashSet<VRage.Game.ModAPI.Ingame.IMyInventory> tmp;
         if (!_groups.TryGetValue(dt.Value, out tmp))
         {
-            tmp = new HashSet<IMyInventory>();
+            tmp = new HashSet<VRage.Game.ModAPI.Ingame.IMyInventory>();
             _groups.Add(dt.Value, tmp);
         }
         tmp.Add(inv);
@@ -469,9 +469,9 @@ private void AddToGroup(IMyTerminalBlock myTerminalBlock, IMyInventory inv)
     }
 }
 
-private List<List<IMyInventory>> FindConveyorNetworks(List<IMyInventory> inventories, bool excludeGroups)
+private List<List<VRage.Game.ModAPI.Ingame.IMyInventory>> FindConveyorNetworks(List<VRage.Game.ModAPI.Ingame.IMyInventory> inventories, bool excludeGroups)
 {
-    var result = new List<List<IMyInventory>>();
+    var result = new List<List<VRage.Game.ModAPI.Ingame.IMyInventory>>();
 
     for (int i = 0; i < inventories.Count; ++i)
     {
@@ -493,7 +493,7 @@ private List<List<IMyInventory>> FindConveyorNetworks(List<IMyInventory> invento
 
         if (add)
         {
-            var network = new List<IMyInventory>();
+            var network = new List<VRage.Game.ModAPI.Ingame.IMyInventory>();
             network.Add(inv);
             result.Add(network);
         }
@@ -502,11 +502,11 @@ private List<List<IMyInventory>> FindConveyorNetworks(List<IMyInventory> invento
     return result;
 }
 
-private List<List<IMyInventory>> DivideByBlockType(List<IMyInventory> list,
+private List<List<VRage.Game.ModAPI.Ingame.IMyInventory>> DivideByBlockType(List<VRage.Game.ModAPI.Ingame.IMyInventory> list,
     out List<string> groupNames)
 {
     groupNames = new List<string>();
-    var result = new List<List<IMyInventory>>(list.Count);
+    var result = new List<List<VRage.Game.ModAPI.Ingame.IMyInventory>>(list.Count);
     var groupMap = new Dictionary<long[], int>(_longArrayComparer);
 
     for (int i = 0; i < list.Count; ++i)
@@ -523,7 +523,7 @@ private List<List<IMyInventory>> DivideByBlockType(List<IMyInventory> list,
         {
             groupId = result.Count;
             groupMap.Add(acceptedItems, groupId);
-            var l = new List<IMyInventory>(list.Count);
+            var l = new List<VRage.Game.ModAPI.Ingame.IMyInventory>(list.Count);
             l.Add(list[i]);
             result.Add(l);
             groupNames.Add(groupName);
@@ -539,9 +539,9 @@ public static readonly System.Text.RegularExpressions.Regex COMMON_WORDS
 public const decimal SMALL_NUMBER_THAT_DOES_NOT_MATTER = 0.000003M;
 public static LongArrayComparer _longArrayComparer = new LongArrayComparer();
 
-private long[] DetermineGroup(IMyInventory myInventory, out string groupName)
+private long[] DetermineGroup(VRage.Game.ModAPI.Ingame.IMyInventory myInventory, out string groupName)
 {
-    var owner = (IMyCubeBlock)myInventory.Owner;
+    var owner = (VRage.Game.ModAPI.Ingame.IMyCubeBlock)myInventory.Owner;
     var fullType = owner.BlockDefinition.ToString();
     BlockTypeInfo blockTypeInfo;
     if (!_blockTypeInfoDict.TryGetValue(fullType, out blockTypeInfo))
@@ -581,14 +581,14 @@ private void DoInitialization()
     }
 }
 
-private bool DoInitialization(ref int num, IEnumerable<IMyInventory> _inventories)
+private bool DoInitialization(ref int num, IEnumerable<VRage.Game.ModAPI.Ingame.IMyInventory> _inventories)
 {
     var it = _inventories.GetEnumerator();
 
     while (it.MoveNext())
     {
         var myInventory = it.Current;
-        var owner = (IMyCubeBlock)myInventory.Owner;
+        var owner = (VRage.Game.ModAPI.Ingame.IMyCubeBlock)myInventory.Owner;
         var fullType = owner.BlockDefinition.ToString();
         BlockTypeInfo blockTypeInfo;
         if (!_blockTypeInfoDict.TryGetValue(fullType, out blockTypeInfo))
@@ -607,7 +607,7 @@ private bool DoInitialization(ref int num, IEnumerable<IMyInventory> _inventorie
     return true;
 }
 
-private BlockTypeInfo CreateBlockTypeInfo(string fullType, IMyInventory myInventory)
+private BlockTypeInfo CreateBlockTypeInfo(string fullType, VRage.Game.ModAPI.Ingame.IMyInventory myInventory)
 {
     var result = new BlockTypeInfo();
 
@@ -651,7 +651,7 @@ private void ProcessReactors()
         return;
     }
 
-    List<List<IMyInventory>> conveyorNetworks = FindConveyorNetworks(_reactorsInventories, true);
+    List<List<VRage.Game.ModAPI.Ingame.IMyInventory>> conveyorNetworks = FindConveyorNetworks(_reactorsInventories, true);
 
     _output.Append("Balancing reactors. Conveyor networks found: ");
     _output.Append(conveyorNetworks.Count);
@@ -660,7 +660,7 @@ private void ProcessReactors()
     for (int i = 0; i < conveyorNetworks.Count; ++i)
     {
         List<string> groupNames;
-        List<List<IMyInventory>> groups = DivideByBlockType(conveyorNetworks[i], out groupNames);
+        List<List<VRage.Game.ModAPI.Ingame.IMyInventory>> groups = DivideByBlockType(conveyorNetworks[i], out groupNames);
 
         for (int j = 0; j < groups.Count; ++j)
         {
@@ -686,7 +686,7 @@ private void ProcessRefineries()
         return;
     }
 
-    List<List<IMyInventory>> conveyorNetworks = FindConveyorNetworks(_refineriesInventories, true);
+    List<List<VRage.Game.ModAPI.Ingame.IMyInventory>> conveyorNetworks = FindConveyorNetworks(_refineriesInventories, true);
 
     _output.Append("Balancing refineries. Conveyor networks found: ");
     _output.Append(conveyorNetworks.Count);
@@ -695,7 +695,7 @@ private void ProcessRefineries()
     for (int i = 0; i < conveyorNetworks.Count; ++i)
     {
         List<string> groupNames;
-        List<List<IMyInventory>> groups = DivideByBlockType(conveyorNetworks[i], out groupNames);
+        List<List<VRage.Game.ModAPI.Ingame.IMyInventory>> groups = DivideByBlockType(conveyorNetworks[i], out groupNames);
 
         for (int j = 0; j < groups.Count; ++j)
         {
@@ -723,7 +723,7 @@ private void ProcessDrills()
         return;
     }
 
-    List<List<IMyInventory>> conveyorNetworks = FindConveyorNetworks(_drillsInventories, true);
+    List<List<VRage.Game.ModAPI.Ingame.IMyInventory>> conveyorNetworks = FindConveyorNetworks(_drillsInventories, true);
     _notConnectedDrillsFound = conveyorNetworks.Count > 1;
 
     _output.Append("Balancing drills. Conveyor networks found: ");
@@ -873,7 +873,7 @@ private void ProcessTurrets()
         return;
     }
 
-    List<List<IMyInventory>> conveyorNetworks = FindConveyorNetworks(_turretsInventories, true);
+    List<List<VRage.Game.ModAPI.Ingame.IMyInventory>> conveyorNetworks = FindConveyorNetworks(_turretsInventories, true);
 
     _output.Append("Balancing turrets. Conveyor networks found: ");
     _output.Append(conveyorNetworks.Count);
@@ -882,7 +882,7 @@ private void ProcessTurrets()
     for (int i = 0; i < conveyorNetworks.Count; ++i)
     {
         List<string> groupNames;
-        List<List<IMyInventory>> groups = DivideByBlockType(conveyorNetworks[i], out groupNames);
+        List<List<VRage.Game.ModAPI.Ingame.IMyInventory>> groups = DivideByBlockType(conveyorNetworks[i], out groupNames);
 
         for (int j = 0; j < groups.Count; ++j)
         {
@@ -908,7 +908,7 @@ private void ProcessOxygenGenerators()
         return;
     }
 
-    List<List<IMyInventory>> conveyorNetworks = FindConveyorNetworks(_oxygenGeneratorsInventories, true);
+    List<List<VRage.Game.ModAPI.Ingame.IMyInventory>> conveyorNetworks = FindConveyorNetworks(_oxygenGeneratorsInventories, true);
 
     _output.Append("Balancing oxygen generators. Conveyor networks found: ");
     _output.Append(conveyorNetworks.Count);
@@ -940,8 +940,8 @@ private void ProcessGroups()
     var it = _groups.GetEnumerator();
     while (it.MoveNext())
     {
-        var blocks = new List<IMyInventory>(it.Current.Value);
-        List<List<IMyInventory>> conveyorNetworks = FindConveyorNetworks(blocks, false);
+        var blocks = new List<VRage.Game.ModAPI.Ingame.IMyInventory>(it.Current.Value);
+        List<List<VRage.Game.ModAPI.Ingame.IMyInventory>> conveyorNetworks = FindConveyorNetworks(blocks, false);
 
         _output.Append("Balancing custom group '");
         _output.Append(it.Current.Key);
@@ -972,7 +972,7 @@ private void PrintOnlineStatus()
     ++_cycleNumber;
 }
 
-private void EnforceItemPriority(List<IMyInventory> group,
+private void EnforceItemPriority(List<VRage.Game.ModAPI.Ingame.IMyInventory> group,
     int networkNumber, int groupNumber,
     VRage.ObjectBuilders.MyObjectBuilderType topPriorityType, string topPriority,
     VRage.ObjectBuilders.MyObjectBuilderType lowestPriorityType, string lowestPriority)
@@ -994,7 +994,7 @@ private void EnforceItemPriority(List<IMyInventory> group,
                 || firstItemType.SubtypeName != topPriority)
             {
                 int topPriorityItemIndex = 1;
-                IMyInventoryItem item = null;
+                VRage.Game.ModAPI.Ingame.IMyInventoryItem item = null;
                 while (topPriorityItemIndex < items.Count)
                 {
                     item = items[topPriorityItemIndex];
@@ -1025,7 +1025,7 @@ private void EnforceItemPriority(List<IMyInventory> group,
                 || lastItemType.SubtypeName != lowestPriority)
             {
                 int lowestPriorityItemIndex = items.Count - 2;
-                IMyInventoryItem item = null;
+                VRage.Game.ModAPI.Ingame.IMyInventoryItem item = null;
                 while (lowestPriorityItemIndex >= 0)
                 {
                     item = items[lowestPriorityItemIndex];
@@ -1051,7 +1051,7 @@ private void EnforceItemPriority(List<IMyInventory> group,
     }
 }
 
-private void BalanceInventories(List<IMyInventory> group, int networkNumber, int groupNumber,
+private void BalanceInventories(List<VRage.Game.ModAPI.Ingame.IMyInventory> group, int networkNumber, int groupNumber,
     string groupName, VRage.ObjectBuilders.MyObjectBuilderType? filterType = null,
     string filterSubtype = null)
 {
@@ -1064,7 +1064,7 @@ private void BalanceInventories(List<IMyInventory> group, int networkNumber, int
         return; // nothing to do
     }
 
-    Dictionary<IMyInventory, VolumeInfo> inventories = GetVolumeInfo(group, filterType, filterSubtype);
+    Dictionary<VRage.Game.ModAPI.Ingame.IMyInventory, VolumeInfo> inventories = GetVolumeInfo(group, filterType, filterSubtype);
     var last = inventories[group[inventories.Count - 1]];
 
     if (last.CurrentVolume < SMALL_NUMBER_THAT_DOES_NOT_MATTER)
@@ -1113,10 +1113,10 @@ private void BalanceInventories(List<IMyInventory> group, int networkNumber, int
     }
 }
 
-private Dictionary<IMyInventory, VolumeInfo> GetVolumeInfo(List<IMyInventory> group,
+private Dictionary<VRage.Game.ModAPI.Ingame.IMyInventory, VolumeInfo> GetVolumeInfo(List<VRage.Game.ModAPI.Ingame.IMyInventory> group,
     VRage.ObjectBuilders.MyObjectBuilderType? filterType, string filterSubtype)
 {
-    var result = new Dictionary<IMyInventory, VolumeInfo>(group.Count);
+    var result = new Dictionary<VRage.Game.ModAPI.Ingame.IMyInventory, VolumeInfo>(group.Count);
 
     if (filterType.HasValue || filterSubtype != null)
     {
@@ -1144,7 +1144,7 @@ private Dictionary<IMyInventory, VolumeInfo> GetVolumeInfo(List<IMyInventory> gr
     return result;
 }
 
-private VRage.MyFixedPoint MoveVolume(IMyInventory from, IMyInventory to,
+private VRage.MyFixedPoint MoveVolume(VRage.Game.ModAPI.Ingame.IMyInventory from, VRage.Game.ModAPI.Ingame.IMyInventory to,
     VRage.MyFixedPoint volumeAmountToMove,
     VRage.ObjectBuilders.MyObjectBuilderType? filterType, string filterSubtype)
 {
@@ -1160,13 +1160,13 @@ private VRage.MyFixedPoint MoveVolume(IMyInventory from, IMyInventory to,
     _output.Append(((IMyTerminalBlock)from.Owner).CustomName);
     _output.Append(" to ");
     _output.AppendLine(((IMyTerminalBlock)to.Owner).CustomName);
-    List<IMyInventoryItem> itemsFrom = from.GetItems();
+    List<VRage.Game.ModAPI.Ingame.IMyInventoryItem> itemsFrom = from.GetItems();
     string groupName;
     long[] accepted = DetermineGroup(to, out groupName);
 
     for (int i = itemsFrom.Count - 1; i >= 0; --i)
     {
-        IMyInventoryItem item = itemsFrom[i];
+        VRage.Game.ModAPI.Ingame.IMyInventoryItem item = itemsFrom[i];
 
         if (filterType.HasValue && item.Content.TypeId != filterType.Value)
             continue;
@@ -1199,11 +1199,11 @@ private VRage.MyFixedPoint MoveVolume(IMyInventory from, IMyInventory to,
         if (amountToMove == 0)
             continue;
 
-        List<IMyInventoryItem> itemsTo = to.GetItems();
+        List<VRage.Game.ModAPI.Ingame.IMyInventoryItem> itemsTo = to.GetItems();
         int targetItemIndex = 0;
         while (targetItemIndex < itemsTo.Count)
         {
-            IMyInventoryItem item2 = itemsTo[targetItemIndex];
+            VRage.Game.ModAPI.Ingame.IMyInventoryItem item2 = itemsTo[targetItemIndex];
             if (item2.Content.TypeId == item.Content.TypeId
                 && item2.Content.SubtypeName == item.Content.SubtypeName)
                 break;
@@ -1351,6 +1351,8 @@ public void BuildItemInfoDict()
     AddItemInfo(AmmoMagazineType, "TankCannonAmmoSEM4", 35M, 16M, true, true);
     AddItemInfo(AmmoMagazineType, "TelionAF_PMagazine", 35M, 16M, true, true);
     AddItemInfo(AmmoMagazineType, "TelionAMMagazine", 35M, 16M, true, true);
+    AddItemInfo(AmmoMagazineType, "TritiumMissile", 72M, 60M, true, true);
+    AddItemInfo(AmmoMagazineType, "TritiumShot", 3M, 3M, true, true);
     AddItemInfo(AmmoMagazineType, "TungstenBolt", 4812M, 250M, true, true);
 
     AddItemInfo(ComponentType, "AlloyPlate", 30M, 3M, true, true);
@@ -1409,6 +1411,8 @@ public void BuildItemInfoDict()
     AddItemInfo(IngotType, "Stone", 1M, 0.37M, false, true);
     AddItemInfo(IngotType, "Tungsten", 1M, 0.52M, false, true);
     AddItemInfo(IngotType, "Uranium", 1M, 0.052M, false, true);
+    AddItemInfo(IngotType, "v2HydrogenGas", 0.1656M, 0.43M, false, true);
+    AddItemInfo(IngotType, "v2OxygenGas", 2.664M, 0.9M, false, true);
 
     AddItemInfo(OreType, "Carbon", 1M, 0.37M, false, true);
     AddItemInfo(OreType, "Cobalt", 1M, 0.37M, false, true);
@@ -1445,6 +1449,7 @@ public void BuildItemInfoDict()
     AddItemInfo(PhysicalGunObjectType, "PhysicalConcreteTool", 5M, 15M, true, false);
     AddItemInfo(PhysicalGunObjectType, "PreciseAutomaticRifleItem", 3M, 14M, true, false);
     AddItemInfo(PhysicalGunObjectType, "RapidFireAutomaticRifleItem", 3M, 14M, true, false);
+    AddItemInfo(PhysicalGunObjectType, "TritiumAutomaticRifleItem", 3M, 14M, true, false);
     AddItemInfo(PhysicalGunObjectType, "UltimateAutomaticRifleItem", 3M, 14M, true, false);
     AddItemInfo(PhysicalGunObjectType, "Welder2Item", 5M, 8M, true, false);
     AddItemInfo(PhysicalGunObjectType, "Welder3Item", 5M, 8M, true, false);
@@ -1546,7 +1551,7 @@ public class ItemType : IEquatable<ItemType>
 
 public class VolumeInfo
 {
-    public VolumeInfo(IMyInventory myInventory)
+    public VolumeInfo(VRage.Game.ModAPI.Ingame.IMyInventory myInventory)
     {
         MyInventory = myInventory;
         CurrentVolume = (decimal)myInventory.CurrentVolume;
@@ -1555,7 +1560,7 @@ public class VolumeInfo
         Percent = CurrentVolume / MaxVolume;
     }
 
-    public VolumeInfo(IMyInventory myInventory,
+    public VolumeInfo(VRage.Game.ModAPI.Ingame.IMyInventory myInventory,
         Dictionary<ItemType, ItemInfo> itemInfoDict,
         VRage.ObjectBuilders.MyObjectBuilderType? filterType,
         string filterSubtype, StringBuilder output)
@@ -1569,7 +1574,7 @@ public class VolumeInfo
         Percent = CurrentVolume / MaxVolume;
     }
 
-    public IMyInventory MyInventory;
+    public VRage.Game.ModAPI.Ingame.IMyInventory MyInventory;
 
     public decimal CurrentVolume;
 
@@ -1582,10 +1587,10 @@ public class VolumeInfo
         VRage.ObjectBuilders.MyObjectBuilderType? filterType,
         string filterSubtype, StringBuilder output)
     {
-        List<IMyInventoryItem> items = MyInventory.GetItems();
+        List<VRage.Game.ModAPI.Ingame.IMyInventoryItem> items = MyInventory.GetItems();
         for (int i = 0; i < items.Count; ++i)
         {
-            IMyInventoryItem item = items[i];
+            VRage.Game.ModAPI.Ingame.IMyInventoryItem item = items[i];
 
             if ((!filterType.HasValue || item.Content.TypeId == filterType.Value)
                 && (filterSubtype == null || item.Content.SubtypeName == filterSubtype))
@@ -1613,16 +1618,16 @@ public class VolumeInfo
     }
 }
 
-private class MyInventoryComparer : IComparer<IMyInventory>
+private class MyInventoryComparer : IComparer<VRage.Game.ModAPI.Ingame.IMyInventory>
 {
-    private Dictionary<IMyInventory, VolumeInfo> _volumeInfo;
+    private Dictionary<VRage.Game.ModAPI.Ingame.IMyInventory, VolumeInfo> _volumeInfo;
 
-    public MyInventoryComparer(Dictionary<IMyInventory, VolumeInfo> volumeInfo)
+    public MyInventoryComparer(Dictionary<VRage.Game.ModAPI.Ingame.IMyInventory, VolumeInfo> volumeInfo)
     {
         _volumeInfo = volumeInfo;
     }
 
-    public int Compare(IMyInventory x, IMyInventory y)
+    public int Compare(VRage.Game.ModAPI.Ingame.IMyInventory x, VRage.Game.ModAPI.Ingame.IMyInventory y)
     {
         var a = _volumeInfo[x];
         var b = _volumeInfo[y];
