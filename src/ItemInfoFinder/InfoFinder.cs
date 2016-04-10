@@ -28,7 +28,7 @@ namespace ItemInfoFinder
         {
             foreach (var dt in Directory.GetFiles(path, searchPattern))
             {
-                ProcessFile(File.OpenRead(dt));
+                ProcessFile(File.OpenRead(dt), 0);
             }
         }
 
@@ -42,22 +42,22 @@ namespace ItemInfoFinder
                 var addedAnything = false;
                 try
                 {
-                    var archive = ZipFile.OpenRead(dt);
-                    foreach (var entry in archive.Entries)
+                    var file = new FileInfo(dt);
+                    var name = file.Name.Substring(0, file.Name.Length - file.Extension.Length);
+                    long itemId;
+                    if (Int64.TryParse(name, out itemId))
                     {
-                        if (entry.FullName.StartsWith(innerPath, StringComparison.InvariantCultureIgnoreCase) && entry.FullName.EndsWith(dataFileExtension))
+                        var archive = ZipFile.OpenRead(dt);
+                        foreach (var entry in archive.Entries)
                         {
-                            if (ProcessFile(entry.Open()))
-                                addedAnything = true;
+                            if (entry.FullName.StartsWith(innerPath, StringComparison.InvariantCultureIgnoreCase) && entry.FullName.EndsWith(dataFileExtension))
+                            {
+                                if (ProcessFile(entry.Open(), itemId))
+                                    addedAnything = true;
+                            }
                         }
-                    }
 
-                    if (addedAnything)
-                    {
-                        var file = new FileInfo(dt);
-                        var name = file.Name.Substring(0, file.Name.Length - file.Extension.Length);
-                        long itemId;
-                        if (Int64.TryParse(name, out itemId))
+                        if (addedAnything)
                             ModIds.Add(itemId);
                     }
                 }
@@ -68,7 +68,7 @@ namespace ItemInfoFinder
             }
         }
 
-        private bool ProcessFile(Stream input)
+        private bool ProcessFile(Stream input, long modId)
         {
             using (var reader = XmlReader.Create(input))
             {
@@ -76,11 +76,11 @@ namespace ItemInfoFinder
                 document.Load(reader);
                 if (document.DocumentElement.LocalName != "Definitions")
                     return false;
-                return ProcessFileSecondStep(document.DocumentElement);
+                return ProcessFileSecondStep(document.DocumentElement, modId);
             }
         }
 
-        private bool ProcessFileSecondStep(XmlElement xmlElement)
+        private bool ProcessFileSecondStep(XmlElement xmlElement, long modId)
         {
             var addedAnything = false;
             foreach (XmlNode node in xmlElement.ChildNodes)
@@ -88,13 +88,13 @@ namespace ItemInfoFinder
                 if (node.NodeType != XmlNodeType.Element)
                     continue;
 
-                if (ProcessFileParseNodes(node))
+                if (ProcessFileParseNodes(node, modId))
                     addedAnything = true;
             }
             return addedAnything;
         }
 
-        private bool ProcessFileParseNodes(XmlNode parentNode)
+        private bool ProcessFileParseNodes(XmlNode parentNode, long modId)
         {
             var addedAnything = false;
             foreach (XmlNode node in parentNode.ChildNodes)
@@ -132,7 +132,7 @@ namespace ItemInfoFinder
                 if (volume.StartsWith("."))
                     volume = "0" + volume;
 
-                var itemInfo = new ItemInfo(typeId, subtypeId, mass, volume);
+                var itemInfo = new ItemInfo(modId, typeId, subtypeId, mass, volume);
                 Result.Add(itemInfo);
                 addedAnything = true;
             }
@@ -158,27 +158,59 @@ namespace ItemInfoFinder
             Result.Sort(Comparision);
             var sb = new StringBuilder();
 
+            var modMap = new Dictionary<long, string>();
+            var modUsed = new HashSet<long>();
+            if (Mods != null)
+            {
+                Mods.Data.Sort((a, b) => String.Compare(a.Title, b.Title, true));
+                modMap.Add(0, "Space Engineers");
+                foreach (var dt in Mods.Data)
+                    modMap.Add(dt.PublishedFileId, dt.Title);
+            }
+
             var lastTypeId = Result[0].TypeId;
+            var lastSubtype = String.Empty;
             foreach (var dt in Result)
             {
                 if (lastTypeId != dt.TypeId)
                 {
                     lastTypeId = dt.TypeId;
                     sb.AppendLine();
+                    lastSubtype = String.Empty;
+                }
+                else if (lastSubtype == dt.SubtypeId)
+                {
+                    sb.Append("duplicate");
+                }
+                else
+                {
+                    lastSubtype = dt.SubtypeId;
                 }
 
-                sb.AppendFormat(CultureInfo.InvariantCulture, "AddItemInfo({0}Type, \"{1}\", {2}M, {3}M, {4}, {5});", dt.TypeId,
-                    dt.SubtypeId, dt.Mass, dt.Volume, dt.IsSingleItem ? "true" : "false", dt.IsStackable ? "true" : "false");
+                string modTitle;
+                if (modMap.TryGetValue(dt.ModId, out modTitle))
+                {
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "AddItemInfo({0}Type, \"{1}\", {2}M, {3}M, {4}, {5}); // {6}",
+                        dt.TypeId, dt.SubtypeId, dt.Mass, dt.Volume, dt.IsSingleItem ? "true" : "false", dt.IsStackable ? "true" : "false", modTitle);
+                    modUsed.Add(dt.ModId);
+                }
+                else
+                {
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "AddItemInfo({0}Type, \"{1}\", {2}M, {3}M, {4}, {5});", dt.TypeId,
+                        dt.SubtypeId, dt.Mass, dt.Volume, dt.IsSingleItem ? "true" : "false", dt.IsStackable ? "true" : "false");
+                }
                 sb.AppendLine();
             }
 
             if (Mods != null)
             {
                 sb.AppendLine();
-                Mods.Data.Sort((a, b) => String.Compare(a.Title, b.Title, true));
+                sb.AppendLine("/*");
                 foreach (var dt in Mods.Data)
-                    sb.AppendFormat(@"- [url=http://steamcommunity.com/sharedfiles/filedetails/{0}]{1}[/url]", dt.PublishedFileId, dt.Title)
-                        .AppendLine();
+                    if (modUsed.Contains(dt.PublishedFileId))
+                        sb.AppendFormat(@"- [url=http://steamcommunity.com/sharedfiles/filedetails/{0}]{1}[/url]", dt.PublishedFileId, dt.Title)
+                            .AppendLine();
+                sb.AppendLine("*/");
             }
 
             return sb.ToString();

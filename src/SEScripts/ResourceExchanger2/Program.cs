@@ -10,7 +10,7 @@ namespace SEScripts.ResourceExchanger2
 {
     public class Program : MyGridProgram
     {
-/// Resource Exchanger version 2.1.3 2016-03-17
+/// Resource Exchanger version 2.1.4 2016-04-10
 /// Made by Sinus32
 /// http://steamcommunity.com/sharedfiles/filedetails/546221822
 
@@ -115,6 +115,9 @@ public Program()
     _blockTypeInfoDict = new Dictionary<string, BlockTypeInfo>();
 }
 
+public void Save()
+{ }
+
 private StringBuilder _output;
 private List<IMyTextPanel> _debugScreen;
 private List<VRage.Game.ModAPI.Ingame.IMyInventory> _reactorsInventories;
@@ -134,7 +137,7 @@ private bool _notConnectedDrillsFound;
 private int _cycleNumber = 0;
 private bool _isInitialized = false;
 
-void Main(string argument)
+public void Main(string argument)
 {
     bool hasScreen = CollectTerminals();
 
@@ -1267,6 +1270,8 @@ private static readonly VRage.ObjectBuilders.MyObjectBuilderType OxygenContainer
     = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_OxygenContainerObject");
 private static readonly VRage.ObjectBuilders.MyObjectBuilderType GasContainerObjectType
     = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_GasContainerObject");
+private static readonly VRage.ObjectBuilders.MyObjectBuilderType ModelComponentType
+    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_ModelComponent");
 private static readonly VRage.ObjectBuilders.MyObjectBuilderType TreeObjectType
     = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_TreeObject");
 
@@ -1288,190 +1293,192 @@ public void BuildItemInfoDict()
 {
     _itemInfoDict = new Dictionary<ItemType, ItemInfo>();
 
-    AddItemInfo(AmmoMagazineType, "250shell", 128M, 64M, true, true);
-    AddItemInfo(AmmoMagazineType, "88hekc", 16M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "88shell", 16M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "AFmagazine", 35M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "AZ_Missile_AA", 45M, 60M, true, true);
-    AddItemInfo(AmmoMagazineType, "AZ_Missile200mm", 45M, 60M, true, true);
-    AddItemInfo(AmmoMagazineType, "BatteryCannonAmmo1", 50M, 50M, true, true);
-    AddItemInfo(AmmoMagazineType, "BatteryCannonAmmo2", 200M, 200M, true, true);
-    AddItemInfo(AmmoMagazineType, "BlasterCell", 1M, 1M, true, true);
-    AddItemInfo(AmmoMagazineType, "codecatAmmo40x368mm", 70M, 32M, true, true);
-    AddItemInfo(AmmoMagazineType, "codecatMissilePinocchio", 50M, 60M, true, true);
-    AddItemInfo(AmmoMagazineType, "codecatPunisherAmmo25x184mm", 70M, 32M, true, true);
-    AddItemInfo(AmmoMagazineType, "ConcreteMix", 2M, 2M, true, true);
-    AddItemInfo(AmmoMagazineType, "Eikester_Missile120mm", 25M, 30M, true, true);
-    AddItemInfo(AmmoMagazineType, "Eikester_Nuke", 1800M, 8836M, true, true);
-    AddItemInfo(AmmoMagazineType, "Flak130mm", 2M, 3M, true, true);
-    AddItemInfo(AmmoMagazineType, "Flak200mm", 4M, 6M, true, true);
-    AddItemInfo(AmmoMagazineType, "Flak500mm", 4M, 6M, true, true);
-    AddItemInfo(AmmoMagazineType, "HDTCannonAmmo", 150M, 100M, true, true);
-    AddItemInfo(AmmoMagazineType, "ISM_FusionAmmo", 35M, 10M, true, true);
-    AddItemInfo(AmmoMagazineType, "ISM_GrendelAmmo", 35M, 2M, true, true);
-    AddItemInfo(AmmoMagazineType, "ISM_Hellfire", 45M, 60M, true, true);
-    AddItemInfo(AmmoMagazineType, "ISM_LongbowAmmo", 35M, 2M, true, true);
-    AddItemInfo(AmmoMagazineType, "ISM_MinigunAmmo", 35M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "ISMNeedles", 35M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "ISMTracer", 35M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "LargeKlingonCharge", 35M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "LargeShipShotGunAmmo", 50M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "LargeShotGunAmmoTracer", 50M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "LaserAmmo", 0.001M, 0.01M, true, true);
-    AddItemInfo(AmmoMagazineType, "LaserArrayFlakMagazine", 45M, 30M, true, true);
-    AddItemInfo(AmmoMagazineType, "LaserArrayShellMagazine", 45M, 120M, true, true);
-    AddItemInfo(AmmoMagazineType, "MinotaurAmmo", 360M, 128M, true, true);
-    AddItemInfo(AmmoMagazineType, "Missile200mm", 45M, 60M, true, true);
-    AddItemInfo(AmmoMagazineType, "MK1CannonAmmo", 150M, 100M, true, true);
-    AddItemInfo(AmmoMagazineType, "MK2CannonAmmo", 150M, 100M, true, true);
-    AddItemInfo(AmmoMagazineType, "MK3CannonMagazineAP", 100M, 100M, true, true);
-    AddItemInfo(AmmoMagazineType, "MK3CannonMagazineHE", 300M, 100M, true, true);
-    AddItemInfo(AmmoMagazineType, "NATO_25x184mm", 35M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "NATO_5p56x45mm", 0.45M, 0.2M, true, true);
-    AddItemInfo(AmmoMagazineType, "NiFeDUSlugMagazineLZM", 45M, 50M, true, true);
-    AddItemInfo(AmmoMagazineType, "OKI122mmAmmo", 180M, 60M, true, true);
-    AddItemInfo(AmmoMagazineType, "OKI230mmAmmo", 450M, 240M, true, true);
-    AddItemInfo(AmmoMagazineType, "OKI23mmAmmo", 50M, 20M, true, true);
-    AddItemInfo(AmmoMagazineType, "OKI50mmAmmo", 70M, 20M, true, true);
-    AddItemInfo(AmmoMagazineType, "Phaser2Charge", 35M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "Phaser2ChargeLarge", 35M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "PhaserCharge", 35M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "PhaserChargeLarge", 35M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "Plasma_Hydrogen", 4M, 6M, true, true);
-    AddItemInfo(AmmoMagazineType, "PlasmaCutterCell", 1M, 1M, true, true);
-    AddItemInfo(AmmoMagazineType, "RB_NATO_125x920mm", 875M, 160M, true, true);
-    AddItemInfo(AmmoMagazineType, "RB_Rocket100mm", 11.25M, 15M, true, true);
-    AddItemInfo(AmmoMagazineType, "RB_Rocket400mm", 180M, 240M, true, true);
-    AddItemInfo(AmmoMagazineType, "RomulanCharge", 35M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "RomulanChargeLarge", 35M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "SmallKlingonCharge", 35M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "SmallShotGunAmmo", 50M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "SmallShotGunAmmoTracer", 50M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "SniperRoundLowSpeedHighDamage", 35M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "TankCannonAmmoSEM4", 35M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "TelionAF_PMagazine", 35M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "TelionAMMagazine", 35M, 16M, true, true);
-    AddItemInfo(AmmoMagazineType, "TritiumMissile", 72M, 60M, true, true);
-    AddItemInfo(AmmoMagazineType, "TritiumShot", 3M, 3M, true, true);
-    AddItemInfo(AmmoMagazineType, "TungstenBolt", 4812M, 250M, true, true);
+    AddItemInfo(AmmoMagazineType, "250shell", 128M, 64M, true, true); // CSD Battlecannon
+    AddItemInfo(AmmoMagazineType, "88hekc", 16M, 16M, true, true); // CSD Battlecannon
+    AddItemInfo(AmmoMagazineType, "88shell", 16M, 16M, true, true); // CSD Battlecannon
+    AddItemInfo(AmmoMagazineType, "AFmagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
+    AddItemInfo(AmmoMagazineType, "AZ_Missile_AA", 45M, 60M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+    AddItemInfo(AmmoMagazineType, "AZ_Missile200mm", 45M, 60M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+    AddItemInfo(AmmoMagazineType, "BatteryCannonAmmo1", 50M, 50M, true, true); // MWI - Weapon Collection (DX11)
+    AddItemInfo(AmmoMagazineType, "BatteryCannonAmmo2", 200M, 200M, true, true); // MWI - Weapon Collection (DX11)
+    AddItemInfo(AmmoMagazineType, "BlasterCell", 1M, 1M, true, true); // [SEI] Weapon Pack DX11
+    AddItemInfo(AmmoMagazineType, "codecatAmmo40x368mm", 70M, 32M, true, true); // [codecat]Weaponry [DX11]
+    AddItemInfo(AmmoMagazineType, "codecatMissilePinocchio", 50M, 60M, true, true); // [codecat]Weaponry [DX11]
+    AddItemInfo(AmmoMagazineType, "codecatPunisherAmmo25x184mm", 70M, 32M, true, true); // [codecat]Weaponry [DX11]
+    AddItemInfo(AmmoMagazineType, "ConcreteMix", 2M, 2M, true, true); // Concrete Tool - placing voxels in survival
+    AddItemInfo(AmmoMagazineType, "Eikester_Missile120mm", 25M, 30M, true, true); // (DX11) Small Missile Turret
+    AddItemInfo(AmmoMagazineType, "Eikester_Nuke", 1800M, 8836M, true, true); // (DX11) Nuke Launcher [WiP]
+    AddItemInfo(AmmoMagazineType, "Flak130mm", 2M, 3M, true, true); // [SEI] Weapon Pack DX11
+    AddItemInfo(AmmoMagazineType, "Flak200mm", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
+    AddItemInfo(AmmoMagazineType, "Flak500mm", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
+    AddItemInfo(AmmoMagazineType, "HDTCannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
+    AddItemInfo(AmmoMagazineType, "ISM_FusionAmmo", 35M, 10M, true, true); // ISM Mega Mod Pack [DX11 -WIP]
+    AddItemInfo(AmmoMagazineType, "ISM_GrendelAmmo", 35M, 2M, true, true); // ISM Mega Mod Pack [DX11 -WIP]
+    AddItemInfo(AmmoMagazineType, "ISM_Hellfire", 45M, 60M, true, true); // ISM Mega Mod Pack [DX11 -WIP]
+    AddItemInfo(AmmoMagazineType, "ISM_LongbowAmmo", 35M, 2M, true, true); // ISM Mega Mod Pack [DX11 -WIP]
+    AddItemInfo(AmmoMagazineType, "ISM_MinigunAmmo", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 -WIP]
+    AddItemInfo(AmmoMagazineType, "ISMNeedles", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 -WIP]
+    AddItemInfo(AmmoMagazineType, "ISMTracer", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 -WIP]
+    AddItemInfo(AmmoMagazineType, "LargeKlingonCharge", 35M, 16M, true, true); // Star Trek - Fixed Phaser Pack (Obsolete!)
+    AddItemInfo(AmmoMagazineType, "LargeShipShotGunAmmo", 50M, 16M, true, true); // Azimuth Industries Mega Mod Pack [OLD]
+    AddItemInfo(AmmoMagazineType, "LargeShotGunAmmoTracer", 50M, 16M, true, true); // Azimuth Industries Mega Mod Pack [OLD]
+    AddItemInfo(AmmoMagazineType, "LaserAmmo", 0.001M, 0.01M, true, true); // (DX11)Laser Turret
+    AddItemInfo(AmmoMagazineType, "LaserArrayFlakMagazine", 45M, 30M, true, true); // White Dwarf - Directed Energy Platform [DX11]
+    AddItemInfo(AmmoMagazineType, "LaserArrayShellMagazine", 45M, 120M, true, true); // White Dwarf - Directed Energy Platform [DX11]
+    AddItemInfo(AmmoMagazineType, "MinotaurAmmo", 360M, 128M, true, true); // (DX11)Minotaur Cannon
+    AddItemInfo(AmmoMagazineType, "Missile200mm", 45M, 60M, true, true); // Space Engineers
+    AddItemInfo(AmmoMagazineType, "MK1CannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
+    AddItemInfo(AmmoMagazineType, "MK2CannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
+    AddItemInfo(AmmoMagazineType, "MK3CannonMagazineAP", 100M, 100M, true, true); // MWI - Weapon Collection (DX11)
+    AddItemInfo(AmmoMagazineType, "MK3CannonMagazineHE", 300M, 100M, true, true); // MWI - Weapon Collection (DX11)
+    AddItemInfo(AmmoMagazineType, "NATO_25x184mm", 35M, 16M, true, true); // Space Engineers
+    AddItemInfo(AmmoMagazineType, "NATO_5p56x45mm", 0.45M, 0.2M, true, true); // Space Engineers
+    AddItemInfo(AmmoMagazineType, "NiFeDUSlugMagazineLZM", 45M, 50M, true, true); // Large Ship Railguns
+    AddItemInfo(AmmoMagazineType, "OKI122mmAmmo", 180M, 60M, true, true); // OKI Weapons Collection (DX11)
+    AddItemInfo(AmmoMagazineType, "OKI230mmAmmo", 450M, 240M, true, true); // OKI Weapons Collection (DX11)
+    AddItemInfo(AmmoMagazineType, "OKI23mmAmmo", 50M, 20M, true, true); // OKI Weapons Collection (DX11)
+    AddItemInfo(AmmoMagazineType, "OKI50mmAmmo", 70M, 20M, true, true); // OKI Weapons Collection (DX11)
+    AddItemInfo(AmmoMagazineType, "Phaser2Charge", 35M, 16M, true, true); // Star Trek - Fixed Phaser Pack (Obsolete!)
+    AddItemInfo(AmmoMagazineType, "Phaser2ChargeLarge", 35M, 16M, true, true); // Star Trek - Fixed Phaser Pack (Obsolete!)
+    AddItemInfo(AmmoMagazineType, "PhaserCharge", 35M, 16M, true, true); // Star Trek - Fixed Phaser Pack (Obsolete!)
+    AddItemInfo(AmmoMagazineType, "PhaserChargeLarge", 35M, 16M, true, true); // Star Trek - Fixed Phaser Pack (Obsolete!)
+    AddItemInfo(AmmoMagazineType, "Plasma_Hydrogen", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
+    AddItemInfo(AmmoMagazineType, "PlasmaCutterCell", 1M, 1M, true, true); // [SEI] Weapon Pack DX11
+    AddItemInfo(AmmoMagazineType, "RB_NATO_125x920mm", 875M, 160M, true, true); // RB Weapon Collection [DX11]
+    AddItemInfo(AmmoMagazineType, "RB_Rocket100mm", 11.25M, 15M, true, true); // RB Weapon Collection [DX11]
+    AddItemInfo(AmmoMagazineType, "RB_Rocket400mm", 180M, 240M, true, true); // RB Weapon Collection [DX11]
+    AddItemInfo(AmmoMagazineType, "RomulanCharge", 35M, 16M, true, true); // Star Trek - Fixed Phaser Pack (Obsolete!)
+    AddItemInfo(AmmoMagazineType, "RomulanChargeLarge", 35M, 16M, true, true); // Star Trek - Fixed Phaser Pack (Obsolete!)
+    AddItemInfo(AmmoMagazineType, "SmallKlingonCharge", 35M, 16M, true, true); // Star Trek - Fixed Phaser Pack (Obsolete!)
+    AddItemInfo(AmmoMagazineType, "SmallShotGunAmmo", 50M, 16M, true, true); // Azimuth Industries Mega Mod Pack [OLD]
+    AddItemInfo(AmmoMagazineType, "SmallShotGunAmmoTracer", 50M, 16M, true, true); // Azimuth Industries Mega Mod Pack [OLD]
+    AddItemInfo(AmmoMagazineType, "SniperRoundLowSpeedHighDamage", 35M, 16M, true, true); // Azimuth Industries Mega Mod Pack [OLD]
+    AddItemInfo(AmmoMagazineType, "TankCannonAmmoSEM4", 35M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+    AddItemInfo(AmmoMagazineType, "TelionAF_PMagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
+    AddItemInfo(AmmoMagazineType, "TelionAMMagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
+    AddItemInfo(AmmoMagazineType, "TritiumMissile", 72M, 60M, true, true); // [VisSE] [DX11] [V2] Hydro Reactors & Ice to Oxy Hydro Gasses MK2
+    AddItemInfo(AmmoMagazineType, "TritiumShot", 3M, 3M, true, true); // [VisSE] [DX11] [V1] Hydro Reactors & Ice to Oxy Hydro Gasses
+    AddItemInfo(AmmoMagazineType, "TungstenBolt", 4812M, 250M, true, true); // (DX11)Mass Driver
 
-    AddItemInfo(ComponentType, "AlloyPlate", 30M, 3M, true, true);
-    AddItemInfo(ComponentType, "ampHD", 10M, 15.5M, true, true);
-    AddItemInfo(ComponentType, "ArcFuel", 2M, 0.627M, true, true);
-    AddItemInfo(ComponentType, "ArcReactorcomponent", 312M, 100M, true, true);
-    AddItemInfo(ComponentType, "AzimuthSupercharger", 10M, 9M, true, true);
-    AddItemInfo(ComponentType, "BulletproofGlass", 15M, 8M, true, true);
-    AddItemInfo(ComponentType, "Computer", 0.2M, 1M, true, true);
-    AddItemInfo(ComponentType, "ConductorMagnets", 900M, 200M, true, true);
-    AddItemInfo(ComponentType, "Construction", 8M, 2M, true, true);
-    AddItemInfo(ComponentType, "DenseSteelPlate", 200M, 30M, true, true);
-    AddItemInfo(ComponentType, "Detector", 5M, 6M, true, true);
-    AddItemInfo(ComponentType, "Display", 8M, 6M, true, true);
-    AddItemInfo(ComponentType, "DT-MiniSolarCell", 0.08M, 0.2M, true, true);
-    AddItemInfo(ComponentType, "Explosives", 2M, 2M, true, true);
-    AddItemInfo(ComponentType, "Girder", 6M, 2M, true, true);
-    AddItemInfo(ComponentType, "GraphenePlate", 0.1M, 3M, true, true);
-    AddItemInfo(ComponentType, "GravityGenerator", 800M, 200M, true, true);
-    AddItemInfo(ComponentType, "InteriorPlate", 3M, 5M, true, true);
-    AddItemInfo(ComponentType, "LargeTube", 25M, 38M, true, true);
-    AddItemInfo(ComponentType, "Magna", 100M, 15M, true, true);
-    AddItemInfo(ComponentType, "Magno", 10M, 5.5M, true, true);
-    AddItemInfo(ComponentType, "Medical", 150M, 160M, true, true);
-    AddItemInfo(ComponentType, "MetalGrid", 6M, 15M, true, true);
-    AddItemInfo(ComponentType, "Mg_FuelCell", 15M, 16M, true, true);
-    AddItemInfo(ComponentType, "Motor", 24M, 8M, true, true);
-    AddItemInfo(ComponentType, "PowerCell", 25M, 45M, true, true);
-    AddItemInfo(ComponentType, "productioncontrolcomponent", 40M, 15M, true, true);
-    AddItemInfo(ComponentType, "RadioCommunication", 8M, 140M, true, true);
-    AddItemInfo(ComponentType, "Reactor", 25M, 8M, true, true);
-    AddItemInfo(ComponentType, "SmallTube", 4M, 2M, true, true);
-    AddItemInfo(ComponentType, "SolarCell", 8M, 20M, true, true);
-    AddItemInfo(ComponentType, "SteelPlate", 20M, 3M, true, true);
-    AddItemInfo(ComponentType, "Superconductor", 15M, 8M, true, true);
-    AddItemInfo(ComponentType, "Thrust", 40M, 10M, true, true);
-    AddItemInfo(ComponentType, "TractorHD", 1500M, 200M, true, true);
-    AddItemInfo(ComponentType, "Tritium", 3M, 3M, true, true);
-    AddItemInfo(ComponentType, "TVSI_DiamondGlass", 40M, 8M, true, true);
-    AddItemInfo(ComponentType, "WaterTankComponent", 200M, 160M, true, true);
+    AddItemInfo(ComponentType, "AlloyPlate", 30M, 3M, true, true); // Industrial Centrifuge (DX11)
+    AddItemInfo(ComponentType, "ampHD", 10M, 15.5M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
+    AddItemInfo(ComponentType, "ArcFuel", 2M, 0.627M, true, true); // Arc Reactor Pack [DX-11 Ready]
+    AddItemInfo(ComponentType, "ArcReactorcomponent", 312M, 100M, true, true); // Arc Reactor Pack [DX-11 Ready]
+    AddItemInfo(ComponentType, "AzimuthSupercharger", 10M, 9M, true, true); // Azimuth Industries Mega Mod Pack [OLD]
+    AddItemInfo(ComponentType, "BulletproofGlass", 15M, 8M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "Computer", 0.2M, 1M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "ConductorMagnets", 900M, 200M, true, true); // (DX11)Mass Driver
+    AddItemInfo(ComponentType, "Construction", 8M, 2M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "DenseSteelPlate", 200M, 30M, true, true); // Arc Reactor Pack [DX-11 Ready]
+    AddItemInfo(ComponentType, "Detector", 5M, 6M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "Display", 8M, 6M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "DT-MiniSolarCell", 0.08M, 0.2M, true, true); // }DT{ Modpack
+    AddItemInfo(ComponentType, "Explosives", 2M, 2M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "Girder", 6M, 2M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "GraphenePlate", 0.1M, 3M, true, true); // Graphene Armor [v0.7.1_DX11_Beta] *MOAR Stuff!*
+    AddItemInfo(ComponentType, "GravityGenerator", 800M, 200M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "InteriorPlate", 3M, 5M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "LargeTube", 25M, 38M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "Magna", 100M, 15M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
+    AddItemInfo(ComponentType, "Magno", 10M, 5.5M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
+    AddItemInfo(ComponentType, "Medical", 150M, 160M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "MetalGrid", 6M, 15M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "Mg_FuelCell", 15M, 16M, true, true); // Ripptide's CW & EE Continued
+    AddItemInfo(ComponentType, "Motor", 24M, 8M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "PowerCell", 25M, 45M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "productioncontrolcomponent", 40M, 15M, true, true); // (DX11) Double Sided Upgrade Modules
+    AddItemInfo(ComponentType, "RadioCommunication", 8M, 70M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "Reactor", 25M, 8M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "SmallTube", 4M, 2M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "SolarCell", 8M, 20M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "SteelPlate", 20M, 3M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "Superconductor", 15M, 8M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "Thrust", 40M, 10M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "TractorHD", 1500M, 200M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
+    AddItemInfo(ComponentType, "Tritium", 3M, 3M, true, true); // [VisSE] [DX11] [V1] Hydro Reactors & Ice to Oxy Hydro Gasses
+    AddItemInfo(ComponentType, "TVSI_DiamondGlass", 40M, 8M, true, true); // TVSI-Tech Diamond Bonded Glass (Survival) [DX11]
+    AddItemInfo(ComponentType, "WaterTankComponent", 200M, 160M, true, true); // Industrial Centrifuge (DX11)
 
-    AddItemInfo(GasContainerObjectType, "HydrogenBottle", 30M, 120M, true, false);
+    AddItemInfo(GasContainerObjectType, "HydrogenBottle", 30M, 120M, true, false); // Space Engineers
 
-    AddItemInfo(IngotType, "Carbon", 1M, 0.052M, false, true);
-    AddItemInfo(IngotType, "Cobalt", 1M, 0.112M, false, true);
-    AddItemInfo(IngotType, "Gold", 1M, 0.052M, false, true);
-    AddItemInfo(IngotType, "Iron", 1M, 0.127M, false, true);
-    AddItemInfo(IngotType, "LiquidHelium", 1M, 4.6M, false, true);
-    AddItemInfo(IngotType, "Magmatite", 100M, 37M, false, true);
-    AddItemInfo(IngotType, "Magnesium", 1M, 0.575M, false, true);
-    AddItemInfo(IngotType, "Nickel", 1M, 0.112M, false, true);
-    AddItemInfo(IngotType, "Platinum", 1M, 0.047M, false, true);
-    AddItemInfo(IngotType, "Scrap", 1M, 0.254M, false, true);
-    AddItemInfo(IngotType, "Silicon", 1M, 0.429M, false, true);
-    AddItemInfo(IngotType, "Silver", 1M, 0.095M, false, true);
-    AddItemInfo(IngotType, "Stone", 1M, 0.37M, false, true);
-    AddItemInfo(IngotType, "Tungsten", 1M, 0.52M, false, true);
-    AddItemInfo(IngotType, "Uranium", 1M, 0.052M, false, true);
-    AddItemInfo(IngotType, "v2HydrogenGas", 0.1656M, 0.43M, false, true);
-    AddItemInfo(IngotType, "v2OxygenGas", 2.664M, 0.9M, false, true);
+    AddItemInfo(IngotType, "Carbon", 1M, 0.052M, false, true); // TVSI-Tech Diamond Bonded Glass (Survival) [DX11]
+    AddItemInfo(IngotType, "Cobalt", 1M, 0.112M, false, true); // Space Engineers
+    AddItemInfo(IngotType, "Gold", 1M, 0.052M, false, true); // Space Engineers
+    AddItemInfo(IngotType, "Iron", 1M, 0.127M, false, true); // Space Engineers
+    AddItemInfo(IngotType, "LiquidHelium", 1M, 4.6M, false, true); // (DX11)Mass Driver
+    AddItemInfo(IngotType, "Magmatite", 100M, 37M, false, true); // Stone and Gravel to Metal Ingots (DX 11)
+    AddItemInfo(IngotType, "Magnesium", 1M, 0.575M, false, true); // Space Engineers
+    AddItemInfo(IngotType, "Nickel", 1M, 0.112M, false, true); // Space Engineers
+    AddItemInfo(IngotType, "Platinum", 1M, 0.047M, false, true); // Space Engineers
+    AddItemInfo(IngotType, "Scrap", 1M, 0.254M, false, true); // Space Engineers
+    AddItemInfo(IngotType, "Silicon", 1M, 0.429M, false, true); // Space Engineers
+    AddItemInfo(IngotType, "Silver", 1M, 0.095M, false, true); // Space Engineers
+    AddItemInfo(IngotType, "Stone", 1M, 0.37M, false, true); // Space Engineers
+    AddItemInfo(IngotType, "Tungsten", 1M, 0.52M, false, true); // (DX11)Mass Driver
+    AddItemInfo(IngotType, "Uranium", 1M, 0.052M, false, true); // Space Engineers
+    AddItemInfo(IngotType, "v2HydrogenGas", 0.1656M, 0.43M, false, true); // [VisSE] [DX11] [V2] Hydro Reactors & Ice to Oxy Hydro Gasses MK2
+    AddItemInfo(IngotType, "v2OxygenGas", 2.664M, 0.9M, false, true); // [VisSE] [DX11] [V1] Hydro Reactors & Ice to Oxy Hydro Gasses
 
-    AddItemInfo(OreType, "Carbon", 1M, 0.37M, false, true);
-    AddItemInfo(OreType, "Cobalt", 1M, 0.37M, false, true);
-    AddItemInfo(OreType, "Gold", 1M, 0.37M, false, true);
-    AddItemInfo(OreType, "Helium", 1M, 5.6M, false, true);
-    AddItemInfo(OreType, "HydrogenGas", 0.1665M, 0.45M, false, true);
-    AddItemInfo(OreType, "Ice", 1M, 0.37M, false, true);
-    AddItemInfo(OreType, "Iron", 1M, 0.37M, false, true);
-    AddItemInfo(OreType, "Magnesium", 1M, 0.37M, false, true);
-    AddItemInfo(OreType, "Nickel", 1M, 0.37M, false, true);
-    AddItemInfo(OreType, "Organic", 1M, 0.37M, false, true);
-    AddItemInfo(OreType, "OxygenGas", 2.664M, 0.9M, false, true);
-    AddItemInfo(OreType, "Platinum", 1M, 0.37M, false, true);
-    AddItemInfo(OreType, "Scrap", 1M, 0.254M, false, true);
-    AddItemInfo(OreType, "Silicon", 1M, 0.37M, false, true);
-    AddItemInfo(OreType, "Silver", 1M, 0.37M, false, true);
-    AddItemInfo(OreType, "Stone", 1M, 0.37M, false, true);
-    AddItemInfo(OreType, "Tungsten", 1M, 0.47M, false, true);
-    AddItemInfo(OreType, "Uranium", 1M, 0.37M, false, true);
+    AddItemInfo(ModelComponentType, "AstronautBackpack", 5M, 60M, true, true); // Space Engineers
 
-    AddItemInfo(OxygenContainerObjectType, "OxygenBottle", 30M, 120M, true, false);
+    AddItemInfo(OreType, "Carbon", 1M, 0.37M, false, true); // TVSI-Tech Diamond Bonded Glass (Survival) [DX11]
+    AddItemInfo(OreType, "Cobalt", 1M, 0.37M, false, true); // Space Engineers
+    AddItemInfo(OreType, "Gold", 1M, 0.37M, false, true); // Space Engineers
+    AddItemInfo(OreType, "Helium", 1M, 5.6M, false, true); // (DX11)Mass Driver
+    AddItemInfo(OreType, "HydrogenGas", 0.1665M, 0.45M, false, true); // [VisSE] [DX11] [V1] Hydro Reactors & Ice to Oxy Hydro Gasses
+    AddItemInfo(OreType, "Ice", 1M, 0.37M, false, true); // Space Engineers
+    AddItemInfo(OreType, "Iron", 1M, 0.37M, false, true); // Space Engineers
+    AddItemInfo(OreType, "Magnesium", 1M, 0.37M, false, true); // Space Engineers
+    AddItemInfo(OreType, "Nickel", 1M, 0.37M, false, true); // Space Engineers
+    AddItemInfo(OreType, "Organic", 1M, 0.37M, false, true); // Space Engineers
+    AddItemInfo(OreType, "OxygenGas", 2.664M, 0.9M, false, true); // [VisSE] [DX11] [V1] Hydro Reactors & Ice to Oxy Hydro Gasses
+    AddItemInfo(OreType, "Platinum", 1M, 0.37M, false, true); // Space Engineers
+    AddItemInfo(OreType, "Scrap", 1M, 0.254M, false, true); // Space Engineers
+    AddItemInfo(OreType, "Silicon", 1M, 0.37M, false, true); // Space Engineers
+    AddItemInfo(OreType, "Silver", 1M, 0.37M, false, true); // Space Engineers
+    AddItemInfo(OreType, "Stone", 1M, 0.37M, false, true); // Space Engineers
+    AddItemInfo(OreType, "Tungsten", 1M, 0.47M, false, true); // (DX11)Mass Driver
+    AddItemInfo(OreType, "Uranium", 1M, 0.37M, false, true); // Space Engineers
 
-    AddItemInfo(PhysicalGunObjectType, "AngleGrinder2Item", 3M, 20M, true, false);
-    AddItemInfo(PhysicalGunObjectType, "AngleGrinder3Item", 3M, 20M, true, false);
-    AddItemInfo(PhysicalGunObjectType, "AngleGrinder4Item", 3M, 20M, true, false);
-    AddItemInfo(PhysicalGunObjectType, "AngleGrinderItem", 3M, 20M, true, false);
-    AddItemInfo(PhysicalGunObjectType, "AutomaticRifleItem", 3M, 14M, true, false);
-    AddItemInfo(PhysicalGunObjectType, "CubePlacerItem", 1M, 1M, true, false);
-    AddItemInfo(PhysicalGunObjectType, "GoodAIRewardPunishmentTool", 0.1M, 1M, true, false);
-    AddItemInfo(PhysicalGunObjectType, "HandDrill2Item", 22M, 25M, true, false);
-    AddItemInfo(PhysicalGunObjectType, "HandDrill3Item", 22M, 25M, true, false);
-    AddItemInfo(PhysicalGunObjectType, "HandDrill4Item", 22M, 25M, true, false);
-    AddItemInfo(PhysicalGunObjectType, "HandDrillItem", 22M, 25M, true, false);
-    AddItemInfo(PhysicalGunObjectType, "PhysicalConcreteTool", 5M, 15M, true, false);
-    AddItemInfo(PhysicalGunObjectType, "PreciseAutomaticRifleItem", 3M, 14M, true, false);
-    AddItemInfo(PhysicalGunObjectType, "RapidFireAutomaticRifleItem", 3M, 14M, true, false);
-    AddItemInfo(PhysicalGunObjectType, "TritiumAutomaticRifleItem", 3M, 14M, true, false);
-    AddItemInfo(PhysicalGunObjectType, "UltimateAutomaticRifleItem", 3M, 14M, true, false);
-    AddItemInfo(PhysicalGunObjectType, "Welder2Item", 5M, 8M, true, false);
-    AddItemInfo(PhysicalGunObjectType, "Welder3Item", 5M, 8M, true, false);
-    AddItemInfo(PhysicalGunObjectType, "Welder4Item", 5M, 8M, true, false);
-    AddItemInfo(PhysicalGunObjectType, "WelderItem", 5M, 8M, true, false);
+    AddItemInfo(OxygenContainerObjectType, "OxygenBottle", 30M, 120M, true, false); // Space Engineers
 
-    AddItemInfo(TreeObjectType, "DeadBushMedium", 1300M, 8000M, true, true);
-    AddItemInfo(TreeObjectType, "DesertBushMedium", 1300M, 8000M, true, true);
-    AddItemInfo(TreeObjectType, "DesertTree", 1500M, 8000M, true, true);
-    AddItemInfo(TreeObjectType, "DesertTreeDead", 1500M, 8000M, true, true);
-    AddItemInfo(TreeObjectType, "DesertTreeDeadMedium", 1300M, 8000M, true, true);
-    AddItemInfo(TreeObjectType, "DesertTreeMedium", 1300M, 8000M, true, true);
-    AddItemInfo(TreeObjectType, "LeafBushMedium_var1", 1300M, 8000M, true, true);
-    AddItemInfo(TreeObjectType, "LeafBushMedium_var2", 1300M, 8000M, true, true);
-    AddItemInfo(TreeObjectType, "LeafTree", 1500M, 8000M, true, true);
-    AddItemInfo(TreeObjectType, "LeafTreeMedium", 1300M, 8000M, true, true);
-    AddItemInfo(TreeObjectType, "PineBushMedium", 1300M, 8000M, true, true);
-    AddItemInfo(TreeObjectType, "PineTree", 1500M, 8000M, true, true);
-    AddItemInfo(TreeObjectType, "PineTreeMedium", 1300M, 8000M, true, true);
-    AddItemInfo(TreeObjectType, "PineTreeSnow", 1500M, 8000M, true, true);
-    AddItemInfo(TreeObjectType, "PineTreeSnowMedium", 1300M, 8000M, true, true);
-    AddItemInfo(TreeObjectType, "SnowPineBushMedium", 1300M, 8000M, true, true);
+    AddItemInfo(PhysicalGunObjectType, "AngleGrinder2Item", 3M, 20M, true, false); // Space Engineers
+    AddItemInfo(PhysicalGunObjectType, "AngleGrinder3Item", 3M, 20M, true, false); // Space Engineers
+    AddItemInfo(PhysicalGunObjectType, "AngleGrinder4Item", 3M, 20M, true, false); // Space Engineers
+    AddItemInfo(PhysicalGunObjectType, "AngleGrinderItem", 3M, 20M, true, false); // Space Engineers
+    AddItemInfo(PhysicalGunObjectType, "AutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
+    AddItemInfo(PhysicalGunObjectType, "CubePlacerItem", 1M, 1M, true, false); // Space Engineers
+    AddItemInfo(PhysicalGunObjectType, "GoodAIRewardPunishmentTool", 0.1M, 1M, true, false); // Space Engineers
+    AddItemInfo(PhysicalGunObjectType, "HandDrill2Item", 22M, 25M, true, false); // Space Engineers
+    AddItemInfo(PhysicalGunObjectType, "HandDrill3Item", 22M, 25M, true, false); // Space Engineers
+    AddItemInfo(PhysicalGunObjectType, "HandDrill4Item", 22M, 25M, true, false); // Space Engineers
+    AddItemInfo(PhysicalGunObjectType, "HandDrillItem", 22M, 25M, true, false); // Space Engineers
+    AddItemInfo(PhysicalGunObjectType, "PhysicalConcreteTool", 5M, 15M, true, false); // Concrete Tool - placing voxels in survival
+    AddItemInfo(PhysicalGunObjectType, "PreciseAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
+    AddItemInfo(PhysicalGunObjectType, "RapidFireAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
+    AddItemInfo(PhysicalGunObjectType, "TritiumAutomaticRifleItem", 3M, 14M, true, false); // [VisSE] [DX11] [V1] Hydro Reactors & Ice to Oxy Hydro Gasses
+    AddItemInfo(PhysicalGunObjectType, "UltimateAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
+    AddItemInfo(PhysicalGunObjectType, "Welder2Item", 5M, 8M, true, false); // Space Engineers
+    AddItemInfo(PhysicalGunObjectType, "Welder3Item", 5M, 8M, true, false); // Space Engineers
+    AddItemInfo(PhysicalGunObjectType, "Welder4Item", 5M, 8M, true, false); // Space Engineers
+    AddItemInfo(PhysicalGunObjectType, "WelderItem", 5M, 8M, true, false); // Space Engineers
+
+    AddItemInfo(TreeObjectType, "DeadBushMedium", 1300M, 8000M, true, true); // Space Engineers
+    AddItemInfo(TreeObjectType, "DesertBushMedium", 1300M, 8000M, true, true); // Space Engineers
+    AddItemInfo(TreeObjectType, "DesertTree", 1500M, 8000M, true, true); // Space Engineers
+    AddItemInfo(TreeObjectType, "DesertTreeDead", 1500M, 8000M, true, true); // Space Engineers
+    AddItemInfo(TreeObjectType, "DesertTreeDeadMedium", 1300M, 8000M, true, true); // Space Engineers
+    AddItemInfo(TreeObjectType, "DesertTreeMedium", 1300M, 8000M, true, true); // Space Engineers
+    AddItemInfo(TreeObjectType, "LeafBushMedium_var1", 1300M, 8000M, true, true); // Space Engineers
+    AddItemInfo(TreeObjectType, "LeafBushMedium_var2", 1300M, 8000M, true, true); // Space Engineers
+    AddItemInfo(TreeObjectType, "LeafTree", 1500M, 8000M, true, true); // Space Engineers
+    AddItemInfo(TreeObjectType, "LeafTreeMedium", 1300M, 8000M, true, true); // Space Engineers
+    AddItemInfo(TreeObjectType, "PineBushMedium", 1300M, 8000M, true, true); // Space Engineers
+    AddItemInfo(TreeObjectType, "PineTree", 1500M, 8000M, true, true); // Space Engineers
+    AddItemInfo(TreeObjectType, "PineTreeMedium", 1300M, 8000M, true, true); // Space Engineers
+    AddItemInfo(TreeObjectType, "PineTreeSnow", 1500M, 8000M, true, true); // Space Engineers
+    AddItemInfo(TreeObjectType, "PineTreeSnowMedium", 1300M, 8000M, true, true); // Space Engineers
+    AddItemInfo(TreeObjectType, "SnowPineBushMedium", 1300M, 8000M, true, true); // Space Engineers
 }
 
 private void AddItemInfo(VRage.ObjectBuilders.MyObjectBuilderType mainType, string subtype,
