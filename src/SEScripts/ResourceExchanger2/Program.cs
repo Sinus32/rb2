@@ -10,7 +10,7 @@ namespace SEScripts.ResourceExchanger2
 {
     public class Program : MyGridProgram
     {
-/// Resource Exchanger version 2.1.4 2016-04-10
+/// Resource Exchanger version 2.1.5 2016-04-16
 /// Made by Sinus32
 /// http://steamcommunity.com/sharedfiles/filedetails/546221822
 
@@ -1325,6 +1325,7 @@ public void BuildItemInfoDict()
     AddItemInfo(AmmoMagazineType, "LaserAmmo", 0.001M, 0.01M, true, true); // (DX11)Laser Turret
     AddItemInfo(AmmoMagazineType, "LaserArrayFlakMagazine", 45M, 30M, true, true); // White Dwarf - Directed Energy Platform [DX11]
     AddItemInfo(AmmoMagazineType, "LaserArrayShellMagazine", 45M, 120M, true, true); // White Dwarf - Directed Energy Platform [DX11]
+    AddItemInfo(AmmoMagazineType, "Liquid Naquadah", 0.25M, 0.1M, true, true); // Stargate (working teleport)
     AddItemInfo(AmmoMagazineType, "MinotaurAmmo", 360M, 128M, true, true); // (DX11)Minotaur Cannon
     AddItemInfo(AmmoMagazineType, "Missile200mm", 45M, 60M, true, true); // Space Engineers
     AddItemInfo(AmmoMagazineType, "MK1CannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
@@ -1372,6 +1373,7 @@ public void BuildItemInfoDict()
     AddItemInfo(ComponentType, "DenseSteelPlate", 200M, 30M, true, true); // Arc Reactor Pack [DX-11 Ready]
     AddItemInfo(ComponentType, "Detector", 5M, 6M, true, true); // Space Engineers
     AddItemInfo(ComponentType, "Display", 8M, 6M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "Drone", 200M, 60M, true, true); // Stargate (working teleport)
     AddItemInfo(ComponentType, "DT-MiniSolarCell", 0.08M, 0.2M, true, true); // }DT{ Modpack
     AddItemInfo(ComponentType, "Explosives", 2M, 2M, true, true); // Space Engineers
     AddItemInfo(ComponentType, "Girder", 6M, 2M, true, true); // Space Engineers
@@ -1385,6 +1387,8 @@ public void BuildItemInfoDict()
     AddItemInfo(ComponentType, "MetalGrid", 6M, 15M, true, true); // Space Engineers
     AddItemInfo(ComponentType, "Mg_FuelCell", 15M, 16M, true, true); // Ripptide's CW & EE Continued
     AddItemInfo(ComponentType, "Motor", 24M, 8M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "Naquadah", 100M, 10M, true, true); // Stargate (working teleport)
+    AddItemInfo(ComponentType, "Neutronium", 500M, 5M, true, true); // Stargate (working teleport)
     AddItemInfo(ComponentType, "PowerCell", 25M, 45M, true, true); // Space Engineers
     AddItemInfo(ComponentType, "productioncontrolcomponent", 40M, 15M, true, true); // (DX11) Double Sided Upgrade Modules
     AddItemInfo(ComponentType, "RadioCommunication", 8M, 70M, true, true); // Space Engineers
@@ -1395,9 +1399,11 @@ public void BuildItemInfoDict()
     AddItemInfo(ComponentType, "Superconductor", 15M, 8M, true, true); // Space Engineers
     AddItemInfo(ComponentType, "Thrust", 40M, 10M, true, true); // Space Engineers
     AddItemInfo(ComponentType, "TractorHD", 1500M, 200M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
+    AddItemInfo(ComponentType, "Trinium", 100M, 10M, true, true); // Stargate (working teleport)
     AddItemInfo(ComponentType, "Tritium", 3M, 3M, true, true); // [VisSE] [DX11] [V1] Hydro Reactors & Ice to Oxy Hydro Gasses
     AddItemInfo(ComponentType, "TVSI_DiamondGlass", 40M, 8M, true, true); // TVSI-Tech Diamond Bonded Glass (Survival) [DX11]
     AddItemInfo(ComponentType, "WaterTankComponent", 200M, 160M, true, true); // Industrial Centrifuge (DX11)
+    AddItemInfo(ComponentType, "ZPM", 50M, 60M, true, true); // Stargate (working teleport)
 
     AddItemInfo(GasContainerObjectType, "HydrogenBottle", 30M, 120M, true, false); // Space Engineers
 
@@ -1408,12 +1414,15 @@ public void BuildItemInfoDict()
     AddItemInfo(IngotType, "LiquidHelium", 1M, 4.6M, false, true); // (DX11)Mass Driver
     AddItemInfo(IngotType, "Magmatite", 100M, 37M, false, true); // Stone and Gravel to Metal Ingots (DX 11)
     AddItemInfo(IngotType, "Magnesium", 1M, 0.575M, false, true); // Space Engineers
+    AddItemInfo(IngotType, "Naquadah", 1M, 0.052M, false, true); // Stargate (working teleport)
+    AddItemInfo(IngotType, "Neutronium", 1M, 0.052M, false, true); // Stargate (working teleport)
     AddItemInfo(IngotType, "Nickel", 1M, 0.112M, false, true); // Space Engineers
     AddItemInfo(IngotType, "Platinum", 1M, 0.047M, false, true); // Space Engineers
     AddItemInfo(IngotType, "Scrap", 1M, 0.254M, false, true); // Space Engineers
     AddItemInfo(IngotType, "Silicon", 1M, 0.429M, false, true); // Space Engineers
     AddItemInfo(IngotType, "Silver", 1M, 0.095M, false, true); // Space Engineers
     AddItemInfo(IngotType, "Stone", 1M, 0.37M, false, true); // Space Engineers
+    AddItemInfo(IngotType, "Trinium", 1M, 0.052M, false, true); // Stargate (working teleport)
     AddItemInfo(IngotType, "Tungsten", 1M, 0.52M, false, true); // (DX11)Mass Driver
     AddItemInfo(IngotType, "Uranium", 1M, 0.052M, false, true); // Space Engineers
     AddItemInfo(IngotType, "v2HydrogenGas", 0.1656M, 0.43M, false, true); // [VisSE] [DX11] [V2] Hydro Reactors & Ice to Oxy Hydro Gasses MK2
@@ -1429,6 +1438,8 @@ public void BuildItemInfoDict()
     AddItemInfo(OreType, "Ice", 1M, 0.37M, false, true); // Space Engineers
     AddItemInfo(OreType, "Iron", 1M, 0.37M, false, true); // Space Engineers
     AddItemInfo(OreType, "Magnesium", 1M, 0.37M, false, true); // Space Engineers
+    AddItemInfo(OreType, "Naquadah", 1M, 0.37M, false, true); // Stargate (working teleport)
+    AddItemInfo(OreType, "Neutronium", 1M, 0.37M, false, true); // Stargate (working teleport)
     AddItemInfo(OreType, "Nickel", 1M, 0.37M, false, true); // Space Engineers
     AddItemInfo(OreType, "Organic", 1M, 0.37M, false, true); // Space Engineers
     AddItemInfo(OreType, "OxygenGas", 2.664M, 0.9M, false, true); // [VisSE] [DX11] [V1] Hydro Reactors & Ice to Oxy Hydro Gasses
@@ -1437,6 +1448,7 @@ public void BuildItemInfoDict()
     AddItemInfo(OreType, "Silicon", 1M, 0.37M, false, true); // Space Engineers
     AddItemInfo(OreType, "Silver", 1M, 0.37M, false, true); // Space Engineers
     AddItemInfo(OreType, "Stone", 1M, 0.37M, false, true); // Space Engineers
+    AddItemInfo(OreType, "Trinium", 1M, 0.37M, false, true); // Stargate (working teleport)
     AddItemInfo(OreType, "Tungsten", 1M, 0.47M, false, true); // (DX11)Mass Driver
     AddItemInfo(OreType, "Uranium", 1M, 0.37M, false, true); // Space Engineers
 
@@ -1453,15 +1465,18 @@ public void BuildItemInfoDict()
     AddItemInfo(PhysicalGunObjectType, "HandDrill3Item", 22M, 25M, true, false); // Space Engineers
     AddItemInfo(PhysicalGunObjectType, "HandDrill4Item", 22M, 25M, true, false); // Space Engineers
     AddItemInfo(PhysicalGunObjectType, "HandDrillItem", 22M, 25M, true, false); // Space Engineers
+    AddItemInfo(PhysicalGunObjectType, "P90", 3M, 12M, true, false); // Stargate (working teleport)
     AddItemInfo(PhysicalGunObjectType, "PhysicalConcreteTool", 5M, 15M, true, false); // Concrete Tool - placing voxels in survival
     AddItemInfo(PhysicalGunObjectType, "PreciseAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
     AddItemInfo(PhysicalGunObjectType, "RapidFireAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
+    AddItemInfo(PhysicalGunObjectType, "Staff", 3M, 16M, true, false); // Stargate (working teleport)
     AddItemInfo(PhysicalGunObjectType, "TritiumAutomaticRifleItem", 3M, 14M, true, false); // [VisSE] [DX11] [V1] Hydro Reactors & Ice to Oxy Hydro Gasses
     AddItemInfo(PhysicalGunObjectType, "UltimateAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
     AddItemInfo(PhysicalGunObjectType, "Welder2Item", 5M, 8M, true, false); // Space Engineers
     AddItemInfo(PhysicalGunObjectType, "Welder3Item", 5M, 8M, true, false); // Space Engineers
     AddItemInfo(PhysicalGunObjectType, "Welder4Item", 5M, 8M, true, false); // Space Engineers
     AddItemInfo(PhysicalGunObjectType, "WelderItem", 5M, 8M, true, false); // Space Engineers
+    AddItemInfo(PhysicalGunObjectType, "Zat", 3M, 12M, true, false); // Stargate (working teleport)
 
     AddItemInfo(TreeObjectType, "DeadBushMedium", 1300M, 8000M, true, true); // Space Engineers
     AddItemInfo(TreeObjectType, "DesertBushMedium", 1300M, 8000M, true, true); // Space Engineers
