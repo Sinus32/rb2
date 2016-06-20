@@ -10,7 +10,7 @@ namespace SEScripts.ResourceExchanger2
 {
     public class Program : MyGridProgram
     {
-/// Resource Exchanger version 2.1.5 2016-04-16
+/// Resource Exchanger version 2.1.6 2016-06-20
 /// Made by Sinus32
 /// http://steamcommunity.com/sharedfiles/filedetails/546221822
 
@@ -1302,9 +1302,9 @@ public void BuildItemInfoDict()
     AddItemInfo(AmmoMagazineType, "BatteryCannonAmmo1", 50M, 50M, true, true); // MWI - Weapon Collection (DX11)
     AddItemInfo(AmmoMagazineType, "BatteryCannonAmmo2", 200M, 200M, true, true); // MWI - Weapon Collection (DX11)
     AddItemInfo(AmmoMagazineType, "BlasterCell", 1M, 1M, true, true); // [SEI] Weapon Pack DX11
-    AddItemInfo(AmmoMagazineType, "codecatAmmo40x368mm", 70M, 32M, true, true); // [codecat]Weaponry [DX11]
-    AddItemInfo(AmmoMagazineType, "codecatMissilePinocchio", 50M, 60M, true, true); // [codecat]Weaponry [DX11]
-    AddItemInfo(AmmoMagazineType, "codecatPunisherAmmo25x184mm", 70M, 32M, true, true); // [codecat]Weaponry [DX11]
+    AddItemInfo(AmmoMagazineType, "codecatAmmo40x368mm", 70M, 32M, true, true); // [codecat]Weaponry [DX11] [outdated]
+    AddItemInfo(AmmoMagazineType, "codecatMissilePinocchio", 50M, 60M, true, true); // [codecat]Weaponry [DX11] [outdated]
+    AddItemInfo(AmmoMagazineType, "codecatPunisherAmmo25x184mm", 70M, 32M, true, true); // [codecat]Weaponry [DX11] [outdated]
     AddItemInfo(AmmoMagazineType, "ConcreteMix", 2M, 2M, true, true); // Concrete Tool - placing voxels in survival
     AddItemInfo(AmmoMagazineType, "Eikester_Missile120mm", 25M, 30M, true, true); // (DX11) Small Missile Turret
     AddItemInfo(AmmoMagazineType, "Eikester_Nuke", 1800M, 8836M, true, true); // (DX11) Nuke Launcher [WiP]
@@ -1312,6 +1312,7 @@ public void BuildItemInfoDict()
     AddItemInfo(AmmoMagazineType, "Flak200mm", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
     AddItemInfo(AmmoMagazineType, "Flak500mm", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
     AddItemInfo(AmmoMagazineType, "HDTCannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
+    AddItemInfo(AmmoMagazineType, "HighDamageGatlingAmmo", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
     AddItemInfo(AmmoMagazineType, "ISM_FusionAmmo", 35M, 10M, true, true); // ISM Mega Mod Pack [DX11 -WIP]
     AddItemInfo(AmmoMagazineType, "ISM_GrendelAmmo", 35M, 2M, true, true); // ISM Mega Mod Pack [DX11 -WIP]
     AddItemInfo(AmmoMagazineType, "ISM_Hellfire", 45M, 60M, true, true); // ISM Mega Mod Pack [DX11 -WIP]
@@ -1353,7 +1354,10 @@ public void BuildItemInfoDict()
     AddItemInfo(AmmoMagazineType, "SmallKlingonCharge", 35M, 16M, true, true); // Star Trek - Fixed Phaser Pack (Obsolete!)
     AddItemInfo(AmmoMagazineType, "SmallShotGunAmmo", 50M, 16M, true, true); // Azimuth Industries Mega Mod Pack [OLD]
     AddItemInfo(AmmoMagazineType, "SmallShotGunAmmoTracer", 50M, 16M, true, true); // Azimuth Industries Mega Mod Pack [OLD]
-    AddItemInfo(AmmoMagazineType, "SniperRoundLowSpeedHighDamage", 35M, 16M, true, true); // Azimuth Industries Mega Mod Pack [OLD]
+    AddItemInfo(AmmoMagazineType, "SniperRoundHighSpeedLowDamage", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+    AddItemInfo(AmmoMagazineType, "SniperRoundHighSpeedLowDamageSmallShip", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+    AddItemInfo(AmmoMagazineType, "SniperRoundLowSpeedHighDamage", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+    AddItemInfo(AmmoMagazineType, "SniperRoundLowSpeedHighDamageSmallShip", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
     AddItemInfo(AmmoMagazineType, "TankCannonAmmoSEM4", 35M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
     AddItemInfo(AmmoMagazineType, "TelionAF_PMagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
     AddItemInfo(AmmoMagazineType, "TelionAMMagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
@@ -1393,6 +1397,7 @@ public void BuildItemInfoDict()
     AddItemInfo(ComponentType, "productioncontrolcomponent", 40M, 15M, true, true); // (DX11) Double Sided Upgrade Modules
     AddItemInfo(ComponentType, "RadioCommunication", 8M, 70M, true, true); // Space Engineers
     AddItemInfo(ComponentType, "Reactor", 25M, 8M, true, true); // Space Engineers
+    AddItemInfo(ComponentType, "Scrap", 2M, 2M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
     AddItemInfo(ComponentType, "SmallTube", 4M, 2M, true, true); // Space Engineers
     AddItemInfo(ComponentType, "SolarCell", 8M, 20M, true, true); // Space Engineers
     AddItemInfo(ComponentType, "SteelPlate", 20M, 3M, true, true); // Space Engineers
