@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -25,7 +26,7 @@ namespace ItemInfoFinder
                 request.Timeout = 10000;
                 request.Accept = "application/xml";
                 request.Headers.Add(HttpRequestHeader.AcceptLanguage, "en-US");
-                request.Headers.Add(HttpRequestHeader.AcceptEncoding, "gzip, deflate");
+                request.Headers.Add(HttpRequestHeader.AcceptEncoding, "gzip");
 
                 var data = new StringBuilder();
                 data.AppendFormat("key={0}&format=xml&itemcount={1}", API_KEY, itemIds.Count);
@@ -48,10 +49,24 @@ namespace ItemInfoFinder
 
                 using (var response = request.GetResponse())
                 using (var stream = response.GetResponseStream())
-                using (var reader = XmlReader.Create(stream, settings))
                 {
-                    resp = new XmlDocument();
-                    resp.Load(reader);
+                    if (response.Headers[HttpResponseHeader.ContentEncoding] == "gzip")
+                    {
+                        using (var gzip = new GZipStream(stream, CompressionMode.Decompress))
+                        using (var reader = XmlReader.Create(gzip, settings))
+                        {
+                            resp = new XmlDocument();
+                            resp.Load(reader);
+                        }
+                    }
+                    else
+                    {
+                        using (var reader = XmlReader.Create(stream, settings))
+                        {
+                            resp = new XmlDocument();
+                            resp.Load(reader);
+                        }
+                    }
                 }
 
                 var result = new WorkshopItemInfo();

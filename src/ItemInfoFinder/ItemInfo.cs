@@ -8,13 +8,16 @@ namespace ItemInfoFinder
 {
     public class ItemInfo : IEquatable<ItemInfo>
     {
-        public ItemInfo(string typeId, string subtypeId, string mass, string volume)
+        public ItemInfo(long modId, string typeId, string subtypeId, string mass, string volume)
         {
+            ModId = modId;
             TypeId = typeId;
             SubtypeId = subtypeId;
             Mass = mass;
             Volume = volume;
         }
+
+        public long ModId { get; set; }
 
         public string TypeId { get; set; }
 
