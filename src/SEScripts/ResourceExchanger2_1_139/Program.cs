@@ -6,11 +6,11 @@ using Sandbox.ModAPI.Interfaces;
 using VRage.Game;
 using VRageMath;
 
-namespace SEScripts.ResourceExchanger2
+namespace SEScripts.ResourceExchanger2_1_139
 {
     public class Program : MyGridProgram
     {
-/// Resource Exchanger version 2.1.6 2016-06-20
+/// Resource Exchanger version 2.1.6 2016-06-20 for SE 01.139
 /// Made by Sinus32
 /// http://steamcommunity.com/sharedfiles/filedetails/546221822
 
