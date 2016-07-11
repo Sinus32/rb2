@@ -10,7 +10,7 @@ namespace SEScripts.ResourceExchanger2_dev
 {
     public class Program : MyGridProgram
     {
-/// Resource Exchanger version 2.1.6 2016-06-20
+/// Resource Exchanger version 2.2.0 2016-07-??
 /// Made by Sinus32
 /// http://steamcommunity.com/sharedfiles/filedetails/546221822
 
@@ -202,70 +202,92 @@ private bool CollectTerminals()
     _drillsCurrentVolume = 0;
     _notConnectedDrillsFound = false;
 
-    var allBlocks = new List<IMyTerminalBlock>();
+    var blocks = new List<IMyTerminalBlock>();
+
     if (String.IsNullOrEmpty(MANAGED_BLOCKS_GROUP))
-        GridTerminalSystem.GetBlocks(allBlocks);
-
-    if (MANAGED_BLOCKS_GROUP != null || DISPLAY_LCD_GROUP != null
-        || DRILLS_PAYLOAD_LIGHTS_GROUP != null)
     {
-        var blockGroups = new List<IMyBlockGroup>();
-        GridTerminalSystem.GetBlockGroups(blockGroups);
+        GridTerminalSystem.GetBlocksOfType<IMyCargoContainer>(blocks, MyTerminalBlockFilter);
+        for (int i = 0; i < blocks.Count; ++i)
+            CollectContainer((IMyCargoContainer)blocks[i]);
 
-        for (int i = 0; i < blockGroups.Count; ++i)
-        {
-            IMyBlockGroup group = blockGroups[i];
-            if (String.Equals(group.Name, MANAGED_BLOCKS_GROUP,
-                StringComparison.CurrentCultureIgnoreCase))
-            {
-                allBlocks.AddRange(group.Blocks);
-            }
-            else if (String.Equals(group.Name, DISPLAY_LCD_GROUP,
-                StringComparison.CurrentCultureIgnoreCase))
-            {
-                _debugScreen = new List<IMyTextPanel>();
-                for (int j = 0; j < group.Blocks.Count; ++j)
-                    if (group.Blocks[j] is IMyTextPanel)
-                        _debugScreen.Add(group.Blocks[j] as IMyTextPanel);
-            }
-            else if (String.Equals(group.Name, DRILLS_PAYLOAD_LIGHTS_GROUP,
-                StringComparison.CurrentCultureIgnoreCase))
-            {
-                for (int j = 0; j < group.Blocks.Count; ++j)
-                    CollectLight(group.Blocks[j] as IMyLightingBlock);
-            }
-        }
+        GridTerminalSystem.GetBlocksOfType<IMyRefinery>(blocks, MyTerminalBlockFilter);
+        for (int i = 0; i < blocks.Count; ++i)
+            CollectRefinery((IMyRefinery)blocks[i]);
 
-        if (allBlocks.Count == 0)
+        GridTerminalSystem.GetBlocksOfType<IMyReactor>(blocks, MyTerminalBlockFilter);
+        for (int i = 0; i < blocks.Count; ++i)
+            CollectReactor((IMyReactor)blocks[i]);
+
+        GridTerminalSystem.GetBlocksOfType<IMyShipDrill>(blocks, MyTerminalBlockFilter);
+        for (int i = 0; i < blocks.Count; ++i)
+            CollectDrill((IMyShipDrill)blocks[i]);
+
+        GridTerminalSystem.GetBlocksOfType<IMyUserControllableGun>(blocks, MyTerminalBlockFilter);
+        for (int i = 0; i < blocks.Count; ++i)
+            CollectTurret((IMyUserControllableGun)blocks[i]);
+
+        GridTerminalSystem.GetBlocksOfType<IMyOxygenGenerator>(blocks, MyTerminalBlockFilter);
+        for (int i = 0; i < blocks.Count; ++i)
+            CollectOxygenGenerator((IMyOxygenGenerator)blocks[i]);
+    }
+    else
+    {
+        var group = GridTerminalSystem.GetBlockGroupWithName(MANAGED_BLOCKS_GROUP);
+        if (group == null)
         {
             _output.Append("Error: a group ");
             _output.Append(MANAGED_BLOCKS_GROUP);
-            _output.AppendLine(" has not been found or is empty.");
-            return _debugScreen != null && _debugScreen.Count > 0;
+            _output.AppendLine(" has not been found");
+        }
+        else
+        {
+            group.GetBlocksOfType<IMyCargoContainer>(blocks, MyTerminalBlockFilter);
+            for (int i = 0; i < blocks.Count; ++i)
+                CollectContainer((IMyCargoContainer)blocks[i]);
+
+            group.GetBlocksOfType<IMyRefinery>(blocks, MyTerminalBlockFilter);
+            for (int i = 0; i < blocks.Count; ++i)
+                CollectRefinery((IMyRefinery)blocks[i]);
+
+            group.GetBlocksOfType<IMyReactor>(blocks, MyTerminalBlockFilter);
+            for (int i = 0; i < blocks.Count; ++i)
+                CollectReactor((IMyReactor)blocks[i]);
+
+            group.GetBlocksOfType<IMyShipDrill>(blocks, MyTerminalBlockFilter);
+            for (int i = 0; i < blocks.Count; ++i)
+                CollectDrill((IMyShipDrill)blocks[i]);
+
+            group.GetBlocksOfType<IMyUserControllableGun>(blocks, MyTerminalBlockFilter);
+            for (int i = 0; i < blocks.Count; ++i)
+                CollectTurret((IMyUserControllableGun)blocks[i]);
+
+            group.GetBlocksOfType<IMyOxygenGenerator>(blocks, MyTerminalBlockFilter);
+            for (int i = 0; i < blocks.Count; ++i)
+                CollectOxygenGenerator((IMyOxygenGenerator)blocks[i]);
         }
     }
 
-    if (_debugScreen != null && _debugScreen.Count > 1)
-        _debugScreen = new List<IMyTextPanel>(new HashSet<IMyTextPanel>(_debugScreen));
-    if (allBlocks.Count > 1)
-        allBlocks = new List<IMyTerminalBlock>(new HashSet<IMyTerminalBlock>(allBlocks));
-    if (_drillsPayloadLights.Count > 1)
-        _drillsPayloadLights = new List<IMyLightingBlock>(new HashSet<IMyLightingBlock>(_drillsPayloadLights));
-
-    for (int i = 0; i < allBlocks.Count; ++i)
+    if (!String.IsNullOrEmpty(DISPLAY_LCD_GROUP))
     {
-        if (CollectContainer(allBlocks[i] as IMyCargoContainer))
-            continue;
-        if (CollectRefinery(allBlocks[i] as IMyRefinery))
-            continue;
-        if (CollectReactor(allBlocks[i] as IMyReactor))
-            continue;
-        if (CollectDrill(allBlocks[i] as IMyShipDrill))
-            continue;
-        if (CollectTurret(allBlocks[i] as IMyUserControllableGun))
-            continue;
-        if (CollectOxygenGenerator(allBlocks[i] as IMyOxygenGenerator))
-            continue;
+        var group = GridTerminalSystem.GetBlockGroupWithName(DISPLAY_LCD_GROUP);
+        if (group != null)
+        {
+            _debugScreen = new List<IMyTextPanel>();
+            group.GetBlocksOfType<IMyTextPanel>(blocks, MyTerminalBlockFilter);
+            for (int i = 0; i < blocks.Count; ++i)
+                _debugScreen.Add((IMyTextPanel)blocks[i]);
+        }
+    }
+
+    if (!String.IsNullOrEmpty(DRILLS_PAYLOAD_LIGHTS_GROUP))
+    {
+        var group = GridTerminalSystem.GetBlockGroupWithName(DISPLAY_LCD_GROUP);
+        if (group != null)
+        {
+            group.GetBlocksOfType<IMyLightingBlock>(blocks, MyTerminalBlockFilter);
+            for (int i = 0; i < blocks.Count; ++i)
+                _drillsPayloadLights.Add((IMyLightingBlock)blocks[i]);
+        }
     }
 
     _output.Append("Resource exchanger. Blocks managed:");
@@ -315,143 +337,84 @@ private void CalcRatio()
     }
 }
 
-private bool CollectContainer(IMyCargoContainer myCargoContainer)
+private bool MyTerminalBlockFilter(IMyTerminalBlock myTerminalBlock)
 {
-    if (myCargoContainer == null)
-        return false;
+    return myTerminalBlock.IsFunctional && (MY_GRID_ONLY || myTerminalBlock.CubeGrid == Me.CubeGrid);
+}
 
-    if (!myCargoContainer.IsFunctional || MY_GRID_ONLY && myCargoContainer.CubeGrid != Me.CubeGrid)
-        return true;
-
-    if (myCargoContainer.GetInventoryCount() == 0)
-        return true;
-
+private void CollectContainer(IMyCargoContainer myCargoContainer)
+{
     var inv = myCargoContainer.GetInventory(0);
     if (inv == null || inv.MaxVolume == 0)
-        return true;
+        return;
 
     _cargoContainersInventories.Add(inv);
     AddToGroup(myCargoContainer, inv);
-
-    return true;
 }
 
-private bool CollectRefinery(IMyRefinery myRefinery)
+private void CollectRefinery(IMyRefinery myRefinery)
 {
-    if (myRefinery == null)
-        return false;
-
-    if (!myRefinery.IsFunctional || !myRefinery.UseConveyorSystem || MY_GRID_ONLY && myRefinery.CubeGrid != Me.CubeGrid)
-        return true;
-
-    if (myRefinery.GetInventoryCount() == 0)
-        return true;
+    if (!myRefinery.UseConveyorSystem)
+        return;
 
     var inv = myRefinery.GetInventory(0);
     if (inv == null || inv.MaxVolume == 0)
-        return true;
+        return;
 
     _refineriesInventories.Add(inv);
     AddToGroup(myRefinery, inv);
-
-    return true;
 }
 
-private bool CollectReactor(IMyReactor myReactor)
+private void CollectReactor(IMyReactor myReactor)
 {
-    if (myReactor == null)
-        return false;
-
-    if (!myReactor.IsFunctional || !myReactor.UseConveyorSystem || MY_GRID_ONLY && myReactor.CubeGrid != Me.CubeGrid)
-        return true;
-
-    if (myReactor.GetInventoryCount() == 0)
-        return true;
+    if (!myReactor.UseConveyorSystem)
+        return;
 
     var inv = myReactor.GetInventory(0);
     if (inv == null || inv.MaxVolume == 0)
-        return true;
+        return;
 
     _reactorsInventories.Add(inv);
     AddToGroup(myReactor, inv);
-
-    return true;
 }
 
-private bool CollectDrill(IMyShipDrill myDrill)
+private void CollectDrill(IMyShipDrill myDrill)
 {
-    if (myDrill == null)
-        return false;
-
-    if (!myDrill.IsFunctional || !myDrill.UseConveyorSystem || MY_GRID_ONLY && myDrill.CubeGrid != Me.CubeGrid)
-        return true;
-
-    if (myDrill.GetInventoryCount() == 0)
-        return true;
+    if (!myDrill.UseConveyorSystem)
+        return;
 
     var inv = myDrill.GetInventory(0);
     if (inv == null || inv.MaxVolume == 0)
-        return true;
+        return;
 
     _drillsInventories.Add(inv);
     AddToGroup(myDrill, inv);
 
     _drillsMaxVolume += inv.MaxVolume;
     _drillsCurrentVolume += inv.CurrentVolume;
-
-    return true;
 }
 
-private bool CollectTurret(IMyUserControllableGun myTurret)
+private void CollectTurret(IMyUserControllableGun myTurret)
 {
-    if (myTurret == null)
-        return false;
-
-    if (!myTurret.IsFunctional || myTurret is SpaceEngineers.Game.ModAPI.Ingame.IMyLargeInteriorTurret || MY_GRID_ONLY && myTurret.CubeGrid != Me.CubeGrid)
-        return true;
-
-    if (myTurret.GetInventoryCount() == 0)
-        return true;
+    if (myTurret is SpaceEngineers.Game.ModAPI.Ingame.IMyLargeInteriorTurret)
+        return;
 
     var inv = myTurret.GetInventory(0);
     if (inv == null || inv.MaxVolume == 0)
-        return true;
+        return;
 
     _turretsInventories.Add(inv);
     AddToGroup(myTurret, inv);
-
-    return true;
 }
 
-private bool CollectOxygenGenerator(IMyOxygenGenerator myOxygenGenerator)
+private void CollectOxygenGenerator(IMyOxygenGenerator myOxygenGenerator)
 {
-    if (myOxygenGenerator == null)
-        return false;
-
-    if (!myOxygenGenerator.IsFunctional || MY_GRID_ONLY && myOxygenGenerator.CubeGrid != Me.CubeGrid)
-        return true;
-
-    if (myOxygenGenerator.GetInventoryCount() == 0)
-        return true;
-
     var inv = myOxygenGenerator.GetInventory(0);
     if (inv == null || inv.MaxVolume == 0)
-        return true;
+        return;
 
     _oxygenGeneratorsInventories.Add(inv);
     AddToGroup(myOxygenGenerator, inv);
-
-    return true;
-}
-
-private bool CollectLight(IMyLightingBlock myLightingBlock)
-{
-    if (myLightingBlock == null || !myLightingBlock.IsFunctional)
-        return false;
-
-    _drillsPayloadLights.Add(myLightingBlock);
-
-    return true;
 }
 
 private void AddToGroup(IMyTerminalBlock myTerminalBlock, VRage.Game.ModAPI.Ingame.IMyInventory inv)
