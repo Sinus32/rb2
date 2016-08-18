@@ -10,7 +10,7 @@ namespace SEScripts.ResourceExchanger2_1_139
 {
     public class Program : MyGridProgram
     {
-/// Resource Exchanger version 2.1.6 2016-06-20 for SE 01.139
+/// Resource Exchanger version 2.1.7 2016-08-09 for SE 01.140 stable
 /// Made by Sinus32
 /// http://steamcommunity.com/sharedfiles/filedetails/546221822
 
@@ -1294,14 +1294,21 @@ public void BuildItemInfoDict()
     _itemInfoDict = new Dictionary<ItemType, ItemInfo>();
 
     AddItemInfo(AmmoMagazineType, "250shell", 128M, 64M, true, true); // CSD Battlecannon
+    AddItemInfo(AmmoMagazineType, "300mmShell_AP", 35M, 25M, true, true); // Battle Cannon and Turrets (DX11)
+    AddItemInfo(AmmoMagazineType, "300mmShell_HE", 35M, 25M, true, true); // Battle Cannon and Turrets (DX11)
     AddItemInfo(AmmoMagazineType, "88hekc", 16M, 16M, true, true); // CSD Battlecannon
     AddItemInfo(AmmoMagazineType, "88shell", 16M, 16M, true, true); // CSD Battlecannon
+    AddItemInfo(AmmoMagazineType, "900mmShell_AP", 210M, 75M, true, true); // Battle Cannon and Turrets (DX11)
+    AddItemInfo(AmmoMagazineType, "900mmShell_HE", 210M, 75M, true, true); // Battle Cannon and Turrets (DX11)
+    AddItemInfo(AmmoMagazineType, "Aden30x113", 35M, 16M, true, true); // Battle Cannon and Turrets (DX11)
     AddItemInfo(AmmoMagazineType, "AFmagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
     AddItemInfo(AmmoMagazineType, "AZ_Missile_AA", 45M, 60M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
     AddItemInfo(AmmoMagazineType, "AZ_Missile200mm", 45M, 60M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
     AddItemInfo(AmmoMagazineType, "BatteryCannonAmmo1", 50M, 50M, true, true); // MWI - Weapon Collection (DX11)
     AddItemInfo(AmmoMagazineType, "BatteryCannonAmmo2", 200M, 200M, true, true); // MWI - Weapon Collection (DX11)
+    AddItemInfo(AmmoMagazineType, "BigBertha", 3600M, 2800M, true, true); // Battle Cannon and Turrets (DX11)
     AddItemInfo(AmmoMagazineType, "BlasterCell", 1M, 1M, true, true); // [SEI] Weapon Pack DX11
+    AddItemInfo(AmmoMagazineType, "Bofors40mm", 36M, 28M, true, true); // Battle Cannon and Turrets (DX11)
     AddItemInfo(AmmoMagazineType, "codecatAmmo40x368mm", 70M, 32M, true, true); // [codecat]Weaponry [DX11] [outdated]
     AddItemInfo(AmmoMagazineType, "codecatMissilePinocchio", 50M, 60M, true, true); // [codecat]Weaponry [DX11] [outdated]
     AddItemInfo(AmmoMagazineType, "codecatPunisherAmmo25x184mm", 70M, 32M, true, true); // [codecat]Weaponry [DX11] [outdated]
@@ -1327,6 +1334,7 @@ public void BuildItemInfoDict()
     AddItemInfo(AmmoMagazineType, "LaserArrayFlakMagazine", 45M, 30M, true, true); // White Dwarf - Directed Energy Platform [DX11]
     AddItemInfo(AmmoMagazineType, "LaserArrayShellMagazine", 45M, 120M, true, true); // White Dwarf - Directed Energy Platform [DX11]
     AddItemInfo(AmmoMagazineType, "Liquid Naquadah", 0.25M, 0.1M, true, true); // Stargate (working teleport)
+    AddItemInfo(AmmoMagazineType, "LittleDavid", 360M, 280M, true, true); // Battle Cannon and Turrets (DX11)
     AddItemInfo(AmmoMagazineType, "MinotaurAmmo", 360M, 128M, true, true); // (DX11)Minotaur Cannon
     AddItemInfo(AmmoMagazineType, "Missile200mm", 45M, 60M, true, true); // Space Engineers
     AddItemInfo(AmmoMagazineType, "MK1CannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
@@ -1364,8 +1372,9 @@ public void BuildItemInfoDict()
     AddItemInfo(AmmoMagazineType, "TritiumMissile", 72M, 60M, true, true); // [VisSE] [DX11] [V2] Hydro Reactors & Ice to Oxy Hydro Gasses MK2
     AddItemInfo(AmmoMagazineType, "TritiumShot", 3M, 3M, true, true); // [VisSE] [DX11] [V1] Hydro Reactors & Ice to Oxy Hydro Gasses
     AddItemInfo(AmmoMagazineType, "TungstenBolt", 4812M, 250M, true, true); // (DX11)Mass Driver
+    AddItemInfo(AmmoMagazineType, "Vulcan20x102", 35M, 16M, true, true); // Battle Cannon and Turrets (DX11)
 
-    AddItemInfo(ComponentType, "AlloyPlate", 30M, 3M, true, true); // Industrial Centrifuge (DX11)
+    AddItemInfo(ComponentType, "AlloyPlate", 30M, 3M, true, true); // Industrial Centrifuge (stable/dev)
     AddItemInfo(ComponentType, "ampHD", 10M, 15.5M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
     AddItemInfo(ComponentType, "ArcFuel", 2M, 0.627M, true, true); // Arc Reactor Pack [DX-11 Ready]
     AddItemInfo(ComponentType, "ArcReactorcomponent", 312M, 100M, true, true); // Arc Reactor Pack [DX-11 Ready]
@@ -1407,7 +1416,7 @@ public void BuildItemInfoDict()
     AddItemInfo(ComponentType, "Trinium", 100M, 10M, true, true); // Stargate (working teleport)
     AddItemInfo(ComponentType, "Tritium", 3M, 3M, true, true); // [VisSE] [DX11] [V1] Hydro Reactors & Ice to Oxy Hydro Gasses
     AddItemInfo(ComponentType, "TVSI_DiamondGlass", 40M, 8M, true, true); // TVSI-Tech Diamond Bonded Glass (Survival) [DX11]
-    AddItemInfo(ComponentType, "WaterTankComponent", 200M, 160M, true, true); // Industrial Centrifuge (DX11)
+    AddItemInfo(ComponentType, "WaterTankComponent", 200M, 160M, true, true); // Industrial Centrifuge (stable/dev)
     AddItemInfo(ComponentType, "ZPM", 50M, 60M, true, true); // Stargate (working teleport)
 
     AddItemInfo(GasContainerObjectType, "HydrogenBottle", 30M, 120M, true, false); // Space Engineers
@@ -1430,8 +1439,8 @@ public void BuildItemInfoDict()
     AddItemInfo(IngotType, "Trinium", 1M, 0.052M, false, true); // Stargate (working teleport)
     AddItemInfo(IngotType, "Tungsten", 1M, 0.52M, false, true); // (DX11)Mass Driver
     AddItemInfo(IngotType, "Uranium", 1M, 0.052M, false, true); // Space Engineers
-    AddItemInfo(IngotType, "v2HydrogenGas", 0.1656M, 0.43M, false, true); // [VisSE] [DX11] [V2] Hydro Reactors & Ice to Oxy Hydro Gasses MK2
-    AddItemInfo(IngotType, "v2OxygenGas", 2.664M, 0.9M, false, true); // [VisSE] [DX11] [V1] Hydro Reactors & Ice to Oxy Hydro Gasses
+    AddItemInfo(IngotType, "v2HydrogenGas", 2.1656M, 0.43M, false, true); // [VisSE] [DX11] [V2] Hydro Reactors & Ice to Oxy Hydro Gasses MK2
+    AddItemInfo(IngotType, "v2OxygenGas", 4.664M, 0.9M, false, true); // [VisSE] [DX11] [V2] Hydro Reactors & Ice to Oxy Hydro Gasses MK2
 
     AddItemInfo(ModelComponentType, "AstronautBackpack", 5M, 60M, true, true); // Space Engineers
 
