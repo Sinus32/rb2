@@ -10,7 +10,7 @@ namespace SEScripts.ResourceExchanger2_1_144
 {
     public class Program : MyGridProgram
     {
-/// Resource Exchanger version 2.1.8 2016-0?-?? for SE 01.144 stable
+/// Resource Exchanger version 2.1.8 2016-08-28 for SE 1.144+ (WiP)
 /// Made by Sinus32
 /// http://steamcommunity.com/sharedfiles/filedetails/546221822
 
@@ -281,7 +281,7 @@ private bool CollectTerminals()
 
     if (!String.IsNullOrEmpty(DRILLS_PAYLOAD_LIGHTS_GROUP))
     {
-        var group = GridTerminalSystem.GetBlockGroupWithName(DISPLAY_LCD_GROUP);
+        var group = GridTerminalSystem.GetBlockGroupWithName(DRILLS_PAYLOAD_LIGHTS_GROUP);
         if (group != null)
         {
             group.GetBlocksOfType<IMyLightingBlock>(blocks, MyTerminalBlockFilter);
@@ -560,16 +560,19 @@ private BlockTypeInfo CreateBlockTypeInfo(string fullType, VRage.Game.ModAPI.Ing
     result.BlockDefinition = fullType;
     result.AcceptedItems = new long[1 + _itemInfoDict.Count / 32];
 
-    var it = _itemInfoDict.GetEnumerator();
-    while (it.MoveNext())
-    {
-        var def = new VRage.ObjectBuilders.SerializableDefinitionId(it.Current.Key.MainType, it.Current.Key.Subtype);
-        if (myInventory.CanItemsBeAdded(-1, def))
-        {
-            for (int i = 0; i < it.Current.Value.Id.Length; ++i)
-                result.AcceptedItems[i] += it.Current.Value.Id[i];
-        }
-    }
+    //var dbef = new VRage.ObjectBuilders.SerializableDefinitionId(null, "fdgfd");
+
+    //var it = _itemInfoDict.GetEnumerator();
+    //while (it.MoveNext())
+    //{
+    //    var def = new VRage.ObjectBuilders.SerializableDefinitionId(VRage.ObjectBuilders.MyObjectBuilderType.Parse(it.Current.Key.MainType), it.Current.Key.Subtype);
+    //    if (myInventory.CanItemsBeAdded(-1, def))
+    //    {
+    //        for (int i = 0; i < it.Current.Value.Id.Length; ++i)
+    //            result.AcceptedItems[i] += it.Current.Value.Id[i];
+    //    }
+    //}
+    result.AcceptedItems[0] = _blockTypeInfoDict.Count + 1;
 
     return result;
 }
@@ -914,8 +917,8 @@ private void PrintOnlineStatus()
 
 private void EnforceItemPriority(List<VRage.Game.ModAPI.Ingame.IMyInventory> group,
     int networkNumber, int groupNumber,
-    VRage.ObjectBuilders.MyObjectBuilderType topPriorityType, string topPriority,
-    VRage.ObjectBuilders.MyObjectBuilderType lowestPriorityType, string lowestPriority)
+    string topPriorityType, string topPriority,
+    string lowestPriorityType, string lowestPriority)
 {
     if (topPriority == null && lowestPriority == null)
         return;
@@ -930,7 +933,7 @@ private void EnforceItemPriority(List<VRage.Game.ModAPI.Ingame.IMyInventory> gro
         if (topPriority != null)
         {
             var firstItemType = items[0].Content;
-            if (firstItemType.TypeId != topPriorityType
+            if (firstItemType.TypeId.ToString() != topPriorityType
                 || firstItemType.SubtypeName != topPriority)
             {
                 int topPriorityItemIndex = 1;
@@ -938,7 +941,7 @@ private void EnforceItemPriority(List<VRage.Game.ModAPI.Ingame.IMyInventory> gro
                 while (topPriorityItemIndex < items.Count)
                 {
                     item = items[topPriorityItemIndex];
-                    if (item.Content.TypeId == topPriorityType
+                    if (item.Content.TypeId.ToString() == topPriorityType
                         && item.Content.SubtypeName == topPriority)
                         break;
                     ++topPriorityItemIndex;
@@ -961,7 +964,7 @@ private void EnforceItemPriority(List<VRage.Game.ModAPI.Ingame.IMyInventory> gro
         if (lowestPriority != null)
         {
             var lastItemType = items[items.Count - 1].Content;
-            if (lastItemType.TypeId != lowestPriorityType
+            if (lastItemType.TypeId.ToString() != lowestPriorityType
                 || lastItemType.SubtypeName != lowestPriority)
             {
                 int lowestPriorityItemIndex = items.Count - 2;
@@ -969,7 +972,7 @@ private void EnforceItemPriority(List<VRage.Game.ModAPI.Ingame.IMyInventory> gro
                 while (lowestPriorityItemIndex >= 0)
                 {
                     item = items[lowestPriorityItemIndex];
-                    if (item.Content.TypeId == lowestPriorityType
+                    if (item.Content.TypeId.ToString() == lowestPriorityType
                         && item.Content.SubtypeName == lowestPriority)
                         break;
                     --lowestPriorityItemIndex;
@@ -992,8 +995,7 @@ private void EnforceItemPriority(List<VRage.Game.ModAPI.Ingame.IMyInventory> gro
 }
 
 private void BalanceInventories(List<VRage.Game.ModAPI.Ingame.IMyInventory> group, int networkNumber, int groupNumber,
-    string groupName, VRage.ObjectBuilders.MyObjectBuilderType? filterType = null,
-    string filterSubtype = null)
+    string groupName, string filterType = null, string filterSubtype = null)
 {
     if (group.Count < 2)
     {
@@ -1054,11 +1056,11 @@ private void BalanceInventories(List<VRage.Game.ModAPI.Ingame.IMyInventory> grou
 }
 
 private Dictionary<VRage.Game.ModAPI.Ingame.IMyInventory, VolumeInfo> GetVolumeInfo(List<VRage.Game.ModAPI.Ingame.IMyInventory> group,
-    VRage.ObjectBuilders.MyObjectBuilderType? filterType, string filterSubtype)
+    string filterType, string filterSubtype)
 {
     var result = new Dictionary<VRage.Game.ModAPI.Ingame.IMyInventory, VolumeInfo>(group.Count);
 
-    if (filterType.HasValue || filterSubtype != null)
+    if (filterType != null || filterSubtype != null)
     {
         for (int i = 0; i < group.Count; ++i)
         {
@@ -1086,7 +1088,7 @@ private Dictionary<VRage.Game.ModAPI.Ingame.IMyInventory, VolumeInfo> GetVolumeI
 
 private VRage.MyFixedPoint MoveVolume(VRage.Game.ModAPI.Ingame.IMyInventory from, VRage.Game.ModAPI.Ingame.IMyInventory to,
     VRage.MyFixedPoint volumeAmountToMove,
-    VRage.ObjectBuilders.MyObjectBuilderType? filterType, string filterSubtype)
+    string filterType, string filterSubtype)
 {
     if (volumeAmountToMove == 0)
         return volumeAmountToMove;
@@ -1108,13 +1110,15 @@ private VRage.MyFixedPoint MoveVolume(VRage.Game.ModAPI.Ingame.IMyInventory from
     {
         VRage.Game.ModAPI.Ingame.IMyInventoryItem item = itemsFrom[i];
 
-        if (filterType.HasValue && item.Content.TypeId != filterType.Value)
+        if (filterType != null && item.Content.TypeId.ToString() != filterType)
+        {
             continue;
+        }
         if (filterSubtype != null && item.Content.SubtypeName != filterSubtype)
             continue;
 
         ItemInfo data;
-        var key = new ItemType(item.Content.TypeId, item.Content.SubtypeName);
+        var key = new ItemType(item.Content.TypeId.ToString(), item.Content.SubtypeName);
         if (!_itemInfoDict.TryGetValue(key, out data))
         {
             _output.Append("Volume to amount ratio for ");
@@ -1125,8 +1129,8 @@ private VRage.MyFixedPoint MoveVolume(VRage.Game.ModAPI.Ingame.IMyInventory from
             continue;
         }
 
-        if (!IsAcceptedItem(data.Id, accepted))
-            continue;
+        //if (!IsAcceptedItem(data.Id, accepted))
+        //    continue;
 
         decimal amountToMoveRaw = (decimal)volumeAmountToMove * 1000M / data.Volume;
         VRage.MyFixedPoint amountToMove;
@@ -1193,24 +1197,15 @@ private bool IsAcceptedItem(long[] itemId, long[] acceptedIds)
     return false;
 }
 
-private static readonly VRage.ObjectBuilders.MyObjectBuilderType OreType
-    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_Ore");
-private static readonly VRage.ObjectBuilders.MyObjectBuilderType IngotType
-    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_Ingot");
-private static readonly VRage.ObjectBuilders.MyObjectBuilderType ComponentType
-    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_Component");
-private static readonly VRage.ObjectBuilders.MyObjectBuilderType AmmoMagazineType
-    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_AmmoMagazine");
-private static readonly VRage.ObjectBuilders.MyObjectBuilderType PhysicalGunObjectType
-    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_PhysicalGunObject");
-private static readonly VRage.ObjectBuilders.MyObjectBuilderType OxygenContainerObjectType
-    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_OxygenContainerObject");
-private static readonly VRage.ObjectBuilders.MyObjectBuilderType GasContainerObjectType
-    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_GasContainerObject");
-private static readonly VRage.ObjectBuilders.MyObjectBuilderType ModelComponentType
-    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_ModelComponent");
-private static readonly VRage.ObjectBuilders.MyObjectBuilderType TreeObjectType
-    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_TreeObject");
+private const string OreType = "MyObjectBuilder_Ore";
+private const string IngotType = "MyObjectBuilder_Ingot";
+private const string ComponentType = "MyObjectBuilder_Component";
+private const string AmmoMagazineType = "MyObjectBuilder_AmmoMagazine";
+private const string PhysicalGunObjectType = "MyObjectBuilder_PhysicalGunObject";
+private const string OxygenContainerObjectType = "MyObjectBuilder_OxygenContainerObject";
+private const string GasContainerObjectType = "MyObjectBuilder_GasContainerObject";
+private const string ModelComponentType = "MyObjectBuilder_ModelComponent";
+private const string TreeObjectType = "MyObjectBuilder_TreeObject";
 
 private const string COBALT = "Cobalt";
 private const string GOLD = "Gold";
@@ -1447,7 +1442,7 @@ public void BuildItemInfoDict()
     AddItemInfo(TreeObjectType, "SnowPineBushMedium", 1300M, 8000M, true, true); // Space Engineers
 }
 
-private void AddItemInfo(VRage.ObjectBuilders.MyObjectBuilderType mainType, string subtype,
+private void AddItemInfo(string mainType, string subtype,
     decimal mass, decimal volume, bool isSingleItem, bool isStackable)
 {
     var key = new ItemType(mainType, subtype);
@@ -1494,13 +1489,13 @@ public class LongArrayComparer : IEqualityComparer<long[]>
 
 public class ItemType : IEquatable<ItemType>
 {
-    public ItemType(VRage.ObjectBuilders.MyObjectBuilderType mainType, string subtype)
+    public ItemType(string mainType, string subtype)
     {
         MainType = mainType;
         Subtype = subtype;
     }
 
-    public VRage.ObjectBuilders.MyObjectBuilderType MainType;
+    public string MainType;
 
     public string Subtype;
 
@@ -1535,8 +1530,7 @@ public class VolumeInfo
 
     public VolumeInfo(VRage.Game.ModAPI.Ingame.IMyInventory myInventory,
         Dictionary<ItemType, ItemInfo> itemInfoDict,
-        VRage.ObjectBuilders.MyObjectBuilderType? filterType,
-        string filterSubtype, StringBuilder output)
+        string filterType, string filterSubtype, StringBuilder output)
     {
         MyInventory = myInventory;
         CurrentVolume = (decimal)myInventory.CurrentVolume;
@@ -1557,7 +1551,7 @@ public class VolumeInfo
 
     private void ReduceVolumeByItemsForCalculations(
         Dictionary<ItemType, ItemInfo> itemInfoDict,
-        VRage.ObjectBuilders.MyObjectBuilderType? filterType,
+        string filterType,
         string filterSubtype, StringBuilder output)
     {
         List<VRage.Game.ModAPI.Ingame.IMyInventoryItem> items = MyInventory.GetItems();
@@ -1565,13 +1559,13 @@ public class VolumeInfo
         {
             VRage.Game.ModAPI.Ingame.IMyInventoryItem item = items[i];
 
-            if ((!filterType.HasValue || item.Content.TypeId == filterType.Value)
+            if ((filterType == null || item.Content.TypeId.ToString() == filterType)
                 && (filterSubtype == null || item.Content.SubtypeName == filterSubtype))
                 continue;
 
 
             ItemInfo data;
-            var key = new ItemType(item.Content.TypeId, item.Content.SubtypeName);
+            var key = new ItemType(item.Content.TypeId.ToString(), item.Content.SubtypeName);
             if (!itemInfoDict.TryGetValue(key, out data))
             {
                 output.Append("Volume to amount ratio for ");
