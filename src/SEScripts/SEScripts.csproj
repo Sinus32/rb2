@@ -103,6 +103,7 @@
     <Compile Include="MassRenamer\Program.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ResourceExchanger2_1_168\Program.cs" />
     <Compile Include="ResourceExchanger2_1_144\Program.cs" />
   </ItemGroup>
   <ItemGroup>
