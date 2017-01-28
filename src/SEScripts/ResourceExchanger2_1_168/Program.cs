@@ -6,11 +6,11 @@ using Sandbox.ModAPI.Interfaces;
 using VRage.Game;
 using VRageMath;
 
-namespace SEScripts.ResourceExchanger2_dev
+namespace SEScripts.ResourceExchanger2_1_168
 {
     public class Program : MyGridProgram
     {
-/// Resource Exchanger version 2.2.0 2016-07-??
+/// Resource Exchanger version 2.1.9 2017-01-28 for SE 1.168+ (WiP)
 /// Made by Sinus32
 /// http://steamcommunity.com/sharedfiles/filedetails/546221822
 
@@ -281,7 +281,7 @@ private bool CollectTerminals()
 
     if (!String.IsNullOrEmpty(DRILLS_PAYLOAD_LIGHTS_GROUP))
     {
-        var group = GridTerminalSystem.GetBlockGroupWithName(DISPLAY_LCD_GROUP);
+        var group = GridTerminalSystem.GetBlockGroupWithName(DRILLS_PAYLOAD_LIGHTS_GROUP);
         if (group != null)
         {
             group.GetBlocksOfType<IMyLightingBlock>(blocks, MyTerminalBlockFilter);
@@ -309,32 +309,6 @@ private bool CollectTerminals()
     _output.AppendLine();
 
     return _debugScreen != null && _debugScreen.Count > 0;
-}
-
-private void CalcRatio()
-{
-    for (int i = 0; i < _cargoContainersInventories.Count; ++i)
-    {
-        var inv = _cargoContainersInventories[i];
-        var items = inv.GetItems();
-
-        if (items.Count == 1)
-        {
-            _output.Append(items[0].Content.TypeId);
-            _output.Append("/");
-            _output.Append(items[0].Content.SubtypeName);
-            _output.Append("; m: ");
-            _output.Append(inv.CurrentMass);
-            _output.Append("; v: ");
-            _output.Append(inv.CurrentVolume);
-            _output.Append("; a: ");
-            _output.Append(items[0].Amount);
-            _output.Append("; r: ");
-            _output.Append(((decimal)items[0].Amount / (decimal)inv.CurrentVolume)
-                .ToString("F6"));
-            _output.AppendLine();
-        }
-    }
 }
 
 private bool MyTerminalBlockFilter(IMyTerminalBlock myTerminalBlock)
@@ -586,16 +560,19 @@ private BlockTypeInfo CreateBlockTypeInfo(string fullType, VRage.Game.ModAPI.Ing
     result.BlockDefinition = fullType;
     result.AcceptedItems = new long[1 + _itemInfoDict.Count / 32];
 
-    var it = _itemInfoDict.GetEnumerator();
-    while (it.MoveNext())
-    {
-        var def = new VRage.ObjectBuilders.SerializableDefinitionId(it.Current.Key.MainType, it.Current.Key.Subtype);
-        if (myInventory.CanItemsBeAdded(-1, def))
-        {
-            for (int i = 0; i < it.Current.Value.Id.Length; ++i)
-                result.AcceptedItems[i] += it.Current.Value.Id[i];
-        }
-    }
+    //var dbef = new VRage.ObjectBuilders.SerializableDefinitionId(null, "fdgfd");
+
+    //var it = _itemInfoDict.GetEnumerator();
+    //while (it.MoveNext())
+    //{
+    //    var def = new VRage.ObjectBuilders.SerializableDefinitionId(VRage.ObjectBuilders.MyObjectBuilderType.Parse(it.Current.Key.MainType), it.Current.Key.Subtype);
+    //    if (myInventory.CanItemsBeAdded(-1, def))
+    //    {
+    //        for (int i = 0; i < it.Current.Value.Id.Length; ++i)
+    //            result.AcceptedItems[i] += it.Current.Value.Id[i];
+    //    }
+    //}
+    result.AcceptedItems[0] = _blockTypeInfoDict.Count + 1;
 
     return result;
 }
@@ -940,8 +917,8 @@ private void PrintOnlineStatus()
 
 private void EnforceItemPriority(List<VRage.Game.ModAPI.Ingame.IMyInventory> group,
     int networkNumber, int groupNumber,
-    VRage.ObjectBuilders.MyObjectBuilderType topPriorityType, string topPriority,
-    VRage.ObjectBuilders.MyObjectBuilderType lowestPriorityType, string lowestPriority)
+    string topPriorityType, string topPriority,
+    string lowestPriorityType, string lowestPriority)
 {
     if (topPriority == null && lowestPriority == null)
         return;
@@ -956,7 +933,7 @@ private void EnforceItemPriority(List<VRage.Game.ModAPI.Ingame.IMyInventory> gro
         if (topPriority != null)
         {
             var firstItemType = items[0].Content;
-            if (firstItemType.TypeId != topPriorityType
+            if (firstItemType.TypeId.ToString() != topPriorityType
                 || firstItemType.SubtypeName != topPriority)
             {
                 int topPriorityItemIndex = 1;
@@ -964,7 +941,7 @@ private void EnforceItemPriority(List<VRage.Game.ModAPI.Ingame.IMyInventory> gro
                 while (topPriorityItemIndex < items.Count)
                 {
                     item = items[topPriorityItemIndex];
-                    if (item.Content.TypeId == topPriorityType
+                    if (item.Content.TypeId.ToString() == topPriorityType
                         && item.Content.SubtypeName == topPriority)
                         break;
                     ++topPriorityItemIndex;
@@ -987,7 +964,7 @@ private void EnforceItemPriority(List<VRage.Game.ModAPI.Ingame.IMyInventory> gro
         if (lowestPriority != null)
         {
             var lastItemType = items[items.Count - 1].Content;
-            if (lastItemType.TypeId != lowestPriorityType
+            if (lastItemType.TypeId.ToString() != lowestPriorityType
                 || lastItemType.SubtypeName != lowestPriority)
             {
                 int lowestPriorityItemIndex = items.Count - 2;
@@ -995,7 +972,7 @@ private void EnforceItemPriority(List<VRage.Game.ModAPI.Ingame.IMyInventory> gro
                 while (lowestPriorityItemIndex >= 0)
                 {
                     item = items[lowestPriorityItemIndex];
-                    if (item.Content.TypeId == lowestPriorityType
+                    if (item.Content.TypeId.ToString() == lowestPriorityType
                         && item.Content.SubtypeName == lowestPriority)
                         break;
                     --lowestPriorityItemIndex;
@@ -1018,8 +995,7 @@ private void EnforceItemPriority(List<VRage.Game.ModAPI.Ingame.IMyInventory> gro
 }
 
 private void BalanceInventories(List<VRage.Game.ModAPI.Ingame.IMyInventory> group, int networkNumber, int groupNumber,
-    string groupName, VRage.ObjectBuilders.MyObjectBuilderType? filterType = null,
-    string filterSubtype = null)
+    string groupName, string filterType = null, string filterSubtype = null)
 {
     if (group.Count < 2)
     {
@@ -1080,11 +1056,11 @@ private void BalanceInventories(List<VRage.Game.ModAPI.Ingame.IMyInventory> grou
 }
 
 private Dictionary<VRage.Game.ModAPI.Ingame.IMyInventory, VolumeInfo> GetVolumeInfo(List<VRage.Game.ModAPI.Ingame.IMyInventory> group,
-    VRage.ObjectBuilders.MyObjectBuilderType? filterType, string filterSubtype)
+    string filterType, string filterSubtype)
 {
     var result = new Dictionary<VRage.Game.ModAPI.Ingame.IMyInventory, VolumeInfo>(group.Count);
 
-    if (filterType.HasValue || filterSubtype != null)
+    if (filterType != null || filterSubtype != null)
     {
         for (int i = 0; i < group.Count; ++i)
         {
@@ -1112,7 +1088,7 @@ private Dictionary<VRage.Game.ModAPI.Ingame.IMyInventory, VolumeInfo> GetVolumeI
 
 private VRage.MyFixedPoint MoveVolume(VRage.Game.ModAPI.Ingame.IMyInventory from, VRage.Game.ModAPI.Ingame.IMyInventory to,
     VRage.MyFixedPoint volumeAmountToMove,
-    VRage.ObjectBuilders.MyObjectBuilderType? filterType, string filterSubtype)
+    string filterType, string filterSubtype)
 {
     if (volumeAmountToMove == 0)
         return volumeAmountToMove;
@@ -1134,13 +1110,15 @@ private VRage.MyFixedPoint MoveVolume(VRage.Game.ModAPI.Ingame.IMyInventory from
     {
         VRage.Game.ModAPI.Ingame.IMyInventoryItem item = itemsFrom[i];
 
-        if (filterType.HasValue && item.Content.TypeId != filterType.Value)
+        if (filterType != null && item.Content.TypeId.ToString() != filterType)
+        {
             continue;
+        }
         if (filterSubtype != null && item.Content.SubtypeName != filterSubtype)
             continue;
 
         ItemInfo data;
-        var key = new ItemType(item.Content.TypeId, item.Content.SubtypeName);
+        var key = new ItemType(item.Content.TypeId.ToString(), item.Content.SubtypeName);
         if (!_itemInfoDict.TryGetValue(key, out data))
         {
             _output.Append("Volume to amount ratio for ");
@@ -1151,8 +1129,8 @@ private VRage.MyFixedPoint MoveVolume(VRage.Game.ModAPI.Ingame.IMyInventory from
             continue;
         }
 
-        if (!IsAcceptedItem(data.Id, accepted))
-            continue;
+        //if (!IsAcceptedItem(data.Id, accepted))
+        //    continue;
 
         decimal amountToMoveRaw = (decimal)volumeAmountToMove * 1000M / data.Volume;
         VRage.MyFixedPoint amountToMove;
@@ -1219,24 +1197,15 @@ private bool IsAcceptedItem(long[] itemId, long[] acceptedIds)
     return false;
 }
 
-private static readonly VRage.ObjectBuilders.MyObjectBuilderType OreType
-    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_Ore");
-private static readonly VRage.ObjectBuilders.MyObjectBuilderType IngotType
-    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_Ingot");
-private static readonly VRage.ObjectBuilders.MyObjectBuilderType ComponentType
-    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_Component");
-private static readonly VRage.ObjectBuilders.MyObjectBuilderType AmmoMagazineType
-    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_AmmoMagazine");
-private static readonly VRage.ObjectBuilders.MyObjectBuilderType PhysicalGunObjectType
-    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_PhysicalGunObject");
-private static readonly VRage.ObjectBuilders.MyObjectBuilderType OxygenContainerObjectType
-    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_OxygenContainerObject");
-private static readonly VRage.ObjectBuilders.MyObjectBuilderType GasContainerObjectType
-    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_GasContainerObject");
-private static readonly VRage.ObjectBuilders.MyObjectBuilderType ModelComponentType
-    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_ModelComponent");
-private static readonly VRage.ObjectBuilders.MyObjectBuilderType TreeObjectType
-    = VRage.ObjectBuilders.MyObjectBuilderType.Parse("MyObjectBuilder_TreeObject");
+private const string OreType = "MyObjectBuilder_Ore";
+private const string IngotType = "MyObjectBuilder_Ingot";
+private const string ComponentType = "MyObjectBuilder_Component";
+private const string AmmoMagazineType = "MyObjectBuilder_AmmoMagazine";
+private const string PhysicalGunObjectType = "MyObjectBuilder_PhysicalGunObject";
+private const string OxygenContainerObjectType = "MyObjectBuilder_OxygenContainerObject";
+private const string GasContainerObjectType = "MyObjectBuilder_GasContainerObject";
+private const string ModelComponentType = "MyObjectBuilder_ModelComponent";
+private const string TreeObjectType = "MyObjectBuilder_TreeObject";
 
 private const string COBALT = "Cobalt";
 private const string GOLD = "Gold";
@@ -1257,14 +1226,21 @@ public void BuildItemInfoDict()
     _itemInfoDict = new Dictionary<ItemType, ItemInfo>();
 
     AddItemInfo(AmmoMagazineType, "250shell", 128M, 64M, true, true); // CSD Battlecannon
+    AddItemInfo(AmmoMagazineType, "300mmShell_AP", 35M, 25M, true, true); // Battle Cannon and Turrets (DX11)
+    AddItemInfo(AmmoMagazineType, "300mmShell_HE", 35M, 25M, true, true); // Battle Cannon and Turrets (DX11)
     AddItemInfo(AmmoMagazineType, "88hekc", 16M, 16M, true, true); // CSD Battlecannon
     AddItemInfo(AmmoMagazineType, "88shell", 16M, 16M, true, true); // CSD Battlecannon
+    AddItemInfo(AmmoMagazineType, "900mmShell_AP", 210M, 75M, true, true); // Battle Cannon and Turrets (DX11)
+    AddItemInfo(AmmoMagazineType, "900mmShell_HE", 210M, 75M, true, true); // Battle Cannon and Turrets (DX11)
+    AddItemInfo(AmmoMagazineType, "Aden30x113", 35M, 16M, true, true); // Battle Cannon and Turrets (DX11)
     AddItemInfo(AmmoMagazineType, "AFmagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
     AddItemInfo(AmmoMagazineType, "AZ_Missile_AA", 45M, 60M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
     AddItemInfo(AmmoMagazineType, "AZ_Missile200mm", 45M, 60M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
     AddItemInfo(AmmoMagazineType, "BatteryCannonAmmo1", 50M, 50M, true, true); // MWI - Weapon Collection (DX11)
     AddItemInfo(AmmoMagazineType, "BatteryCannonAmmo2", 200M, 200M, true, true); // MWI - Weapon Collection (DX11)
+    AddItemInfo(AmmoMagazineType, "BigBertha", 3600M, 2800M, true, true); // Battle Cannon and Turrets (DX11)
     AddItemInfo(AmmoMagazineType, "BlasterCell", 1M, 1M, true, true); // [SEI] Weapon Pack DX11
+    AddItemInfo(AmmoMagazineType, "Bofors40mm", 36M, 28M, true, true); // Battle Cannon and Turrets (DX11)
     AddItemInfo(AmmoMagazineType, "codecatAmmo40x368mm", 70M, 32M, true, true); // [codecat]Weaponry [DX11] [outdated]
     AddItemInfo(AmmoMagazineType, "codecatMissilePinocchio", 50M, 60M, true, true); // [codecat]Weaponry [DX11] [outdated]
     AddItemInfo(AmmoMagazineType, "codecatPunisherAmmo25x184mm", 70M, 32M, true, true); // [codecat]Weaponry [DX11] [outdated]
@@ -1289,7 +1265,8 @@ public void BuildItemInfoDict()
     AddItemInfo(AmmoMagazineType, "LaserAmmo", 0.001M, 0.01M, true, true); // (DX11)Laser Turret
     AddItemInfo(AmmoMagazineType, "LaserArrayFlakMagazine", 45M, 30M, true, true); // White Dwarf - Directed Energy Platform [DX11]
     AddItemInfo(AmmoMagazineType, "LaserArrayShellMagazine", 45M, 120M, true, true); // White Dwarf - Directed Energy Platform [DX11]
-    AddItemInfo(AmmoMagazineType, "Liquid Naquadah", 0.25M, 0.1M, true, true); // Stargate (working teleport)
+    AddItemInfo(AmmoMagazineType, "Liquid Naquadah", 0.25M, 0.1M, true, true); // [Old Version] Stargate (working teleport)
+    AddItemInfo(AmmoMagazineType, "LittleDavid", 360M, 280M, true, true); // Battle Cannon and Turrets (DX11)
     AddItemInfo(AmmoMagazineType, "MinotaurAmmo", 360M, 128M, true, true); // (DX11)Minotaur Cannon
     AddItemInfo(AmmoMagazineType, "Missile200mm", 45M, 60M, true, true); // Space Engineers
     AddItemInfo(AmmoMagazineType, "MK1CannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
@@ -1324,11 +1301,13 @@ public void BuildItemInfoDict()
     AddItemInfo(AmmoMagazineType, "TankCannonAmmoSEM4", 35M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
     AddItemInfo(AmmoMagazineType, "TelionAF_PMagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
     AddItemInfo(AmmoMagazineType, "TelionAMMagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
-    AddItemInfo(AmmoMagazineType, "TritiumMissile", 72M, 60M, true, true); // [VisSE] [DX11] [V2] Hydro Reactors & Ice to Oxy Hydro Gasses MK2
+    AddItemInfo(AmmoMagazineType, "TritiumMissile", 72M, 60M, true, true); // [VisSE] [DX11] [2017] Hydro Reactors & Ice to Oxy Hydro Gasses MK2
     AddItemInfo(AmmoMagazineType, "TritiumShot", 3M, 3M, true, true); // [VisSE] [DX11] [V1] Hydro Reactors & Ice to Oxy Hydro Gasses
     AddItemInfo(AmmoMagazineType, "TungstenBolt", 4812M, 250M, true, true); // (DX11)Mass Driver
+    AddItemInfo(AmmoMagazineType, "Vulcan20x102", 35M, 16M, true, true); // Battle Cannon and Turrets (DX11)
 
-    AddItemInfo(ComponentType, "AlloyPlate", 30M, 3M, true, true); // Industrial Centrifuge (DX11)
+    AddItemInfo(ComponentType, "AdvancedReactorBundle", 50M, 20M, true, true); // Tiered Thorium Reactors and Refinery (new)
+    AddItemInfo(ComponentType, "AlloyPlate", 30M, 3M, true, true); // Industrial Centrifuge (stable/dev)
     AddItemInfo(ComponentType, "ampHD", 10M, 15.5M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
     AddItemInfo(ComponentType, "ArcFuel", 2M, 0.627M, true, true); // Arc Reactor Pack [DX-11 Ready]
     AddItemInfo(ComponentType, "ArcReactorcomponent", 312M, 100M, true, true); // Arc Reactor Pack [DX-11 Ready]
@@ -1340,11 +1319,11 @@ public void BuildItemInfoDict()
     AddItemInfo(ComponentType, "DenseSteelPlate", 200M, 30M, true, true); // Arc Reactor Pack [DX-11 Ready]
     AddItemInfo(ComponentType, "Detector", 5M, 6M, true, true); // Space Engineers
     AddItemInfo(ComponentType, "Display", 8M, 6M, true, true); // Space Engineers
-    AddItemInfo(ComponentType, "Drone", 200M, 60M, true, true); // Stargate (working teleport)
+    AddItemInfo(ComponentType, "Drone", 200M, 60M, true, true); // [Old Version] Stargate (working teleport)
     AddItemInfo(ComponentType, "DT-MiniSolarCell", 0.08M, 0.2M, true, true); // }DT{ Modpack
     AddItemInfo(ComponentType, "Explosives", 2M, 2M, true, true); // Space Engineers
     AddItemInfo(ComponentType, "Girder", 6M, 2M, true, true); // Space Engineers
-    AddItemInfo(ComponentType, "GraphenePlate", 0.1M, 3M, true, true); // Graphene Armor [v0.7.1_DX11_Beta] *MOAR Stuff!*
+    AddItemInfo(ComponentType, "GraphenePlate", 0.1M, 3M, true, true); // Graphene Armor [Version 0.9 Beta]
     AddItemInfo(ComponentType, "GravityGenerator", 800M, 200M, true, true); // Space Engineers
     AddItemInfo(ComponentType, "InteriorPlate", 3M, 5M, true, true); // Space Engineers
     AddItemInfo(ComponentType, "LargeTube", 25M, 38M, true, true); // Space Engineers
@@ -1354,8 +1333,8 @@ public void BuildItemInfoDict()
     AddItemInfo(ComponentType, "MetalGrid", 6M, 15M, true, true); // Space Engineers
     AddItemInfo(ComponentType, "Mg_FuelCell", 15M, 16M, true, true); // Ripptide's CW & EE Continued
     AddItemInfo(ComponentType, "Motor", 24M, 8M, true, true); // Space Engineers
-    AddItemInfo(ComponentType, "Naquadah", 100M, 10M, true, true); // Stargate (working teleport)
-    AddItemInfo(ComponentType, "Neutronium", 500M, 5M, true, true); // Stargate (working teleport)
+    AddItemInfo(ComponentType, "Naquadah", 100M, 10M, true, true); // [Old Version] Stargate (working teleport)
+    AddItemInfo(ComponentType, "Neutronium", 500M, 5M, true, true); // [Old Version] Stargate (working teleport)
     AddItemInfo(ComponentType, "PowerCell", 25M, 45M, true, true); // Space Engineers
     AddItemInfo(ComponentType, "productioncontrolcomponent", 40M, 15M, true, true); // (DX11) Double Sided Upgrade Modules
     AddItemInfo(ComponentType, "RadioCommunication", 8M, 70M, true, true); // Space Engineers
@@ -1367,11 +1346,11 @@ public void BuildItemInfoDict()
     AddItemInfo(ComponentType, "Superconductor", 15M, 8M, true, true); // Space Engineers
     AddItemInfo(ComponentType, "Thrust", 40M, 10M, true, true); // Space Engineers
     AddItemInfo(ComponentType, "TractorHD", 1500M, 200M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
-    AddItemInfo(ComponentType, "Trinium", 100M, 10M, true, true); // Stargate (working teleport)
+    AddItemInfo(ComponentType, "Trinium", 100M, 10M, true, true); // [Old Version] Stargate (working teleport)
     AddItemInfo(ComponentType, "Tritium", 3M, 3M, true, true); // [VisSE] [DX11] [V1] Hydro Reactors & Ice to Oxy Hydro Gasses
     AddItemInfo(ComponentType, "TVSI_DiamondGlass", 40M, 8M, true, true); // TVSI-Tech Diamond Bonded Glass (Survival) [DX11]
-    AddItemInfo(ComponentType, "WaterTankComponent", 200M, 160M, true, true); // Industrial Centrifuge (DX11)
-    AddItemInfo(ComponentType, "ZPM", 50M, 60M, true, true); // Stargate (working teleport)
+    AddItemInfo(ComponentType, "WaterTankComponent", 200M, 160M, true, true); // Industrial Centrifuge (stable/dev)
+    AddItemInfo(ComponentType, "ZPM", 50M, 60M, true, true); // [Old Version] Stargate (working teleport)
 
     AddItemInfo(GasContainerObjectType, "HydrogenBottle", 30M, 120M, true, false); // Space Engineers
 
@@ -1382,19 +1361,20 @@ public void BuildItemInfoDict()
     AddItemInfo(IngotType, "LiquidHelium", 1M, 4.6M, false, true); // (DX11)Mass Driver
     AddItemInfo(IngotType, "Magmatite", 100M, 37M, false, true); // Stone and Gravel to Metal Ingots (DX 11)
     AddItemInfo(IngotType, "Magnesium", 1M, 0.575M, false, true); // Space Engineers
-    AddItemInfo(IngotType, "Naquadah", 1M, 0.052M, false, true); // Stargate (working teleport)
-    AddItemInfo(IngotType, "Neutronium", 1M, 0.052M, false, true); // Stargate (working teleport)
+    AddItemInfo(IngotType, "Naquadah", 1M, 0.052M, false, true); // [Old Version] Stargate (working teleport)
+    AddItemInfo(IngotType, "Neutronium", 1M, 0.052M, false, true); // [Old Version] Stargate (working teleport)
     AddItemInfo(IngotType, "Nickel", 1M, 0.112M, false, true); // Space Engineers
     AddItemInfo(IngotType, "Platinum", 1M, 0.047M, false, true); // Space Engineers
     AddItemInfo(IngotType, "Scrap", 1M, 0.254M, false, true); // Space Engineers
     AddItemInfo(IngotType, "Silicon", 1M, 0.429M, false, true); // Space Engineers
     AddItemInfo(IngotType, "Silver", 1M, 0.095M, false, true); // Space Engineers
     AddItemInfo(IngotType, "Stone", 1M, 0.37M, false, true); // Space Engineers
-    AddItemInfo(IngotType, "Trinium", 1M, 0.052M, false, true); // Stargate (working teleport)
+    AddItemInfo(IngotType, "Thorium", 30M, 5M, false, true); // Tiered Thorium Reactors and Refinery (new)
+    AddItemInfo(IngotType, "Trinium", 1M, 0.052M, false, true); // [Old Version] Stargate (working teleport)
     AddItemInfo(IngotType, "Tungsten", 1M, 0.52M, false, true); // (DX11)Mass Driver
     AddItemInfo(IngotType, "Uranium", 1M, 0.052M, false, true); // Space Engineers
-    AddItemInfo(IngotType, "v2HydrogenGas", 0.1656M, 0.43M, false, true); // [VisSE] [DX11] [V2] Hydro Reactors & Ice to Oxy Hydro Gasses MK2
-    AddItemInfo(IngotType, "v2OxygenGas", 2.664M, 0.9M, false, true); // [VisSE] [DX11] [V1] Hydro Reactors & Ice to Oxy Hydro Gasses
+    AddItemInfo(IngotType, "v2HydrogenGas", 2.1656M, 0.43M, false, true); // [VisSE] [DX11] [2017] Hydro Reactors & Ice to Oxy Hydro Gasses MK2
+    AddItemInfo(IngotType, "v2OxygenGas", 4.664M, 0.9M, false, true); // [VisSE] [DX11] [2017] Hydro Reactors & Ice to Oxy Hydro Gasses MK2
 
     AddItemInfo(ModelComponentType, "AstronautBackpack", 5M, 60M, true, true); // Space Engineers
 
@@ -1406,8 +1386,8 @@ public void BuildItemInfoDict()
     AddItemInfo(OreType, "Ice", 1M, 0.37M, false, true); // Space Engineers
     AddItemInfo(OreType, "Iron", 1M, 0.37M, false, true); // Space Engineers
     AddItemInfo(OreType, "Magnesium", 1M, 0.37M, false, true); // Space Engineers
-    AddItemInfo(OreType, "Naquadah", 1M, 0.37M, false, true); // Stargate (working teleport)
-    AddItemInfo(OreType, "Neutronium", 1M, 0.37M, false, true); // Stargate (working teleport)
+    AddItemInfo(OreType, "Naquadah", 1M, 0.37M, false, true); // [Old Version] Stargate (working teleport)
+    AddItemInfo(OreType, "Neutronium", 1M, 0.37M, false, true); // [Old Version] Stargate (working teleport)
     AddItemInfo(OreType, "Nickel", 1M, 0.37M, false, true); // Space Engineers
     AddItemInfo(OreType, "Organic", 1M, 0.37M, false, true); // Space Engineers
     AddItemInfo(OreType, "OxygenGas", 2.664M, 0.9M, false, true); // [VisSE] [DX11] [V1] Hydro Reactors & Ice to Oxy Hydro Gasses
@@ -1416,7 +1396,7 @@ public void BuildItemInfoDict()
     AddItemInfo(OreType, "Silicon", 1M, 0.37M, false, true); // Space Engineers
     AddItemInfo(OreType, "Silver", 1M, 0.37M, false, true); // Space Engineers
     AddItemInfo(OreType, "Stone", 1M, 0.37M, false, true); // Space Engineers
-    AddItemInfo(OreType, "Trinium", 1M, 0.37M, false, true); // Stargate (working teleport)
+    AddItemInfo(OreType, "Trinium", 1M, 0.37M, false, true); // [Old Version] Stargate (working teleport)
     AddItemInfo(OreType, "Tungsten", 1M, 0.47M, false, true); // (DX11)Mass Driver
     AddItemInfo(OreType, "Uranium", 1M, 0.37M, false, true); // Space Engineers
 
@@ -1433,18 +1413,18 @@ public void BuildItemInfoDict()
     AddItemInfo(PhysicalGunObjectType, "HandDrill3Item", 22M, 25M, true, false); // Space Engineers
     AddItemInfo(PhysicalGunObjectType, "HandDrill4Item", 22M, 25M, true, false); // Space Engineers
     AddItemInfo(PhysicalGunObjectType, "HandDrillItem", 22M, 25M, true, false); // Space Engineers
-    AddItemInfo(PhysicalGunObjectType, "P90", 3M, 12M, true, false); // Stargate (working teleport)
+    AddItemInfo(PhysicalGunObjectType, "P90", 3M, 12M, true, false); // [Old Version] Stargate (working teleport)
     AddItemInfo(PhysicalGunObjectType, "PhysicalConcreteTool", 5M, 15M, true, false); // Concrete Tool - placing voxels in survival
     AddItemInfo(PhysicalGunObjectType, "PreciseAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
     AddItemInfo(PhysicalGunObjectType, "RapidFireAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
-    AddItemInfo(PhysicalGunObjectType, "Staff", 3M, 16M, true, false); // Stargate (working teleport)
+    AddItemInfo(PhysicalGunObjectType, "Staff", 3M, 16M, true, false); // [Old Version] Stargate (working teleport)
     AddItemInfo(PhysicalGunObjectType, "TritiumAutomaticRifleItem", 3M, 14M, true, false); // [VisSE] [DX11] [V1] Hydro Reactors & Ice to Oxy Hydro Gasses
     AddItemInfo(PhysicalGunObjectType, "UltimateAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
     AddItemInfo(PhysicalGunObjectType, "Welder2Item", 5M, 8M, true, false); // Space Engineers
     AddItemInfo(PhysicalGunObjectType, "Welder3Item", 5M, 8M, true, false); // Space Engineers
     AddItemInfo(PhysicalGunObjectType, "Welder4Item", 5M, 8M, true, false); // Space Engineers
     AddItemInfo(PhysicalGunObjectType, "WelderItem", 5M, 8M, true, false); // Space Engineers
-    AddItemInfo(PhysicalGunObjectType, "Zat", 3M, 12M, true, false); // Stargate (working teleport)
+    AddItemInfo(PhysicalGunObjectType, "Zat", 3M, 12M, true, false); // [Old Version] Stargate (working teleport)
 
     AddItemInfo(TreeObjectType, "DeadBushMedium", 1300M, 8000M, true, true); // Space Engineers
     AddItemInfo(TreeObjectType, "DesertBushMedium", 1300M, 8000M, true, true); // Space Engineers
@@ -1464,7 +1444,7 @@ public void BuildItemInfoDict()
     AddItemInfo(TreeObjectType, "SnowPineBushMedium", 1300M, 8000M, true, true); // Space Engineers
 }
 
-private void AddItemInfo(VRage.ObjectBuilders.MyObjectBuilderType mainType, string subtype,
+private void AddItemInfo(string mainType, string subtype,
     decimal mass, decimal volume, bool isSingleItem, bool isStackable)
 {
     var key = new ItemType(mainType, subtype);
@@ -1511,13 +1491,13 @@ public class LongArrayComparer : IEqualityComparer<long[]>
 
 public class ItemType : IEquatable<ItemType>
 {
-    public ItemType(VRage.ObjectBuilders.MyObjectBuilderType mainType, string subtype)
+    public ItemType(string mainType, string subtype)
     {
         MainType = mainType;
         Subtype = subtype;
     }
 
-    public VRage.ObjectBuilders.MyObjectBuilderType MainType;
+    public string MainType;
 
     public string Subtype;
 
@@ -1552,8 +1532,7 @@ public class VolumeInfo
 
     public VolumeInfo(VRage.Game.ModAPI.Ingame.IMyInventory myInventory,
         Dictionary<ItemType, ItemInfo> itemInfoDict,
-        VRage.ObjectBuilders.MyObjectBuilderType? filterType,
-        string filterSubtype, StringBuilder output)
+        string filterType, string filterSubtype, StringBuilder output)
     {
         MyInventory = myInventory;
         CurrentVolume = (decimal)myInventory.CurrentVolume;
@@ -1574,7 +1553,7 @@ public class VolumeInfo
 
     private void ReduceVolumeByItemsForCalculations(
         Dictionary<ItemType, ItemInfo> itemInfoDict,
-        VRage.ObjectBuilders.MyObjectBuilderType? filterType,
+        string filterType,
         string filterSubtype, StringBuilder output)
     {
         List<VRage.Game.ModAPI.Ingame.IMyInventoryItem> items = MyInventory.GetItems();
@@ -1582,13 +1561,13 @@ public class VolumeInfo
         {
             VRage.Game.ModAPI.Ingame.IMyInventoryItem item = items[i];
 
-            if ((!filterType.HasValue || item.Content.TypeId == filterType.Value)
+            if ((filterType == null || item.Content.TypeId.ToString() == filterType)
                 && (filterSubtype == null || item.Content.SubtypeName == filterSubtype))
                 continue;
 
 
             ItemInfo data;
-            var key = new ItemType(item.Content.TypeId, item.Content.SubtypeName);
+            var key = new ItemType(item.Content.TypeId.ToString(), item.Content.SubtypeName);
             if (!itemInfoDict.TryGetValue(key, out data))
             {
                 output.Append("Volume to amount ratio for ");
