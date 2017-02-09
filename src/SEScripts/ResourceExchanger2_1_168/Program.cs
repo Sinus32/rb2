@@ -10,7 +10,7 @@ namespace SEScripts.ResourceExchanger2_1_168
 {
     public class Program : MyGridProgram
     {
-/// Resource Exchanger version 2.1.9 2017-01-28 for SE 1.168+ (WiP)
+/// Resource Exchanger version 2.1.10 2017-02-09 for SE 1.172+
 /// Made by Sinus32
 /// http://steamcommunity.com/sharedfiles/filedetails/546221822
 
@@ -226,9 +226,9 @@ private bool CollectTerminals()
         for (int i = 0; i < blocks.Count; ++i)
             CollectTurret((IMyUserControllableGun)blocks[i]);
 
-        GridTerminalSystem.GetBlocksOfType<IMyOxygenGenerator>(blocks, MyTerminalBlockFilter);
+        GridTerminalSystem.GetBlocksOfType<IMyGasGenerator>(blocks, MyTerminalBlockFilter);
         for (int i = 0; i < blocks.Count; ++i)
-            CollectOxygenGenerator((IMyOxygenGenerator)blocks[i]);
+            CollectOxygenGenerator((IMyGasGenerator)blocks[i]);
     }
     else
     {
@@ -261,9 +261,9 @@ private bool CollectTerminals()
             for (int i = 0; i < blocks.Count; ++i)
                 CollectTurret((IMyUserControllableGun)blocks[i]);
 
-            group.GetBlocksOfType<IMyOxygenGenerator>(blocks, MyTerminalBlockFilter);
+            group.GetBlocksOfType<IMyGasGenerator>(blocks, MyTerminalBlockFilter);
             for (int i = 0; i < blocks.Count; ++i)
-                CollectOxygenGenerator((IMyOxygenGenerator)blocks[i]);
+                CollectOxygenGenerator((IMyGasGenerator)blocks[i]);
         }
     }
 
@@ -381,7 +381,7 @@ private void CollectTurret(IMyUserControllableGun myTurret)
     AddToGroup(myTurret, inv);
 }
 
-private void CollectOxygenGenerator(IMyOxygenGenerator myOxygenGenerator)
+private void CollectOxygenGenerator(IMyGasGenerator myOxygenGenerator)
 {
     var inv = myOxygenGenerator.GetInventory(0);
     if (inv == null || inv.MaxVolume == 0)
