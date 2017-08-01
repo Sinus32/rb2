@@ -18,7 +18,7 @@ namespace SEScripts.ResourceExchanger2_1_182
 {
     public class Program : MyGridProgram
     {
-        /// Resource Exchanger version 2.2.1 2017-07-30 for SE 1.182+
+        /// Resource Exchanger version 2.2.1 2017-08-01 for SE 1.182+
         /// Made by Sinus32
         /// http://steamcommunity.com/sharedfiles/filedetails/546221822
 
@@ -54,6 +54,11 @@ namespace SEScripts.ResourceExchanger2_1_182
 
         /// Set this variable to false to disable exchanging items in blocks of custom groups.
         public bool ENABLE_EXCHANGING_ITEMS_IN_GROUPS = false;
+
+        /// Maximum number of items movements to do per each group of inventories.
+        /// This setting has significant impact to performance.
+        /// Bigger values may implicit server lags.
+        public int MAX_MOVEMENTS_PER_GROUP = 2;
 
         /// Group of wide LCD screens that will act as debugger output for this script.
         /// You can name this screens as you wish, but pay attention that
@@ -98,16 +103,19 @@ namespace SEScripts.ResourceExchanger2_1_182
         /// Top priority item type to process in refineries and/or arc furnaces.
         /// The script will move an item of this type to the first slot of a refinery or arc
         /// furnace if it find that item in the refinery (or arc furnace) processing queue.
-        /// You can find definitions of other materials in line 1273 and below.
+        /// You can find definitions of other materials in line 1040 and below.
         /// Set this variable to null to disable this feature
         public readonly string TopRefineryPriority = IRON;
 
         /// Lowest priority item type to process in refineries and/or arc furnaces.
         /// The script will move an item of this type to the last slot of a refinery or arc
         /// furnace if it find that item in the refinery (or arc furnace) processing queue.
-        /// You can find definitions of other materials in line 1273 and below.
+        /// You can find definitions of other materials in line 1040 and below.
         /// Set this variable to null to disable this feature
         public readonly string LowestRefineryPriority = STONE;
+
+        /// Number of last runs, from which average movements should be calculated.
+        public const int NUMBER_OF_AVERAGE_SAMPLES = 15;
 
         /// Regular expression used to recognize groups
         public static readonly System.Text.RegularExpressions.Regex GROUP_TAG_PATTERN
@@ -143,6 +151,8 @@ namespace SEScripts.ResourceExchanger2_1_182
         private int _numberOfNetworks;
         private bool _notConnectedDrillsFound;
         private int _cycleNumber = 0;
+        private int _movementsDone;
+        private int[] _avgMovements = new int[NUMBER_OF_AVERAGE_SAMPLES];
 
         public void Main(string argument)
         {
@@ -203,6 +213,7 @@ namespace SEScripts.ResourceExchanger2_1_182
             _drillsMaxVolume = 0;
             _drillsCurrentVolume = 0;
             _notConnectedDrillsFound = false;
+            _movementsDone = 0;
 
             var blocks = new List<IMyTerminalBlock>();
 
@@ -763,6 +774,15 @@ namespace SEScripts.ResourceExchanger2_1_182
         private void PrintOnlineStatus()
         {
             Echo("Conveyor networks: " + _numberOfNetworks);
+            _avgMovements[_cycleNumber % NUMBER_OF_AVERAGE_SAMPLES] = _movementsDone;
+            var samples = _cycleNumber + 1 < NUMBER_OF_AVERAGE_SAMPLES
+                ? _cycleNumber + 1 : NUMBER_OF_AVERAGE_SAMPLES;
+            double avg = 0;
+            for (int i = 0; i < samples; ++i)
+                avg += _avgMovements[i];
+            avg /= samples;
+            Echo("Avg. movements: " + avg.ToString("F2") + " (last " + samples + " runs)");
+
             var tab = new char[42];
             for (int i = 0; i < 42; ++i)
             {
@@ -817,6 +837,7 @@ namespace SEScripts.ResourceExchanger2_1_182
                             _output.Append(inv.Block.CustomName);
                             _output.AppendLine();
                             inv.TransferItemTo(inv, topPriorityItemIndex, 0, false, item.Amount);
+                            ++_movementsDone;
                         }
                     }
                 }
@@ -848,6 +869,7 @@ namespace SEScripts.ResourceExchanger2_1_182
                             _output.Append(inv.Block.CustomName);
                             _output.AppendLine();
                             inv.TransferItemTo(inv, lowestPriorityItemIndex, items.Count, false, item.Amount);
+                            ++_movementsDone;
                         }
                     }
                 }
@@ -894,7 +916,7 @@ namespace SEScripts.ResourceExchanger2_1_182
                 .Append(" group ").Append(groupNumber + 1)
                 .Append(" \"").Append(groupName).AppendLine("\"...");
 
-            for (int i = 0; i < group.Count / 2; ++i)
+            for (int i = 0; i < MAX_MOVEMENTS_PER_GROUP && i < group.Count / 2; ++i)
             {
                 var inv1 = group[i];
                 var inv2 = group[group.Count - i - 1];
@@ -995,6 +1017,7 @@ namespace SEScripts.ResourceExchanger2_1_182
                 {
                     itemVolume = (decimal)amountToMove * data.Volume / 1000M;
                     success = from.TransferItemTo(to, i, targetItemIndex, true, amountToMove);
+                    ++_movementsDone;
                     _output.Append("Move ");
                     _output.Append(amountToMove);
                     _output.Append(" -> ");
@@ -1004,18 +1027,12 @@ namespace SEScripts.ResourceExchanger2_1_182
                 {
                     itemVolume = (decimal)item.Amount * data.Volume / 1000M;
                     success = from.TransferItemTo(to, i, targetItemIndex, true, item.Amount);
+                    ++_movementsDone;
                     _output.Append("Move all ");
                     _output.Append(item.Amount);
                     _output.Append(" -> ");
                     _output.AppendLine(success ? "success" : "failure");
                 }
-
-                _output.Append("Volume ");
-                _output.Append(data.Volume);
-                _output.Append(", Scale ");
-                _output.Append(item.Scale);
-                _output.Append(", Id ");
-                _output.AppendLine(item.ItemId.ToString());
 
                 if (success)
                     volumeAmountToMove -= (VRage.MyFixedPoint)itemVolume;
@@ -1187,7 +1204,6 @@ namespace SEScripts.ResourceExchanger2_1_182
             AddItemInfo(GasContainerObjectType, "HydrogenBottle", 30M, 120M, true, false); // Space Engineers
 
             AddItemInfo(IngotType, "Carbon", 1M, 0.052M, false, true); // TVSI-Tech Diamond Bonded Glass (Survival) [DX11]
-            AddItemInfo(IngotType, "Carbon", 1M, 0.025M, false, true); // Graphene Armor [Beta]
             AddItemInfo(IngotType, "Cobalt", 1M, 0.112M, false, true); // Space Engineers
             AddItemInfo(IngotType, "Gold", 1M, 0.052M, false, true); // Space Engineers
             AddItemInfo(IngotType, "Iron", 1M, 0.127M, false, true); // Space Engineers
@@ -1317,7 +1333,14 @@ namespace SEScripts.ResourceExchanger2_1_182
             value.Volume = volume;
             value.IsSingleItem = isSingleItem;
             value.IsStackable = isStackable;
-            _itemInfoDict.Add(key, value);
+            try
+            {
+                _itemInfoDict.Add(key, value);
+            }
+            catch (ArgumentException ex)
+            {
+                throw new InvalidOperationException("Item info " + mainType + " " + subtype + " already added", ex);
+            }
         }
 
         public class ItemInfo
