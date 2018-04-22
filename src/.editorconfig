@@ -1,0 +1,20 @@
+root = true
+
+[*]
+end_of_line = crlf
+
+[*.cs]
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.xaml]
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{xml,resx,config}]
+indent_style = space
+indent_size = 2

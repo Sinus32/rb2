@@ -6,7 +6,7 @@ using Sandbox.ModAPI.Interfaces;
 using VRage.Game;
 using VRageMath;
 
-namespace SEScripts.ResourceExchanger2_1_139
+namespace SEScripts.ResourceExchanger2_1_7_139
 {
     public class Program : MyGridProgram
     {
