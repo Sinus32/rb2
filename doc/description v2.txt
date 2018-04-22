@@ -43,8 +43,7 @@ This script also supports all reactors, refineries, oxygen generators, turrets a
 - Applies to both stations and ships
 - You can create custom groups of blocks to balance. The only thing you have to do is to put a group tag in the name of block.
 - Cargo containers are also supported.
-- Group tag consists of letters "GR" followed by one to three digits. For eg. GR1, GR123, GR005. Group tag have to be separated from other words, so for eg. a name "CargoGR1" will not work.
-- You can use this functionality to keep center of mass where you want.
+- Group tag consists of letters "GR" followed by one up to three digits. For eg. GR1, GR123, GR005. Group tag have to be separated from other words, so for eg. a name "CargoGR1" will not work, but "Cargo GR1" and "Cargo [GR1]" will do.
 - One block can belong to more than one group, and blocks in a group don't have to be the same type.
 - A block that belong to at least one group is excluded from normal resource balancing, and balances it's resource only within the group or groups.
 

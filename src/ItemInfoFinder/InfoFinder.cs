@@ -188,15 +188,15 @@ namespace ItemInfoFinder
                 }
 
                 string modTitle;
-                if (modMap.TryGetValue(dt.ModId, out modTitle))
+                if (modMap.TryGetValue(dt.ModId, out modTitle) && !String.IsNullOrEmpty(modTitle))
                 {
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "AddItemInfo({0}Type, \"{1}\", {2}M, {3}M, {4}, {5}); // {6}",
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "ItemInfo.Add({0}Type, \"{1}\", {2}M, {3}M, {4}, {5}); // {6}",
                         dt.TypeId, dt.SubtypeId, dt.Mass, dt.Volume, dt.IsSingleItem ? "true" : "false", dt.IsStackable ? "true" : "false", modTitle);
                     modUsed.Add(dt.ModId);
                 }
                 else
                 {
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "AddItemInfo({0}Type, \"{1}\", {2}M, {3}M, {4}, {5});", dt.TypeId,
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "ItemInfo.Add({0}Type, \"{1}\", {2}M, {3}M, {4}, {5});", dt.TypeId,
                         dt.SubtypeId, dt.Mass, dt.Volume, dt.IsSingleItem ? "true" : "false", dt.IsStackable ? "true" : "false");
                 }
                 sb.AppendLine();
