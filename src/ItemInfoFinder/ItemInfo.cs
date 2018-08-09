@@ -8,7 +8,7 @@ namespace ItemInfoFinder
 {
     public class ItemInfo : IEquatable<ItemInfo>
     {
-        public ItemInfo(long modId, string typeId, string subtypeId, string mass, string volume)
+        public ItemInfo(long modId, MainType typeId, string subtypeId, string mass, string volume)
         {
             ModId = modId;
             TypeId = typeId;
@@ -17,19 +17,19 @@ namespace ItemInfoFinder
             Volume = volume;
         }
 
-        public long ModId { get; set; }
+        public long ModId { get; }
 
-        public string TypeId { get; set; }
+        public MainType TypeId { get; }
 
-        public string SubtypeId { get; set; }
+        public string SubtypeId { get; }
 
-        public string Mass { get; set; }
+        public string Mass { get; }
 
-        public string Volume { get; set; }
+        public string Volume { get; }
 
-        public bool IsSingleItem { get { return TypeId != "Ore" && TypeId != "Ingot"; } }
+        public bool HasIntegralAmounts { get { return TypeId.HasIntegralAmounts; } }
 
-        public bool IsStackable { get { return TypeId != "PhysicalGunObject" && TypeId != "OxygenContainerObject" && TypeId != "GasContainerObject"; } }
+        public bool IsStackable { get { return TypeId.IsStackable; } }
 
         public bool Equals(ItemInfo other)
         {

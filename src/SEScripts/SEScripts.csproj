@@ -110,6 +110,7 @@
     <Compile Include="ResourceExchanger2_2_182\Program.cs" />
     <Compile Include="ResourceExchanger2_3_0_186\Program.cs" />
     <Compile Include="ResourceExchanger2_4_0_187\Program.cs" />
+    <Compile Include="ResourceExchanger2_4_1_187\Program.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

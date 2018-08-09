@@ -12,6 +12,24 @@ namespace ItemInfoFinder
 {
     public class InfoFinder
     {
+        private static readonly Dictionary<string, MainType> _typeMap;
+
+        static InfoFinder()
+        {
+            var types = new MainType[]
+            {
+                 new MainType("Ore", 1, "OreType", false, true),
+                 new MainType("Ingot", 2, "IngotType", false, true),
+                 new MainType("Component", 3, "ComponentType", true, true),
+                 new MainType("AmmoMagazine", 4, "AmmoType", true, true),
+                 new MainType("PhysicalGunObject", 5, "GunType", true, false),
+                 new MainType("OxygenContainerObject", 6, "OxygenType", true, false),
+                 new MainType("GasContainerObject", 7, "GasType" ,true, false),
+            };
+
+            _typeMap = types.ToDictionary(q => q.Name);
+        }
+
         public InfoFinder()
         {
             Result = new List<ItemInfo>();
@@ -115,12 +133,13 @@ namespace ItemInfoFinder
                 if (typeIdNode == null || subtypeIdNode == null)
                     continue;
 
-                string typeId = typeIdNode.InnerText.Trim();
+                string typeIdStr = typeIdNode.InnerText.Trim();
                 string subtypeId = subtypeIdNode.InnerText.Trim();
                 string mass = massNode.InnerText.Trim();
                 string volume = volumeNode.InnerText.Trim();
 
-                if (String.IsNullOrEmpty(typeId) || String.IsNullOrEmpty(mass) || String.IsNullOrEmpty(volume))
+                MainType typeId;
+                if (String.IsNullOrEmpty(typeIdStr) || String.IsNullOrEmpty(mass) || String.IsNullOrEmpty(volume) || !_typeMap.TryGetValue(typeIdStr, out typeId))
                     continue;
 
                 if (String.IsNullOrEmpty(subtypeId))
@@ -190,14 +209,14 @@ namespace ItemInfoFinder
                 string modTitle;
                 if (modMap.TryGetValue(dt.ModId, out modTitle) && !String.IsNullOrEmpty(modTitle))
                 {
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "ItemInfo.Add({0}Type, \"{1}\", {2}M, {3}M, {4}, {5}); // {6}",
-                        dt.TypeId, dt.SubtypeId, dt.Mass, dt.Volume, dt.IsSingleItem ? "true" : "false", dt.IsStackable ? "true" : "false", modTitle);
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "ItemInfo.Add({0}, \"{1}\", {2}M, {3}M, {4}, {5}); // {6}",
+                        dt.TypeId.Alias, dt.SubtypeId, dt.Mass, dt.Volume, dt.HasIntegralAmounts ? "true" : "false", dt.IsStackable ? "true" : "false", modTitle);
                     modUsed.Add(dt.ModId);
                 }
                 else
                 {
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "ItemInfo.Add({0}Type, \"{1}\", {2}M, {3}M, {4}, {5});", dt.TypeId,
-                        dt.SubtypeId, dt.Mass, dt.Volume, dt.IsSingleItem ? "true" : "false", dt.IsStackable ? "true" : "false");
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "ItemInfo.Add({0}, \"{1}\", {2}M, {3}M, {4}, {5});",
+                        dt.TypeId.Alias, dt.SubtypeId, dt.Mass, dt.Volume, dt.HasIntegralAmounts ? "true" : "false", dt.IsStackable ? "true" : "false");
                 }
                 sb.AppendLine();
             }
@@ -218,7 +237,7 @@ namespace ItemInfoFinder
 
         private int Comparision(ItemInfo x, ItemInfo y)
         {
-            var result = String.Compare(x.TypeId, y.TypeId);
+            var result = x.TypeId.Order - y.TypeId.Order;
             if (result != 0)
                 return result;
             return String.Compare(x.SubtypeId, y.SubtypeId);
