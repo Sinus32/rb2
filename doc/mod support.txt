@@ -1,0 +1,267 @@
+Item list:
+
+ItemInfo.Add(OreType, "Akimotoite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Autunite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Carbon", 1M, 0.37M, false, true); // Graphene Armor [Core] [Beta]
+ItemInfo.Add(OreType, "Carnotite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Cattierite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Chlorargyrite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Cobalt", 1M, 0.37M, false, true); // Space Engineers
+ItemInfo.Add(OreType, "Cohenite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Cooperite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Dense Iron", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Deuterium", 1.5M, 0.5M, false, true); // Deuterium Fusion Reactors
+ItemInfo.Add(OreType, "Dolomite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Electrum", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Galena", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Glaucodot", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Gold", 1M, 0.37M, false, true); // Space Engineers
+ItemInfo.Add(OreType, "Hapkeite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Heazlewoodite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Helium", 1M, 5.6M, false, true); // (DX11)Mass Driver
+ItemInfo.Add(OreType, "Ice", 1M, 0.37M, false, true); // Space Engineers
+ItemInfo.Add(OreType, "Icy Stone", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Iron", 1M, 0.37M, false, true); // Space Engineers
+ItemInfo.Add(OreType, "Kamacite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Magnesium", 1M, 0.37M, false, true); // Space Engineers
+ItemInfo.Add(OreType, "Naquadah", 1M, 0.37M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
+ItemInfo.Add(OreType, "Neutronium", 1M, 0.37M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
+ItemInfo.Add(OreType, "Nickel", 1M, 0.37M, false, true); // Space Engineers
+ItemInfo.Add(OreType, "Niggliite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Olivine", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Organic", 1M, 0.37M, false, true); // Space Engineers
+ItemInfo.Add(OreType, "Petzite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Platinum", 1M, 0.37M, false, true); // Space Engineers
+ItemInfo.Add(OreType, "Porphyry", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Pyrite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Quartz", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Scrap", 1M, 0.254M, false, true); // Space Engineers
+ItemInfo.Add(OreType, "Silicon", 1M, 0.37M, false, true); // Space Engineers
+ItemInfo.Add(OreType, "Silver", 1M, 0.37M, false, true); // Space Engineers
+ItemInfo.Add(OreType, "Sinoite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Sperrylite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Stone", 1M, 0.37M, false, true); // Space Engineers
+ItemInfo.Add(OreType, "Taenite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Thorium", 1M, 0.9M, false, true); // Tiered Thorium Reactors and Refinery (new)
+ItemInfo.Add(OreType, "Trinium", 1M, 0.37M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
+ItemInfo.Add(OreType, "Tungsten", 1M, 0.47M, false, true); // (DX11)Mass Driver
+ItemInfo.Add(OreType, "Uraniaurite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+ItemInfo.Add(OreType, "Uranium", 1M, 0.37M, false, true); // Space Engineers
+ItemInfo.Add(OreType, "Wadsleyite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+
+ItemInfo.Add(IngotType, "Carbon", 1M, 0.052M, false, true); // TVSI-Tech Diamond Bonded Glass (Survival) [DX11]
+ItemInfo.Add(IngotType, "Carbon", 1M, 0.025M, false, true); // Graphene Armor [Core] [Beta]
+ItemInfo.Add(IngotType, "Cobalt", 1M, 0.112M, false, true); // Space Engineers
+ItemInfo.Add(IngotType, "Gold", 1M, 0.052M, false, true); // Space Engineers
+ItemInfo.Add(IngotType, "HeavyH2OIngot", 2M, 1M, false, true); // Deuterium Fusion Reactors
+ItemInfo.Add(IngotType, "Iron", 1M, 0.127M, false, true); // Space Engineers
+ItemInfo.Add(IngotType, "LiquidHelium", 1M, 4.6M, false, true); // (DX11)Mass Driver
+ItemInfo.Add(IngotType, "Magmatite", 100M, 37M, false, true); // Stone and Gravel to Metal Ingots (DX 11)
+ItemInfo.Add(IngotType, "Magnesium", 1M, 0.575M, false, true); // Space Engineers
+ItemInfo.Add(IngotType, "Naquadah", 1M, 0.052M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
+ItemInfo.Add(IngotType, "Neutronium", 1M, 0.052M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
+ItemInfo.Add(IngotType, "Nickel", 1M, 0.112M, false, true); // Space Engineers
+ItemInfo.Add(IngotType, "Platinum", 1M, 0.047M, false, true); // Space Engineers
+ItemInfo.Add(IngotType, "Scrap", 1M, 0.254M, false, true); // Space Engineers
+ItemInfo.Add(IngotType, "Silicon", 1M, 0.429M, false, true); // Space Engineers
+ItemInfo.Add(IngotType, "Silver", 1M, 0.095M, false, true); // Space Engineers
+ItemInfo.Add(IngotType, "Stone", 1M, 0.37M, false, true); // Space Engineers
+ItemInfo.Add(IngotType, "SuitFuel", 0.0003M, 0.052M, false, true); // Independent Survival
+ItemInfo.Add(IngotType, "SuitRTGPellet", 1.0M, 0.052M, false, true); // Independent Survival
+ItemInfo.Add(IngotType, "ThoriumIngot", 3M, 20M, false, true); // Tiered Thorium Reactors and Refinery (new)
+ItemInfo.Add(IngotType, "Trinium", 1M, 0.052M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
+ItemInfo.Add(IngotType, "Tungsten", 1M, 0.52M, false, true); // (DX11)Mass Driver
+ItemInfo.Add(IngotType, "Uranium", 1M, 0.052M, false, true); // Space Engineers
+ItemInfo.Add(IngotType, "v2HydrogenGas", 2.1656M, 0.43M, false, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+ItemInfo.Add(IngotType, "v2OxygenGas", 4.664M, 0.9M, false, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+
+ItemInfo.Add(ComponentType, "AdvancedReactorBundle", 50M, 20M, true, true); // Tiered Thorium Reactors and Refinery (new)
+ItemInfo.Add(ComponentType, "AlloyPlate", 30M, 3M, true, true); // Industrial Centrifuge (stable/dev)
+ItemInfo.Add(ComponentType, "ampHD", 10M, 15.5M, true, true);
+ItemInfo.Add(ComponentType, "ArcFuel", 2M, 0.627M, true, true); // Arc Reactor Pack [DX-11 Ready]
+ItemInfo.Add(ComponentType, "ArcReactorcomponent", 312M, 100M, true, true); // Arc Reactor Pack [DX-11 Ready]
+ItemInfo.Add(ComponentType, "AzimuthSupercharger", 10M, 9M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+ItemInfo.Add(ComponentType, "BulletproofGlass", 15M, 8M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "Canvas", 15M, 8M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "Computer", 0.2M, 1M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "ConductorMagnets", 900M, 200M, true, true); // (DX11)Mass Driver
+ItemInfo.Add(ComponentType, "Construction", 8M, 2M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "DenseSteelPlate", 200M, 30M, true, true); // Arc Reactor Pack [DX-11 Ready]
+ItemInfo.Add(ComponentType, "Detector", 5M, 6M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "Display", 8M, 6M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "Drone", 200M, 60M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
+ItemInfo.Add(ComponentType, "DT-MiniSolarCell", 0.08M, 0.2M, true, true); // }DT{ Modpack
+ItemInfo.Add(ComponentType, "Explosives", 2M, 2M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "Girder", 6M, 2M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "GrapheneAerogelFilling", 0.160M, 2.9166M, true, true); // Graphene Armor [Core] [Beta]
+ItemInfo.Add(ComponentType, "GrapheneNanotubes", 0.01M, 0.1944M, true, true); // Graphene Armor [Core] [Beta]
+ItemInfo.Add(ComponentType, "GraphenePlate", 6.66M, 0.54M, true, true); // Graphene Armor [Core] [Beta]
+ItemInfo.Add(ComponentType, "GraphenePowerCell", 25M, 45M, true, true); // Graphene Armor [Core] [Beta]
+ItemInfo.Add(ComponentType, "GrapheneSolarCell", 4M, 12M, true, true); // Graphene Armor [Core] [Beta]
+ItemInfo.Add(ComponentType, "GravityGenerator", 800M, 200M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "InteriorPlate", 3M, 5M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "LargeTube", 25M, 38M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "Magna", 100M, 15M, true, true);
+ItemInfo.Add(ComponentType, "MagnetronComponent", 50M, 20M, true, true); // Deuterium Fusion Reactors
+ItemInfo.Add(ComponentType, "Magno", 10M, 5.5M, true, true);
+ItemInfo.Add(ComponentType, "Medical", 150M, 160M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "MetalGrid", 6M, 15M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "Mg_FuelCell", 15M, 16M, true, true);
+ItemInfo.Add(ComponentType, "Motor", 24M, 8M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "Naquadah", 100M, 10M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
+ItemInfo.Add(ComponentType, "Neutronium", 500M, 5M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
+ItemInfo.Add(ComponentType, "PowerCell", 25M, 45M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "productioncontrolcomponent", 40M, 15M, true, true); // (DX11) Double Sided Upgrade Modules
+ItemInfo.Add(ComponentType, "RadioCommunication", 8M, 70M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "Reactor", 25M, 8M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "Scrap", 2M, 2M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+ItemInfo.Add(ComponentType, "SmallTube", 4M, 2M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "SolarCell", 8M, 20M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "SteelPlate", 20M, 3M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "Superconductor", 15M, 8M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "Thrust", 40M, 10M, true, true); // Space Engineers
+ItemInfo.Add(ComponentType, "TractorHD", 1500M, 200M, true, true);
+ItemInfo.Add(ComponentType, "Trinium", 100M, 10M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
+ItemInfo.Add(ComponentType, "Tritium", 3M, 3M, true, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+ItemInfo.Add(ComponentType, "TVSI_DiamondGlass", 40M, 8M, true, true); // TVSI-Tech Diamond Bonded Glass (Survival) [DX11]
+ItemInfo.Add(ComponentType, "WaterTankComponent", 200M, 160M, true, true); // Industrial Centrifuge (stable/dev)
+ItemInfo.Add(ComponentType, "ZPM", 50M, 60M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
+
+ItemInfo.Add(AmmoType, "250shell", 128M, 64M, true, true); // [DEPRECATED] CSD Battlecannon
+ItemInfo.Add(AmmoType, "300mmShell_HE", 35M, 25M, true, true); // Battle Cannon and Turrets (DX11)
+ItemInfo.Add(AmmoType, "88shell", 16M, 16M, true, true); // [DEPRECATED] CSD Battlecannon
+ItemInfo.Add(AmmoType, "900mmShell_HE", 210M, 75M, true, true); // Battle Cannon and Turrets (DX11)
+ItemInfo.Add(AmmoType, "Aden30x113", 35M, 16M, true, true); // Battle Cannon and Turrets (DX11)
+ItemInfo.Add(AmmoType, "AFmagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
+ItemInfo.Add(AmmoType, "AZ_Missile_AA", 45M, 60M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+ItemInfo.Add(AmmoType, "AZ_Missile200mm", 45M, 60M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+ItemInfo.Add(AmmoType, "BatteryCannonAmmo1", 50M, 50M, true, true); // MWI - Weapon Collection (DX11)
+ItemInfo.Add(AmmoType, "BatteryCannonAmmo2", 200M, 200M, true, true); // MWI - Weapon Collection (DX11)
+ItemInfo.Add(AmmoType, "BigBertha", 3600M, 2800M, true, true); // Battle Cannon and Turrets (DX11)
+ItemInfo.Add(AmmoType, "BlasterCell", 1M, 1M, true, true); // [SEI] Weapon Pack DX11
+ItemInfo.Add(AmmoType, "Bofors40mm", 36M, 28M, true, true); // Battle Cannon and Turrets (DX11)
+ItemInfo.Add(AmmoType, "ConcreteMix", 2M, 2M, true, true); // Concrete Tool - placing voxels in survival
+ItemInfo.Add(AmmoType, "Eikester_Missile120mm", 25M, 30M, true, true); // (DX11) Small Missile Turret
+ItemInfo.Add(AmmoType, "Eikester_Nuke", 1800M, 8836M, true, true); // (DX11) Nuke Launcher [WiP]
+ItemInfo.Add(AmmoType, "EmergencyBlasterMagazine", 0.45M, 0.2M, true, true); // Independent Survival
+ItemInfo.Add(AmmoType, "Flak130mm", 2M, 3M, true, true); // [SEI] Weapon Pack DX11
+ItemInfo.Add(AmmoType, "Flak200mm", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
+ItemInfo.Add(AmmoType, "Flak500mm", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
+ItemInfo.Add(AmmoType, "HDTCannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
+ItemInfo.Add(AmmoType, "HighDamageGatlingAmmo", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+ItemInfo.Add(AmmoType, "ISM_FusionAmmo", 35M, 10M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+ItemInfo.Add(AmmoType, "ISM_GrendelAmmo", 35M, 2M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+ItemInfo.Add(AmmoType, "ISM_Hellfire", 45M, 60M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+ItemInfo.Add(AmmoType, "ISM_LongbowAmmo", 35M, 2M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+ItemInfo.Add(AmmoType, "ISM_MinigunAmmo", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+ItemInfo.Add(AmmoType, "ISMNeedles", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+ItemInfo.Add(AmmoType, "ISMTracer", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+ItemInfo.Add(AmmoType, "LargeKlingonCharge", 1M, 5M, true, true);
+ItemInfo.Add(AmmoType, "LargeShipShotGunAmmo", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+ItemInfo.Add(AmmoType, "LargeShotGunAmmoTracer", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+ItemInfo.Add(AmmoType, "LaserAmmo", 0.001M, 0.01M, true, true); // (DX11)Laser Turret
+ItemInfo.Add(AmmoType, "LaserArrayFlakMagazine", 45M, 30M, true, true); // White Dwarf - Directed Energy Platform [DX11]
+ItemInfo.Add(AmmoType, "LaserArrayShellMagazine", 45M, 120M, true, true); // White Dwarf - Directed Energy Platform [DX11]
+ItemInfo.Add(AmmoType, "Liquid Naquadah", 0.25M, 0.1M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
+ItemInfo.Add(AmmoType, "LittleDavid", 360M, 280M, true, true); // Battle Cannon and Turrets (DX11)
+ItemInfo.Add(AmmoType, "MinotaurAmmo", 360M, 128M, true, true); // (DX11)Minotaur Cannon
+ItemInfo.Add(AmmoType, "Missile200mm", 45M, 60M, true, true); // Space Engineers
+ItemInfo.Add(AmmoType, "MK1CannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
+ItemInfo.Add(AmmoType, "MK2CannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
+ItemInfo.Add(AmmoType, "MK3CannonMagazineAP", 100M, 100M, true, true); // MWI - Weapon Collection (DX11)
+ItemInfo.Add(AmmoType, "MK3CannonMagazineHE", 300M, 100M, true, true); // MWI - Weapon Collection (DX11)
+ItemInfo.Add(AmmoType, "NATO_25x184mm", 35M, 16M, true, true); // Space Engineers
+ItemInfo.Add(AmmoType, "NATO_5p56x45mm", 0.45M, 0.2M, true, true); // Space Engineers
+ItemInfo.Add(AmmoType, "NiFeDUSlugMagazineLZM", 45M, 50M, true, true); // Large Ship Railguns [Deprecated, link inside]
+ItemInfo.Add(AmmoType, "Phaser2Charge", 1M, 5M, true, true);
+ItemInfo.Add(AmmoType, "Phaser2ChargeLarge", 1M, 5M, true, true);
+ItemInfo.Add(AmmoType, "PhaserCharge", 1M, 5M, true, true);
+ItemInfo.Add(AmmoType, "PhaserChargeLarge", 1M, 5M, true, true);
+ItemInfo.Add(AmmoType, "Plasma_Hydrogen", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
+ItemInfo.Add(AmmoType, "PlasmaCutterCell", 1M, 1M, true, true); // [SEI] Weapon Pack DX11
+ItemInfo.Add(AmmoType, "RB_NATO_125x920mm", 875M, 160M, true, true); // RB Weapon Collection [DX11]
+ItemInfo.Add(AmmoType, "RB_Rocket100mm", 11.25M, 15M, true, true); // RB Weapon Collection [DX11]
+ItemInfo.Add(AmmoType, "RB_Rocket400mm", 180M, 240M, true, true); // RB Weapon Collection [DX11]
+ItemInfo.Add(AmmoType, "RomulanCharge", 1M, 5M, true, true);
+ItemInfo.Add(AmmoType, "RomulanChargeLarge", 1M, 5M, true, true);
+ItemInfo.Add(AmmoType, "SmallKlingonCharge", 1M, 5M, true, true);
+ItemInfo.Add(AmmoType, "SmallShotGunAmmo", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+ItemInfo.Add(AmmoType, "SmallShotGunAmmoTracer", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+ItemInfo.Add(AmmoType, "SniperRoundHighSpeedLowDamage", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+ItemInfo.Add(AmmoType, "SniperRoundHighSpeedLowDamageSmallShip", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+ItemInfo.Add(AmmoType, "SniperRoundLowSpeedHighDamage", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+ItemInfo.Add(AmmoType, "SniperRoundLowSpeedHighDamageSmallShip", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+ItemInfo.Add(AmmoType, "TankCannonAmmoSEM4", 35M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+ItemInfo.Add(AmmoType, "TelionAF_PMagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
+ItemInfo.Add(AmmoType, "TelionAMMagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
+ItemInfo.Add(AmmoType, "TritiumMissile", 72M, 60M, true, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+ItemInfo.Add(AmmoType, "TritiumShot", 3M, 3M, true, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+ItemInfo.Add(AmmoType, "TungstenBolt", 4812M, 250M, true, true); // (DX11)Mass Driver
+ItemInfo.Add(AmmoType, "Vulcan20x102", 35M, 16M, true, true); // Battle Cannon and Turrets (DX11)
+
+ItemInfo.Add(GunType, "AngleGrinder2Item", 3M, 20M, true, false); // Space Engineers
+ItemInfo.Add(GunType, "AngleGrinder3Item", 3M, 20M, true, false); // Space Engineers
+ItemInfo.Add(GunType, "AngleGrinder4Item", 3M, 20M, true, false); // Space Engineers
+ItemInfo.Add(GunType, "AngleGrinderItem", 3M, 20M, true, false); // Space Engineers
+ItemInfo.Add(GunType, "AutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
+ItemInfo.Add(GunType, "CubePlacerItem", 1M, 1M, true, false); // Space Engineers
+ItemInfo.Add(GunType, "EmergencyBlasterItem", 3M, 14M, true, false); // Independent Survival
+ItemInfo.Add(GunType, "GoodAIRewardPunishmentTool", 0.1M, 1M, true, false); // Space Engineers
+ItemInfo.Add(GunType, "HandDrill2Item", 22M, 25M, true, false); // Space Engineers
+ItemInfo.Add(GunType, "HandDrill3Item", 22M, 25M, true, false); // Space Engineers
+ItemInfo.Add(GunType, "HandDrill4Item", 22M, 25M, true, false); // Space Engineers
+ItemInfo.Add(GunType, "HandDrillItem", 22M, 25M, true, false); // Space Engineers
+ItemInfo.Add(GunType, "P90", 3M, 12M, true, false); // [New Version] Stargate Modpack (Server admin block filtering)
+ItemInfo.Add(GunType, "PhysicalConcreteTool", 5M, 15M, true, false); // Concrete Tool - placing voxels in survival
+ItemInfo.Add(GunType, "PreciseAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
+ItemInfo.Add(GunType, "RapidFireAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
+ItemInfo.Add(GunType, "Staff", 3M, 16M, true, false); // [New Version] Stargate Modpack (Server admin block filtering)
+ItemInfo.Add(GunType, "TritiumAutomaticRifleItem", 6M, 21M, true, false); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+ItemInfo.Add(GunType, "UltimateAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
+ItemInfo.Add(GunType, "Welder2Item", 5M, 8M, true, false); // Space Engineers
+ItemInfo.Add(GunType, "Welder3Item", 5M, 8M, true, false); // Space Engineers
+ItemInfo.Add(GunType, "Welder4Item", 5M, 8M, true, false); // Space Engineers
+ItemInfo.Add(GunType, "WelderItem", 5M, 8M, true, false); // Space Engineers
+ItemInfo.Add(GunType, "Zat", 3M, 12M, true, false); // [New Version] Stargate Modpack (Server admin block filtering)
+
+ItemInfo.Add(OxygenType, "GrapheneOxygenBottle", 20M, 100M, true, false); // Graphene Armor [Core] [Beta]
+ItemInfo.Add(OxygenType, "OxygenBottle", 30M, 120M, true, false); // Space Engineers
+
+ItemInfo.Add(GasType, "GrapheneHydrogenBottle", 20M, 100M, true, false); // Graphene Armor [Core] [Beta]
+ItemInfo.Add(GasType, "HydrogenBottle", 30M, 120M, true, false); // Space Engineers
+
+Current mods:
+- [url=http://steamcommunity.com/sharedfiles/filedetails/470459637](DX11) Double Sided Upgrade Modules[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/438092735](DX11) Nuke Launcher [WiP][/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/533741870](DX11) Small Missile Turret[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/294617824](DX11)Laser Turret[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/316931550](DX11)Mass Driver[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/388580965](DX11)Minotaur Cannon[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/350106127][DEPRECATED] CSD Battlecannon[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/754173702][New Version] Stargate Modpack (Server admin block filtering)[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/441223817][SEI] Weapon Pack DX11[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/634365918][VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/406279900]}DT{ Modpack[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/301830183]Arc Reactor Pack [DX-11 Ready][/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/472832143]Azimuth Complete Mega Mod Pack~(DX-11 Ready)[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/543635673]Battle Cannon and Turrets (DX11)[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/406244471]Better Stone v6.9.2[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/396679430]Concrete Tool - placing voxels in survival[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/1259182705]Deuterium Fusion Reactors[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/332768931]Graphene Armor [Core] [Beta][/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/725361837]Independent Survival[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/465220761]Industrial Centrifuge (stable/dev)[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/435414879]ISM Mega Mod Pack [DX11 - BROKEN][/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/344199068]Large Ship Railguns [Deprecated, link inside][/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/449392448]MWI - Weapon Collection (DX11)[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/533081433]RB Weapon Collection [DX11][/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/305329302]Small Ship Mega Mod Pack [100% DX-11 Ready][/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/416953589]Stone and Gravel to Metal Ingots (DX 11)[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/805678675]Tiered Thorium Reactors and Refinery (new)[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/409488246]TVSI-Tech Diamond Bonded Glass (Survival) [DX11][/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/411857127]White Dwarf - Directed Energy Platform [DX11][/url]
+
+No longer exists:
+- [url=http://steamcommunity.com/sharedfiles/filedetails/565845846]Ripptide's CW & EE Continued (DX11)[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/577722578](DX11) Maglock Surface Docking Clamps V2.0[/url]
+- [url=http://steamcommunity.com/sharedfiles/filedetails/781039588]Star Trek Weapon Pack 2.0 (Working Sound)[/url]

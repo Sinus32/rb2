@@ -46,7 +46,14 @@ namespace SEScripts.ResourceExchanger2_5_0_187
 
         /** Implementation ************************************************************************/
 
-        private const decimal SMALL_NUMBER = 0.000003M;
+        private const decimal SmallNumber = 0.000003M;
+        private const string OreType = "MyObjectBuilder_Ore";
+        private const string IngotType = "MyObjectBuilder_Ingot";
+        private const string ComponentType = "MyObjectBuilder_Component";
+        private const string AmmoType = "MyObjectBuilder_AmmoMagazine";
+        private const string GunType = "MyObjectBuilder_PhysicalGunObject";
+        private const string OxygenType = "MyObjectBuilder_OxygenContainerObject";
+        private const string GasType = "MyObjectBuilder_GasContainerObject";
         private readonly Dictionary<MyDefinitionId, ulong[]> _blockToGroupIdMap;
         private readonly Dictionary<ulong[], string> _groupIdToNameMap;
         private readonly int[] _avgMovements;
@@ -64,6 +71,62 @@ namespace SEScripts.ResourceExchanger2_5_0_187
 
         public void Save()
         { }
+
+        public void Main(string argument, UpdateType updateSource)
+        {
+            ReadConfig();
+
+            var bs = new BlockStore(this);
+            var stat = new Statistics();
+            CollectTerminals(bs, stat);
+
+            ProcessBlocks("Balancing reactors", EnableReactors, bs.Reactors, stat, exclude: bs.AllGroupedInventories);
+            ProcessBlocks("Balancing refineries", EnableRefineries, bs.Refineries, stat, exclude: bs.AllGroupedInventories);
+            var dcn = ProcessBlocks("Balancing drills", EnableDrills, bs.Drills, stat, invGroup: "drills", exclude: bs.AllGroupedInventories);
+            stat.NotConnectedDrillsFound = dcn > 1;
+            ProcessBlocks("Balancing turrets", EnableTurrets, bs.Turrets, stat, exclude: bs.AllGroupedInventories);
+            ProcessBlocks("Balancing oxygen gen.", EnableOxygenGenerators, bs.OxygenGenerators, stat, invGroup: "oxygen generators",
+                exclude: bs.AllGroupedInventories, filter: item => item.Content.TypeId.ToString() == OreType);
+
+            if (EnableGroups)
+            {
+                foreach (var kv in bs.Groups)
+                    ProcessBlocks("Balancing group " + kv.Key, true, kv.Value, stat, invGroup: kv.Key);
+            }
+            else
+            {
+                stat.Output.AppendLine("Balancing groups: disabled");
+            }
+
+            if (EnableRefineries)
+            {
+                MyDefinitionId tmp;
+                MyDefinitionId? topPriority = null, lowestPriority = null;
+                if (String.IsNullOrEmpty(TopRefineryPriority))
+                {
+                    if (MyDefinitionId.TryParse(TopRefineryPriority, out tmp))
+                        topPriority = tmp;
+                    else
+                        Echo("Err: type is invalid: " + TopRefineryPriority);
+                }
+                if (String.IsNullOrEmpty(LowestRefineryPriority))
+                {
+                    if (MyDefinitionId.TryParse(LowestRefineryPriority, out tmp))
+                        lowestPriority = tmp;
+                    else
+                        Echo("Err: type is invalid: " + LowestRefineryPriority);
+                }
+                EnforceItemPriority(bs.Refineries, stat, topPriority, lowestPriority);
+            }
+
+            if (dcn >= 1)
+            {
+                ProcessDrillsLights(bs.Drills, bs.DrillsPayloadLights, stat);
+            }
+
+            PrintOnlineStatus(bs, stat);
+            WriteOutput(bs, stat);
+        }
 
         public void ReadConfig()
         {
@@ -150,69 +213,13 @@ namespace SEScripts.ResourceExchanger2_5_0_187
             ini.SetComment(key, comment);
         }
 
-        public void Main(string argument, UpdateType updateSource)
-        {
-            ReadConfig();
-
-            var bs = new BlockStore(this);
-            var stat = new Statistics();
-            CollectTerminals(bs, stat);
-
-            ProcessBlocks("Balancing reactors", EnableReactors, bs.Reactors, stat, exclude: bs.AllGroupedInventories);
-            ProcessBlocks("Balancing refineries", EnableRefineries, bs.Refineries, stat, exclude: bs.AllGroupedInventories);
-            var dcn = ProcessBlocks("Balancing drills", EnableDrills, bs.Drills, stat, invGroup: "drills", exclude: bs.AllGroupedInventories);
-            stat.NotConnectedDrillsFound = dcn > 1;
-            ProcessBlocks("Balancing turrets", EnableTurrets, bs.Turrets, stat, exclude: bs.AllGroupedInventories);
-            ProcessBlocks("Balancing oxygen gen.", EnableOxygenGenerators, bs.OxygenGenerators, stat, invGroup: "oxygen generators",
-                exclude: bs.AllGroupedInventories, filter: item => item.Content.TypeId.ToString() == OreType);
-
-            if (EnableGroups)
-            {
-                foreach (var kv in bs.Groups)
-                    ProcessBlocks("Balancing group " + kv.Key, true, kv.Value, stat, invGroup: kv.Key);
-            }
-            else
-            {
-                stat.Output.AppendLine("Balancing groups: disabled");
-            }
-
-            if (EnableRefineries)
-            {
-                MyDefinitionId tmp;
-                MyDefinitionId? topPriority = null, lowestPriority = null;
-                if (String.IsNullOrEmpty(TopRefineryPriority))
-                {
-                    if (MyDefinitionId.TryParse(TopRefineryPriority, out tmp))
-                        topPriority = tmp;
-                    else
-                        Echo("Err: type is invalid: " + TopRefineryPriority);
-                }
-                if (String.IsNullOrEmpty(LowestRefineryPriority))
-                {
-                    if (MyDefinitionId.TryParse(LowestRefineryPriority, out tmp))
-                        lowestPriority = tmp;
-                    else
-                        Echo("Err: type is invalid: " + LowestRefineryPriority);
-                }
-                EnforceItemPriority(bs.Refineries, stat, topPriority, lowestPriority);
-            }
-
-            if (dcn >= 1)
-            {
-                ProcessDrillsLights(bs.Drills, bs.DrillsPayloadLights, stat);
-            }
-
-            PrintOnlineStatus(bs, stat);
-            WriteOutput(bs, stat);
-        }
-
         private BlockStore CollectTerminals(BlockStore bs, Statistics stat)
         {
             var blocks = new List<IMyTerminalBlock>();
 
             if (String.IsNullOrEmpty(ManagedBlocksGroup))
             {
-                GridTerminalSystem.GetBlocksOfType(blocks, MyTerminalBlockFilter);
+                GridTerminalSystem.GetBlocksOfType(blocks, myTerminalBlockFilter);
             }
             else
             {
@@ -220,7 +227,7 @@ namespace SEScripts.ResourceExchanger2_5_0_187
                 if (group == null)
                     stat.Output.Append("Error: a group ").Append(ManagedBlocksGroup).AppendLine(" has not been found");
                 else
-                    group.GetBlocksOfType(blocks, MyTerminalBlockFilter);
+                    group.GetBlocksOfType(blocks, myTerminalBlockFilter);
             }
 
             foreach (var dt in blocks)
@@ -230,36 +237,426 @@ namespace SEScripts.ResourceExchanger2_5_0_187
             {
                 var group = GridTerminalSystem.GetBlockGroupWithName(DisplayLcdGroup);
                 if (group != null)
-                    group.GetBlocksOfType<IMyTextPanel>(bs.DebugScreen, MyTerminalBlockFilter);
+                    group.GetBlocksOfType<IMyTextPanel>(bs.DebugScreen, myTerminalBlockFilter);
             }
 
             if (!String.IsNullOrEmpty(DrillsPayloadLightsGroup))
             {
                 var group = GridTerminalSystem.GetBlockGroupWithName(DrillsPayloadLightsGroup);
                 if (group != null)
-                    group.GetBlocksOfType<IMyLightingBlock>(bs.DrillsPayloadLights, MyTerminalBlockFilter);
+                    group.GetBlocksOfType<IMyLightingBlock>(bs.DrillsPayloadLights, myTerminalBlockFilter);
             }
 
             stat.Output.Append("Resource exchanger 2.5.0. Blocks managed:")
-                .Append(" reactors: ").Append(CountOrNA(bs.Reactors, EnableReactors))
-                .Append(", refineries: ").Append(CountOrNA(bs.Refineries, EnableRefineries)).AppendLine(",")
-                .Append("oxygen gen.: ").Append(CountOrNA(bs.OxygenGenerators, EnableOxygenGenerators))
-                .Append(", drills: ").Append(CountOrNA(bs.Drills, EnableDrills))
-                .Append(", turrets: ").Append(CountOrNA(bs.Turrets, EnableTurrets))
-                .Append(", cargo cont.: ").Append(CountOrNA(bs.CargoContainers, EnableGroups))
-                .Append(", custom groups: ").Append(CountOrNA(bs.Groups, EnableGroups)).AppendLine();
+                .Append(" reactors: ").Append(countOrNA(bs.Reactors, EnableReactors))
+                .Append(", refineries: ").Append(countOrNA(bs.Refineries, EnableRefineries)).AppendLine(",")
+                .Append("oxygen gen.: ").Append(countOrNA(bs.OxygenGenerators, EnableOxygenGenerators))
+                .Append(", drills: ").Append(countOrNA(bs.Drills, EnableDrills))
+                .Append(", turrets: ").Append(countOrNA(bs.Turrets, EnableTurrets))
+                .Append(", cargo cont.: ").Append(countOrNA(bs.CargoContainers, EnableGroups))
+                .Append(", custom groups: ").Append(countOrNA(bs.Groups, EnableGroups)).AppendLine();
 
             return bs;
+
+            bool myTerminalBlockFilter(IMyTerminalBlock b) => b.IsFunctional && (!MyGridOnly || b.CubeGrid == Me.CubeGrid);
+            string countOrNA(ICollection c, bool e) => e ? c.Count.ToString() : "n/a";
         }
 
-        private string CountOrNA(ICollection collection, bool isEnabled)
+        private int ProcessBlocks(string msg, bool enable, ICollection<InventoryWrapper> blocks, Statistics stat, string invGroup = null,
+            HashSet<InventoryWrapper> exclude = null, Func<IMyInventoryItem, bool> filter = null)
         {
-            return isEnabled ? collection.Count.ToString() : "n/a";
+            stat.Output.Append(msg);
+            if (enable)
+            {
+                if (blocks.Count >= 2)
+                {
+                    var conveyorNetworks = FindConveyorNetworks(blocks, exclude);
+                    stat.NumberOfNetworks += conveyorNetworks.Count;
+                    stat.Output.Append(": ").Append(conveyorNetworks.Count).AppendLine(" conveyor networks found");
+
+                    if (invGroup != null)
+                    {
+                        foreach (var network in conveyorNetworks)
+                            BalanceInventories(stat, network.Inventories, network.No, 0, invGroup, filter);
+                    }
+                    else
+                    {
+                        foreach (var network in conveyorNetworks)
+                            foreach (var group in DivideByBlockType(network))
+                                BalanceInventories(stat, group.Inventories, network.No, group.No, group.Name, filter);
+                    }
+
+                    return conveyorNetworks.Count;
+                }
+                else
+                {
+                    stat.Output.AppendLine(": nothing to do");
+                    return 0;
+                }
+            }
+            else
+            {
+                stat.Output.AppendLine(": disabled");
+                return -1;
+            }
         }
 
-        private bool MyTerminalBlockFilter(IMyTerminalBlock myTerminalBlock)
+        private List<ConveyorNetwork> FindConveyorNetworks(ICollection<InventoryWrapper> inventories, HashSet<InventoryWrapper> exclude)
         {
-            return myTerminalBlock.IsFunctional && (!MyGridOnly || myTerminalBlock.CubeGrid == Me.CubeGrid);
+            var result = new List<ConveyorNetwork>();
+
+            foreach (var wrp in inventories)
+            {
+                if (exclude != null && exclude.Contains(wrp))
+                    continue;
+
+                bool add = true;
+                foreach (var network in result)
+                {
+                    if (network.Inventories[0].Inventory.IsConnectedTo(wrp.Inventory)
+                        && wrp.Inventory.IsConnectedTo(network.Inventories[0].Inventory))
+                    {
+                        network.Inventories.Add(wrp);
+                        add = false;
+                        break;
+                    }
+                }
+
+                if (add)
+                {
+                    var network = new ConveyorNetwork(result.Count + 1);
+                    network.Inventories.Add(wrp);
+                    result.Add(network);
+                }
+            }
+
+            return result;
+        }
+
+        private List<InventoryGroup> DivideByBlockType(ConveyorNetwork network)
+        {
+            var groupMap = new Dictionary<string, InventoryGroup>();
+
+            foreach (var inv in network.Inventories)
+            {
+                InventoryGroup group;
+                if (!groupMap.TryGetValue(inv.GroupName, out group))
+                {
+                    group = new InventoryGroup(groupMap.Count + 1, inv.GroupName);
+                    groupMap.Add(inv.GroupName, group);
+                }
+                group.Inventories.Add(inv);
+            }
+
+            var result = new List<InventoryGroup>(groupMap.Count);
+            result.AddRange(groupMap.Values);
+            return result;
+        }
+
+        private void BalanceInventories(Statistics stat, List<InventoryWrapper> group, int networkNumber,
+            int groupNumber, string groupName, Func<IMyInventoryItem, bool> filter)
+        {
+            const int maxMovementsPerGroup = 2;
+
+            if (group.Count < 2)
+            {
+                stat.Output.Append("Cannot balance conveyor network ").Append(networkNumber + 1)
+                    .Append(" group ").Append(groupNumber + 1).Append(" \"").Append(groupName)
+                    .AppendLine("\"")
+                    .AppendLine("  because there is only one inventory.");
+                return; // nothing to do
+            }
+
+            if (filter != null)
+            {
+                foreach (var wrp in group)
+                    wrp.LoadVolume().FilterItems(stat, filter).CalculatePercent();
+            }
+            else
+            {
+                foreach (var wrp in group)
+                    wrp.LoadVolume().CalculatePercent();
+            }
+
+            group.Sort(InventoryWrapperComparer.Instance);
+
+            var last = group[group.Count - 1];
+
+            if (last.CurrentVolume < SmallNumber)
+            {
+                stat.Output.Append("Cannot balance conveyor network ").Append(networkNumber + 1)
+                    .Append(" group ").Append(groupNumber + 1).Append(" \"").Append(groupName)
+                    .AppendLine("\"")
+                    .AppendLine("  because of lack of items in it.");
+                return; // nothing to do
+            }
+
+            stat.Output.Append("Balancing conveyor network ").Append(networkNumber + 1)
+                .Append(" group ").Append(groupNumber + 1)
+                .Append(" \"").Append(groupName).AppendLine("\"...");
+
+            for (int i = 0; i < maxMovementsPerGroup && i < group.Count / 2; ++i)
+            {
+                var inv1 = group[i];
+                var inv2 = group[group.Count - i - 1];
+
+                decimal toMove;
+                if (inv1.MaxVolume == inv2.MaxVolume)
+                {
+                    toMove = (inv2.CurrentVolume - inv1.CurrentVolume) / 2.0M;
+                }
+                else
+                {
+                    toMove = (inv2.CurrentVolume * inv1.MaxVolume
+                        - inv1.CurrentVolume * inv2.MaxVolume)
+                        / (inv1.MaxVolume + inv2.MaxVolume);
+                }
+
+                stat.Output.Append("Inv. 1 vol: ").Append(inv1.CurrentVolume.ToString("F6")).Append("; ");
+                stat.Output.Append("Inv. 2 vol: ").Append(inv2.CurrentVolume.ToString("F6")).Append("; ");
+                stat.Output.Append("To move: ").Append(toMove.ToString("F6")).AppendLine();
+
+                if (toMove < 0.0M)
+                    throw new InvalidOperationException("Something went wrong with calculations: volumeDiff is " + toMove);
+
+                if (toMove < SmallNumber)
+                    continue;
+
+                MoveVolume(stat, inv2, inv1, (VRage.MyFixedPoint)toMove, filter);
+            }
+        }
+
+        private VRage.MyFixedPoint MoveVolume(Statistics stat, InventoryWrapper from, InventoryWrapper to,
+            VRage.MyFixedPoint volumeAmountToMove, Func<IMyInventoryItem, bool> filter)
+        {
+            if (volumeAmountToMove == 0)
+                return volumeAmountToMove;
+
+            if (volumeAmountToMove < 0)
+                throw new ArgumentException("Invalid volume amount", "volumeAmount");
+
+            stat.Output.Append("Move ").Append(volumeAmountToMove).Append(" l. from ")
+                .Append(from.Block.CustomName).Append(" to ").AppendLine(to.Block.CustomName);
+            List<IMyInventoryItem> itemsFrom = from.Inventory.GetItems();
+
+            for (int i = itemsFrom.Count - 1; i >= 0; --i)
+            {
+                IMyInventoryItem item = itemsFrom[i];
+
+                if (filter != null && !filter(item))
+                    continue;
+
+                var key = MyDefinitionId.FromContent(item.Content);
+                var data = ItemInfo.Get(stat, key);
+                if (data == null)
+                    continue;
+
+                decimal amountToMoveRaw = (decimal)volumeAmountToMove * 1000M / data.Volume;
+                VRage.MyFixedPoint amountToMove;
+
+                if (data.HasIntegralAmounts)
+                    amountToMove = (VRage.MyFixedPoint)((int)(amountToMoveRaw + 0.1M));
+                else
+                    amountToMove = (VRage.MyFixedPoint)amountToMoveRaw;
+
+                if (amountToMove == 0)
+                    continue;
+
+                List<IMyInventoryItem> itemsTo = to.Inventory.GetItems();
+                int targetItemIndex = 0;
+                while (targetItemIndex < itemsTo.Count)
+                {
+                    IMyInventoryItem item2 = itemsTo[targetItemIndex];
+                    if (MyDefinitionId.FromContent(item2.Content).Equals(key))
+                        break;
+                    ++targetItemIndex;
+                }
+
+                decimal itemVolume;
+                bool success;
+                if (amountToMove <= item.Amount)
+                {
+                    itemVolume = (decimal)amountToMove * data.Volume / 1000M;
+                    success = from.TransferItemTo(to, i, targetItemIndex, true, amountToMove);
+                    stat.MovementsDone += 1;
+                    stat.Output.Append("Move ").Append(amountToMove).Append(" -> ").AppendLine(success ? "success" : "failure");
+                }
+                else
+                {
+                    itemVolume = (decimal)item.Amount * data.Volume / 1000M;
+                    success = from.TransferItemTo(to, i, targetItemIndex, true, item.Amount);
+                    stat.MovementsDone += 1;
+                    stat.Output.Append("Move all ").Append(item.Amount).Append(" -> ").AppendLine(success ? "success" : "failure");
+                }
+
+                if (success)
+                    volumeAmountToMove -= (VRage.MyFixedPoint)itemVolume;
+                if (volumeAmountToMove < (VRage.MyFixedPoint)SmallNumber)
+                    return volumeAmountToMove;
+            }
+
+            stat.Output.Append("Cannot move ").Append(volumeAmountToMove).AppendLine(" l.");
+            return volumeAmountToMove;
+        }
+
+        private void ProcessDrillsLights(List<InventoryWrapper> drills, List<IMyLightingBlock> lights, Statistics stat)
+        {
+            VRage.MyFixedPoint warningLevelInCubicMetersLeft = 5;
+            Color step0() => new Color(255, 255, 255);
+            Color step1() => new Color(255, 255, 0);
+            Color step2() => new Color(255, 0, 0);
+            Color warn() => (_cycleNumber & 0x1) == 0 ? new Color(128, 0, 128) : new Color(128, 0, 64);
+            Color err() => (_cycleNumber & 0x1) == 0 ? new Color(0, 128, 128) : new Color(0, 64, 128);
+
+            if (lights.Count == 0)
+            {
+                stat.Output.AppendLine("Setting color of drills payload indicators. Not enough lights found. Nothing to do.");
+                return;
+            }
+
+            stat.Output.AppendLine("Setting color of drills payload indicators.");
+
+            Color color;
+            if (stat.NotConnectedDrillsFound)
+            {
+                stat.Output.AppendLine("Not all drills are connected.");
+                color = err();
+            }
+            else
+            {
+                var drillsMaxVolume = VRage.MyFixedPoint.Zero;
+                var drillsCurrentVolume = VRage.MyFixedPoint.Zero;
+                foreach (var drill in drills)
+                {
+                    drillsMaxVolume += drill.Inventory.MaxVolume;
+                    drillsCurrentVolume += drill.Inventory.CurrentVolume;
+                }
+
+                if (drillsMaxVolume > 0)
+                {
+                    var p = (float)drillsCurrentVolume * 1000.0f;
+                    p /= (float)drillsMaxVolume;
+
+                    stat.DrillsPayloadStr = (p / 10.0f).ToString("F1");
+
+                    stat.Output.Append("Drills space usage: ");
+                    stat.Output.Append(stat.DrillsPayloadStr);
+                    stat.Output.AppendLine("%");
+
+                    stat.DrillsVolumeWarning = (drillsMaxVolume - drillsCurrentVolume) < warningLevelInCubicMetersLeft;
+                    if (stat.DrillsVolumeWarning)
+                    {
+                        color = warn();
+                    }
+                    else
+                    {
+                        Color c1, c2;
+                        float m1, m2;
+
+                        if (p < 500.0f)
+                        {
+                            c1 = step0();
+                            c2 = step1();
+                            m2 = p / 500.0f;
+                            m1 = 1.0f - m2;
+                        }
+                        else
+                        {
+                            c1 = step2();
+                            c2 = step1();
+                            m1 = (p - 500.0f) / 450.0f;
+                            if (m1 > 1.0f)
+                                m1 = 1.0f;
+                            m2 = 1.0f - m1;
+                        }
+
+                        float r = c1.R * m1 + c2.R * m2;
+                        float g = c1.G * m1 + c2.G * m2;
+                        float b = c1.B * m1 + c2.B * m2;
+
+                        if (r > 255.0f)
+                            r = 255.0f;
+                        else if (r < 0.0f)
+                            r = 0.0f;
+
+                        if (g > 255.0f)
+                            g = 255.0f;
+                        else if (g < 0.0f)
+                            g = 0.0f;
+
+                        if (b > 255.0f)
+                            b = 255.0f;
+                        else if (b < 0.0f)
+                            b = 0.0f;
+
+                        color = new Color((int)r, (int)g, (int)b);
+                    }
+                }
+                else
+                {
+                    color = step0();
+                }
+            }
+
+            stat.Output.Append("Drills payload indicators lights color: ");
+            stat.Output.Append(color);
+            stat.Output.AppendLine();
+
+            foreach (IMyLightingBlock light in lights)
+            {
+                var currentColor = light.GetValue<Color>("Color");
+                if (currentColor != color)
+                    light.SetValue<Color>("Color", color);
+            }
+
+            stat.Output.Append("Color of ");
+            stat.Output.Append(lights.Count);
+            stat.Output.AppendLine(" drills payload indicators has been set.");
+        }
+
+        private void EnforceItemPriority(List<InventoryWrapper> group, Statistics stat, MyDefinitionId? topPriority, MyDefinitionId? lowestPriority)
+        {
+            if (topPriority == null && lowestPriority == null)
+                return;
+
+            foreach (var inv in group)
+            {
+                var items = inv.Inventory.GetItems();
+                if (items.Count < 2)
+                    continue;
+
+                if (topPriority.HasValue && !MyDefinitionId.FromContent(items[0].Content).Equals(topPriority.Value))
+                {
+                    for (int i = 1; i < items.Count; ++i)
+                    {
+                        var item = items[i];
+                        if (MyDefinitionId.FromContent(item.Content).Equals(topPriority.Value))
+                        {
+                            stat.Output.Append("Moving ").Append(topPriority.Value.SubtypeName).Append(" from ")
+                                .Append(i + 1).Append(" slot to first slot of ").AppendLine(inv.Block.CustomName);
+                            inv.TransferItemTo(inv, i, 0, false, item.Amount);
+                            stat.MovementsDone += 1;
+                            break;
+                        }
+                    }
+                }
+
+                if (lowestPriority.HasValue && !MyDefinitionId.FromContent(items[items.Count - 1].Content).Equals(lowestPriority.Value))
+                {
+                    for (int i = items.Count - 2; i >= 0; --i)
+                    {
+                        var item = items[i];
+                        if (MyDefinitionId.FromContent(item.Content).Equals(lowestPriority.Value))
+                        {
+                            stat.Output.Append("Moving ").Append(lowestPriority.Value.SubtypeName).Append(" from ")
+                                .Append(i + 1).Append(" slot to last slot of ").AppendLine(inv.Block.CustomName);
+                            inv.TransferItemTo(inv, i, items.Count, false, item.Amount);
+                            stat.MovementsDone += 1;
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         private void PrintOnlineStatus(BlockStore bs, Statistics stat)
@@ -398,416 +795,6 @@ namespace SEScripts.ResourceExchanger2_5_0_187
                 screen.ShowPublicTextOnScreen();
             }
         }
-
-        private List<ConveyorNetwork> FindConveyorNetworks(ICollection<InventoryWrapper> inventories, HashSet<InventoryWrapper> exclude)
-        {
-            var result = new List<ConveyorNetwork>();
-
-            foreach (var wrp in inventories)
-            {
-                if (exclude != null && exclude.Contains(wrp))
-                    continue;
-
-                bool add = true;
-                foreach (var network in result)
-                {
-                    if (network.Inventories[0].Inventory.IsConnectedTo(wrp.Inventory)
-                        && wrp.Inventory.IsConnectedTo(network.Inventories[0].Inventory))
-                    {
-                        network.Inventories.Add(wrp);
-                        add = false;
-                        break;
-                    }
-                }
-
-                if (add)
-                {
-                    var network = new ConveyorNetwork(result.Count + 1);
-                    network.Inventories.Add(wrp);
-                    result.Add(network);
-                }
-            }
-
-            return result;
-        }
-
-        private List<InventoryGroup> DivideByBlockType(ConveyorNetwork network)
-        {
-            var groupMap = new Dictionary<string, InventoryGroup>();
-
-            foreach (var inv in network.Inventories)
-            {
-                InventoryGroup group;
-                if (!groupMap.TryGetValue(inv.GroupName, out group))
-                {
-                    group = new InventoryGroup(groupMap.Count + 1, inv.GroupName);
-                    groupMap.Add(inv.GroupName, group);
-                }
-                group.Inventories.Add(inv);
-            }
-
-            var result = new List<InventoryGroup>(groupMap.Count);
-            result.AddRange(groupMap.Values);
-            return result;
-        }
-
-        private int ProcessBlocks(string msg, bool enable, ICollection<InventoryWrapper> blocks, Statistics stat, string invGroup = null,
-            HashSet<InventoryWrapper> exclude = null, Func<IMyInventoryItem, bool> filter = null)
-        {
-            stat.Output.Append(msg);
-            if (enable)
-            {
-                if (blocks.Count >= 2)
-                {
-                    var conveyorNetworks = FindConveyorNetworks(blocks, exclude);
-                    stat.NumberOfNetworks += conveyorNetworks.Count;
-                    stat.Output.Append(": ").Append(conveyorNetworks.Count).AppendLine(" conveyor networks found");
-
-                    if (invGroup != null)
-                    {
-                        foreach (var network in conveyorNetworks)
-                            BalanceInventories(stat, network.Inventories, network.No, 0, invGroup, filter);
-                    }
-                    else
-                    {
-                        foreach (var network in conveyorNetworks)
-                            foreach (var group in DivideByBlockType(network))
-                                BalanceInventories(stat, group.Inventories, network.No, group.No, group.Name, filter);
-                    }
-
-                    return conveyorNetworks.Count;
-                }
-                else
-                {
-                    stat.Output.AppendLine(": nothing to do");
-                    return 0;
-                }
-            }
-            else
-            {
-                stat.Output.AppendLine(": disabled");
-                return -1;
-            }
-        }
-
-        private void ProcessDrillsLights(List<InventoryWrapper> drills, List<IMyLightingBlock> lights, Statistics stat)
-        {
-            VRage.MyFixedPoint warningLevelInCubicMetersLeft = 5;
-
-            if (lights.Count == 0)
-            {
-                stat.Output.AppendLine("Setting color of drills payload indicators. Not enough lights found. Nothing to do.");
-                return;
-            }
-
-            stat.Output.AppendLine("Setting color of drills payload indicators.");
-
-            Color color;
-            if (stat.NotConnectedDrillsFound)
-            {
-                stat.Output.AppendLine("Not all drills are connected.");
-
-                if (_cycleNumber % 2 == 0)
-                    color = new Color(0, 128, 128);
-                else
-                    color = new Color(0, 64, 128);
-            }
-            else
-            {
-                var drillsMaxVolume = VRage.MyFixedPoint.Zero;
-                var drillsCurrentVolume = VRage.MyFixedPoint.Zero;
-                foreach (var drill in drills)
-                {
-                    drillsMaxVolume += drill.Inventory.MaxVolume;
-                    drillsCurrentVolume += drill.Inventory.CurrentVolume;
-                }
-
-                Func<Color> step0 = () => new Color(255, 255, 255);
-                Func<Color> step1 = () => new Color(255, 255, 0);
-                Func<Color> step2 = () => new Color(255, 0, 0);
-                if (drillsMaxVolume > 0)
-                {
-                    var p = (float)drillsCurrentVolume * 1000.0f;
-                    p /= (float)drillsMaxVolume;
-
-                    stat.DrillsPayloadStr = (p / 10.0f).ToString("F1");
-
-                    stat.Output.Append("Drills space usage: ");
-                    stat.Output.Append(stat.DrillsPayloadStr);
-                    stat.Output.AppendLine("%");
-
-                    stat.DrillsVolumeWarning = (drillsMaxVolume - drillsCurrentVolume) < warningLevelInCubicMetersLeft;
-                    if (stat.DrillsVolumeWarning)
-                    {
-                        if (_cycleNumber % 2 == 0)
-                            color = new Color(128, 0, 128);
-                        else
-                            color = new Color(128, 0, 64);
-                    }
-                    else
-                    {
-                        Color c1, c2;
-                        float m1, m2;
-
-                        if (p < 500.0f)
-                        {
-                            c1 = step0();
-                            c2 = step1();
-                            m2 = p / 500.0f;
-                            m1 = 1.0f - m2;
-                        }
-                        else
-                        {
-                            c1 = step2();
-                            c2 = step1();
-                            m1 = (p - 500.0f) / 450.0f;
-                            if (m1 > 1.0f)
-                                m1 = 1.0f;
-                            m2 = 1.0f - m1;
-                        }
-
-                        float r = c1.R * m1 + c2.R * m2;
-                        float g = c1.G * m1 + c2.G * m2;
-                        float b = c1.B * m1 + c2.B * m2;
-
-                        if (r > 255.0f)
-                            r = 255.0f;
-                        else if (r < 0.0f)
-                            r = 0.0f;
-
-                        if (g > 255.0f)
-                            g = 255.0f;
-                        else if (g < 0.0f)
-                            g = 0.0f;
-
-                        if (b > 255.0f)
-                            b = 255.0f;
-                        else if (b < 0.0f)
-                            b = 0.0f;
-
-                        color = new Color((int)r, (int)g, (int)b);
-                    }
-                }
-                else
-                {
-                    color = step0();
-                }
-            }
-
-            stat.Output.Append("Drills payload indicators lights color: ");
-            stat.Output.Append(color);
-            stat.Output.AppendLine();
-
-            foreach (IMyLightingBlock light in lights)
-            {
-                Color currentColor = light.GetValue<Color>("Color");
-                if (currentColor != color)
-                    light.SetValue<Color>("Color", color);
-            }
-
-            stat.Output.Append("Color of ");
-            stat.Output.Append(lights.Count);
-            stat.Output.AppendLine(" drills payload indicators has been set.");
-        }
-
-        private void EnforceItemPriority(List<InventoryWrapper> group, Statistics stat, MyDefinitionId? topPriority, MyDefinitionId? lowestPriority)
-        {
-            if (topPriority == null && lowestPriority == null)
-                return;
-
-            foreach (var inv in group)
-            {
-                var items = inv.Inventory.GetItems();
-                if (items.Count < 2)
-                    continue;
-
-                if (topPriority.HasValue && !MyDefinitionId.FromContent(items[0].Content).Equals(topPriority.Value))
-                {
-                    for (int i = 1; i < items.Count; ++i)
-                    {
-                        var item = items[i];
-                        if (MyDefinitionId.FromContent(item.Content).Equals(topPriority.Value))
-                        {
-                            stat.Output.Append("Moving ").Append(topPriority.Value.SubtypeName).Append(" from ")
-                                .Append(i + 1).Append(" slot to first slot of ").AppendLine(inv.Block.CustomName);
-                            inv.TransferItemTo(inv, i, 0, false, item.Amount);
-                            stat.MovementsDone += 1;
-                            break;
-                        }
-                    }
-                }
-
-                if (lowestPriority.HasValue && !MyDefinitionId.FromContent(items[items.Count - 1].Content).Equals(lowestPriority.Value))
-                {
-                    for (int i = items.Count - 2; i >= 0; --i)
-                    {
-                        var item = items[i];
-                        if (MyDefinitionId.FromContent(item.Content).Equals(lowestPriority.Value))
-                        {
-                            stat.Output.Append("Moving ").Append(lowestPriority.Value.SubtypeName).Append(" from ")
-                                .Append(i + 1).Append(" slot to last slot of ").AppendLine(inv.Block.CustomName);
-                            inv.TransferItemTo(inv, i, items.Count, false, item.Amount);
-                            stat.MovementsDone += 1;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        private void BalanceInventories(Statistics stat, List<InventoryWrapper> group, int networkNumber,
-            int groupNumber, string groupName, Func<IMyInventoryItem, bool> filter)
-        {
-            const int maxMovementsPerGroup = 2;
-
-            if (group.Count < 2)
-            {
-                stat.Output.Append("Cannot balance conveyor network ").Append(networkNumber + 1)
-                    .Append(" group ").Append(groupNumber + 1).Append(" \"").Append(groupName)
-                    .AppendLine("\"")
-                    .AppendLine("  because there is only one inventory.");
-                return; // nothing to do
-            }
-
-            if (filter != null)
-            {
-                foreach (var wrp in group)
-                    wrp.LoadVolume().FilterItems(stat, filter).CalculatePercent();
-            }
-            else
-            {
-                foreach (var wrp in group)
-                    wrp.LoadVolume().CalculatePercent();
-            }
-
-            group.Sort(InventoryWrapperComparer.Instance);
-
-            var last = group[group.Count - 1];
-
-            if (last.CurrentVolume < SMALL_NUMBER)
-            {
-                stat.Output.Append("Cannot balance conveyor network ").Append(networkNumber + 1)
-                    .Append(" group ").Append(groupNumber + 1).Append(" \"").Append(groupName)
-                    .AppendLine("\"")
-                    .AppendLine("  because of lack of items in it.");
-                return; // nothing to do
-            }
-
-            stat.Output.Append("Balancing conveyor network ").Append(networkNumber + 1)
-                .Append(" group ").Append(groupNumber + 1)
-                .Append(" \"").Append(groupName).AppendLine("\"...");
-
-            for (int i = 0; i < maxMovementsPerGroup && i < group.Count / 2; ++i)
-            {
-                var inv1 = group[i];
-                var inv2 = group[group.Count - i - 1];
-
-                decimal toMove;
-                if (inv1.MaxVolume == inv2.MaxVolume)
-                {
-                    toMove = (inv2.CurrentVolume - inv1.CurrentVolume) / 2.0M;
-                }
-                else
-                {
-                    toMove = (inv2.CurrentVolume * inv1.MaxVolume
-                        - inv1.CurrentVolume * inv2.MaxVolume)
-                        / (inv1.MaxVolume + inv2.MaxVolume);
-                }
-
-                stat.Output.Append("Inv. 1 vol: ").Append(inv1.CurrentVolume.ToString("F6")).Append("; ");
-                stat.Output.Append("Inv. 2 vol: ").Append(inv2.CurrentVolume.ToString("F6")).Append("; ");
-                stat.Output.Append("To move: ").Append(toMove.ToString("F6")).AppendLine();
-
-                if (toMove < 0.0M)
-                    throw new InvalidOperationException("Something went wrong with calculations: volumeDiff is " + toMove);
-
-                if (toMove < SMALL_NUMBER)
-                    continue;
-
-                MoveVolume(stat, inv2, inv1, (VRage.MyFixedPoint)toMove, filter);
-            }
-        }
-
-        private VRage.MyFixedPoint MoveVolume(Statistics stat, InventoryWrapper from, InventoryWrapper to,
-            VRage.MyFixedPoint volumeAmountToMove, Func<IMyInventoryItem, bool> filter)
-        {
-            if (volumeAmountToMove == 0)
-                return volumeAmountToMove;
-
-            if (volumeAmountToMove < 0)
-                throw new ArgumentException("Invalid volume amount", "volumeAmount");
-
-            stat.Output.Append("Move ").Append(volumeAmountToMove).Append(" l. from ")
-                .Append(from.Block.CustomName).Append(" to ").AppendLine(to.Block.CustomName);
-            List<IMyInventoryItem> itemsFrom = from.Inventory.GetItems();
-
-            for (int i = itemsFrom.Count - 1; i >= 0; --i)
-            {
-                IMyInventoryItem item = itemsFrom[i];
-
-                if (filter != null && !filter(item))
-                    continue;
-
-                var key = MyDefinitionId.FromContent(item.Content);
-                var data = ItemInfo.Get(stat, key);
-                if (data == null)
-                    continue;
-
-                decimal amountToMoveRaw = (decimal)volumeAmountToMove * 1000M / data.Volume;
-                VRage.MyFixedPoint amountToMove;
-
-                if (data.HasIntegralAmounts)
-                    amountToMove = (VRage.MyFixedPoint)((int)(amountToMoveRaw + 0.1M));
-                else
-                    amountToMove = (VRage.MyFixedPoint)amountToMoveRaw;
-
-                if (amountToMove == 0)
-                    continue;
-
-                List<IMyInventoryItem> itemsTo = to.Inventory.GetItems();
-                int targetItemIndex = 0;
-                while (targetItemIndex < itemsTo.Count)
-                {
-                    IMyInventoryItem item2 = itemsTo[targetItemIndex];
-                    if (MyDefinitionId.FromContent(item2.Content).Equals(key))
-                        break;
-                    ++targetItemIndex;
-                }
-
-                decimal itemVolume;
-                bool success;
-                if (amountToMove <= item.Amount)
-                {
-                    itemVolume = (decimal)amountToMove * data.Volume / 1000M;
-                    success = from.TransferItemTo(to, i, targetItemIndex, true, amountToMove);
-                    stat.MovementsDone += 1;
-                    stat.Output.Append("Move ").Append(amountToMove).Append(" -> ").AppendLine(success ? "success" : "failure");
-                }
-                else
-                {
-                    itemVolume = (decimal)item.Amount * data.Volume / 1000M;
-                    success = from.TransferItemTo(to, i, targetItemIndex, true, item.Amount);
-                    stat.MovementsDone += 1;
-                    stat.Output.Append("Move all ").Append(item.Amount).Append(" -> ").AppendLine(success ? "success" : "failure");
-                }
-
-                if (success)
-                    volumeAmountToMove -= (VRage.MyFixedPoint)itemVolume;
-                if (volumeAmountToMove < (VRage.MyFixedPoint)SMALL_NUMBER)
-                    return volumeAmountToMove;
-            }
-
-            stat.Output.Append("Cannot move ").Append(volumeAmountToMove).AppendLine(" l.");
-            return volumeAmountToMove;
-        }
-
-        private const string OreType = "MyObjectBuilder_Ore";
-        private const string IngotType = "MyObjectBuilder_Ingot";
-        private const string ComponentType = "MyObjectBuilder_Component";
-        private const string AmmoType = "MyObjectBuilder_AmmoMagazine";
-        private const string GunType = "MyObjectBuilder_PhysicalGunObject";
-        private const string OxygenType = "MyObjectBuilder_OxygenContainerObject";
-        private const string GasType = "MyObjectBuilder_GasContainerObject";
 
         private void BuildItemInfoDict()
         {
@@ -1053,7 +1040,7 @@ namespace SEScripts.ResourceExchanger2_5_0_187
                 return _groupIdToNameMap[groupId];
 
             groupId = new ulong[ItemInfo.ID_LENGTH];
-            foreach (var kv in ItemInfo.Dict)
+            foreach (var kv in ItemInfo.ItemInfoDict)
             {
                 if (inv.CanItemsBeAdded(-1, kv.Key))
                 {
@@ -1281,11 +1268,11 @@ namespace SEScripts.ResourceExchanger2_5_0_187
         private class ItemInfo
         {
             public const int ID_LENGTH = 4;
-            private static readonly Dictionary<MyDefinitionId, ItemInfo> _itemInfoDict;
+            public static readonly Dictionary<MyDefinitionId, ItemInfo> ItemInfoDict;
 
             static ItemInfo()
             {
-                _itemInfoDict = new Dictionary<MyDefinitionId, ItemInfo>(MyDefinitionId.Comparer);
+                ItemInfoDict = new Dictionary<MyDefinitionId, ItemInfo>(MyDefinitionId.Comparer);
             }
 
             private ItemInfo(int itemInfoNo, decimal mass, decimal volume, bool hasIntegralAmounts, bool isStackable)
@@ -1297,12 +1284,7 @@ namespace SEScripts.ResourceExchanger2_5_0_187
                 HasIntegralAmounts = hasIntegralAmounts;
                 IsStackable = isStackable;
             }
-
-            public static Dictionary<MyDefinitionId, ItemInfo> Dict
-            {
-                get { return _itemInfoDict; }
-            }
-
+            
             public readonly ulong[] Id;
             public readonly decimal Mass;
             public readonly decimal Volume;
@@ -1315,10 +1297,10 @@ namespace SEScripts.ResourceExchanger2_5_0_187
                 MyDefinitionId key;
                 if (!MyDefinitionId.TryParse(mainType, subtype, out key))
                     return;
-                var value = new ItemInfo(_itemInfoDict.Count, mass, volume, hasIntegralAmounts, isStackable);
+                var value = new ItemInfo(ItemInfoDict.Count, mass, volume, hasIntegralAmounts, isStackable);
                 try
                 {
-                    _itemInfoDict.Add(key, value);
+                    ItemInfoDict.Add(key, value);
                 }
                 catch (ArgumentException ex)
                 {
@@ -1329,7 +1311,7 @@ namespace SEScripts.ResourceExchanger2_5_0_187
             public static ItemInfo Get(Statistics stat, MyDefinitionId key)
             {
                 ItemInfo data;
-                if (_itemInfoDict.TryGetValue(key, out data))
+                if (ItemInfoDict.TryGetValue(key, out data))
                     return data;
 
                 stat.Output.Append("Volume to amount ratio for ");
@@ -1481,7 +1463,8 @@ namespace SEScripts.ResourceExchanger2_5_0_187
 
     internal class ReferencedTypes
     {
-        private static Type[] ImplicitIngameNamespacesFromTypes = new Type[] {
+        private static readonly Type[] ImplicitIngameNamespacesFromTypes = new Type[]
+        {
             typeof(Object),
             typeof(IEnumerable),
             typeof(IEnumerable<>),
