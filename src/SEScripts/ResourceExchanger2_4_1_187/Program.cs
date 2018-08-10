@@ -11,6 +11,7 @@ using VRage.Collections;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.ModAPI.Ingame;
+using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
@@ -38,25 +39,25 @@ namespace SEScripts.ResourceExchanger2_4_1_187
         public bool MY_GRID_ONLY = false;
 
         /// Set this variable to false to disable exchanging uranium between reactors.
-        public bool ENABLE_BALANCING_REACTORS = true;
+        public bool EnableReactors = true;
 
         /// Set this variable to false to disable exchanging ore
         /// between refineries and arc furnaces.
-        public bool ENABLE_DISTRIBUTING_ORE_IN_REFINERIES = true;
+        public bool EnableRefineries = true;
 
         /// Set this variable to false to disable exchanging ore between drills and
         /// to disable processing lights that indicates how much free space left in drills.
-        public bool ENABLE_DISTRIBUTING_ORE_IN_DRILLS = true;
+        public bool EnableDrills = true;
 
         /// Set this variable to false to disable exchanging ammunition between turrets and launchers.
-        public bool ENABLE_EXCHANGING_AMMUNITION_IN_TURRETS = true;
+        public bool EnableTurrets = true;
 
         /// Set this variable to false to disable exchanging ice (and only ice - not bottles)
         /// between oxygen generators.
-        public bool ENABLE_EXCHANGING_ICE_IN_OXYGEN_GENERATORS = true;
+        public bool EnableOxygenGenerators = true;
 
         /// Set this variable to false to disable exchanging items in blocks of custom groups.
-        public bool ENABLE_EXCHANGING_ITEMS_IN_GROUPS = true;
+        public bool EnableGroups = true;
 
         /// Maximum number of items movements to do per each group of inventories.
         /// This setting has significant impact to performance.
@@ -86,7 +87,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
         /// Default is 5 with means the lights from DRILLS_PAYLOAD_LIGHTS_GROUP will turn
         /// into purple when there will be only 5,000 liters of free space
         /// left in drills (or less)
-        public int WARNING_LEVEL_IN_CUBIC_METERS_LEFT = 5;
+        public VRage.MyFixedPoint WARNING_LEVEL_IN_CUBIC_METERS_LEFT = 5;
 
         /// Configuration of lights colors
         /// Values are in RGB format
@@ -122,7 +123,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
         public readonly System.Text.RegularExpressions.Regex GROUP_TAG_PATTERN
             = new System.Text.RegularExpressions.Regex(@"\bGR\d{1,3}\b",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        
+
         /* Configuration section ends here. *********************************************/
         // The rest of the code does the magic.
 
@@ -139,7 +140,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
             _avgMovements = new int[0x10];
 
             BuildItemInfoDict();
-            Runtime.UpdateFrequency = UpdateFrequency.Update100;
+            //Runtime.UpdateFrequency = UpdateFrequency.Update100;
 
             //Sandbox.Definitions.MyPhysicalItemDefinition def;
             //ListReader<int> listA;
@@ -152,17 +153,37 @@ namespace SEScripts.ResourceExchanger2_4_1_187
 
         public void Main(string argument, UpdateType updateSource)
         {
+            new Config().Read(this, "");
+
             var bs = new BlockStore(this);
             var stat = new Statistics();
             CollectTerminals(bs, stat);
 
-            ProcessReactors(bs);
-            ProcessRefineries(bs);
-            ProcessDrills(bs);
-            ProcessDrillsLights(bs, stat);
-            ProcessTurrets(bs);
-            ProcessOxygenGenerators(bs);
-            ProcessGroups(bs);
+            ProcessBlocks("Balancing reactors", EnableReactors, bs.Reactors, stat, exclude: bs.AllGroupedInventories);
+            ProcessBlocks("Balancing refineries", EnableRefineries, bs.Refineries, stat, exclude: bs.AllGroupedInventories);
+            var dcn = ProcessBlocks("Balancing drills", EnableDrills, bs.Drills, stat, invGroup: "drills", exclude: bs.AllGroupedInventories);
+            stat.NotConnectedDrillsFound = dcn > 1;
+            ProcessBlocks("Balancing turrets", EnableTurrets, bs.Turrets, stat, exclude: bs.AllGroupedInventories);
+            ProcessBlocks("Balancing oxygen gen.", EnableOxygenGenerators, bs.OxygenGenerators, stat, invGroup: "oxygen generators",
+                exclude: bs.AllGroupedInventories, filter: item => item.Content.TypeId.ToString() == OreType);
+
+            if (EnableGroups)
+            {
+                foreach (var kv in bs.Groups)
+                    ProcessBlocks("Balancing group " + kv.Key, true, kv.Value, stat, invGroup: kv.Key);
+            }
+            else
+            {
+                stat._output.AppendLine("Balancing groups: disabled");
+            }
+
+            if (EnableRefineries)
+                EnforceItemPriority(bs.Refineries, stat, TopRefineryPriority, LowestRefineryPriority);
+
+            if (dcn >= 1)
+            {
+                ProcessDrillsLights(bs.Drills, bs.DrillsPayloadLights, stat);
+            }
 
             PrintOnlineStatus(bs, stat);
             WriteOutput(bs, stat);
@@ -209,28 +230,19 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                     group.GetBlocksOfType<IMyLightingBlock>(bs.DrillsPayloadLights, MyTerminalBlockFilter);
             }
 
-            stat._output.Append("Resource exchanger. Blocks managed:");
-            stat._output.Append(" reactors: ");
-            stat._output.Append(CountOrNA(bs.Reactors, ENABLE_BALANCING_REACTORS));
-            stat._output.Append(", refineries: ");
-            stat._output.Append(CountOrNA(bs.Refineries, ENABLE_DISTRIBUTING_ORE_IN_REFINERIES));
-            stat._output.AppendLine(",");
-            stat._output.Append("oxygen gen.: ");
-            stat._output.Append(CountOrNA(bs.OxygenGenerators, ENABLE_EXCHANGING_ICE_IN_OXYGEN_GENERATORS));
-            stat._output.Append(", drills: ");
-            stat._output.Append(CountOrNA(bs.Drills, ENABLE_DISTRIBUTING_ORE_IN_DRILLS));
-            stat._output.Append(", turrets: ");
-            stat._output.Append(CountOrNA(bs.Turrets, ENABLE_EXCHANGING_AMMUNITION_IN_TURRETS));
-            stat._output.Append(", cargo cont.: ");
-            stat._output.Append(CountOrNA(bs.CargoContainers, ENABLE_EXCHANGING_ITEMS_IN_GROUPS));
-            stat._output.Append(", custom groups: ");
-            stat._output.Append(CountOrNA(bs.Groups, ENABLE_EXCHANGING_ITEMS_IN_GROUPS));
-            stat._output.AppendLine();
+            stat._output.Append("Resource exchanger 2.4.1. Blocks managed:")
+                .Append(" reactors: ").Append(CountOrNA(bs.Reactors, EnableReactors))
+                .Append(", refineries: ").Append(CountOrNA(bs.Refineries, EnableRefineries)).AppendLine(",")
+                .Append("oxygen gen.: ").Append(CountOrNA(bs.OxygenGenerators, EnableOxygenGenerators))
+                .Append(", drills: ").Append(CountOrNA(bs.Drills, EnableDrills))
+                .Append(", turrets: ").Append(CountOrNA(bs.Turrets, EnableTurrets))
+                .Append(", cargo cont.: ").Append(CountOrNA(bs.CargoContainers, EnableGroups))
+                .Append(", custom groups: ").Append(CountOrNA(bs.Groups, EnableGroups)).AppendLine();
 
             return bs;
         }
 
-        private string CountOrNA(System.Collections.ICollection collection, bool isEnabled)
+        private string CountOrNA(ICollection collection, bool isEnabled)
         {
             return isEnabled ? collection.Count.ToString() : "n/a";
         }
@@ -253,10 +265,10 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 .Append(stat._numberOfNetworks);
 
             var blocksAffected = bs.Reactors.Count
-                + bs.OxygenGenerators.Count
                 + bs.Refineries.Count
                 + bs.Drills.Count
                 + bs.Turrets.Count
+                + bs.OxygenGenerators.Count
                 + bs.CargoContainers.Count;
 
             sb.AppendLine()
@@ -266,54 +278,60 @@ namespace SEScripts.ResourceExchanger2_4_1_187
 
             sb.Append("reactors: ");
             if (bs.Reactors.Count != 0)
-                sb.Append(bs.Reactors);
+                sb.Append(bs.Reactors.Count);
             else
-                sb.Append(ENABLE_BALANCING_REACTORS ? "0" : "OFF");
+                sb.Append(EnableReactors ? "0" : "OFF");
 
             sb.Append(", refineries: ");
             if (bs.Refineries.Count != 0)
-                sb.Append(bs.Refineries);
+                sb.Append(bs.Refineries.Count);
             else
-                sb.Append(ENABLE_DISTRIBUTING_ORE_IN_REFINERIES ? "0" : "OFF");
+                sb.Append(EnableRefineries ? "0" : "OFF");
 
-            sb.AppendLine(",").Append("drills: ");
+            sb.AppendLine().Append("drills: ");
             if (bs.Drills.Count != 0)
-                sb.Append(bs.Drills);
+                sb.Append(bs.Drills.Count);
             else
-                sb.Append(ENABLE_DISTRIBUTING_ORE_IN_DRILLS ? "0" : "OFF");
+                sb.Append(EnableDrills ? "0" : "OFF");
 
             sb.Append(", turrets: ");
             if (bs.Turrets.Count != 0)
-                sb.Append(bs.Turrets);
+                sb.Append(bs.Turrets.Count);
             else
-                sb.Append(ENABLE_EXCHANGING_AMMUNITION_IN_TURRETS ? "0" : "OFF");
+                sb.Append(EnableTurrets ? "0" : "OFF");
 
-            sb.AppendLine(",").Append("oxygen gen.: ");
+            sb.Append(", o. gen.: ");
             if (bs.OxygenGenerators.Count != 0)
-                sb.Append(bs.OxygenGenerators);
+                sb.Append(bs.OxygenGenerators.Count);
             else
-                sb.Append(ENABLE_EXCHANGING_ICE_IN_OXYGEN_GENERATORS ? "0" : "OFF");
+                sb.Append(EnableOxygenGenerators ? "0" : "OFF");
+
+            sb.AppendLine().Append("cargo cont.: ");
+            if (bs.CargoContainers.Count != 0)
+                sb.Append(bs.CargoContainers.Count);
+            else
+                sb.Append(EnableGroups ? "0" : "OFF");
 
             sb.Append(", groups: ");
             if (bs.Groups.Count != 0)
-                sb.Append(bs.Groups);
+                sb.Append(bs.Groups.Count);
             else
-                sb.Append(ENABLE_EXCHANGING_ITEMS_IN_GROUPS ? "0" : "OFF");
+                sb.Append(EnableGroups ? "0" : "OFF");
 
             sb.AppendLine();
 
             if (bs.Drills.Count != 0)
             {
-                if (bs.NotConnectedDrillsFound)
+                if (stat.NotConnectedDrillsFound)
                     sb.AppendLine("Warn: Some drills are not connected");
 
                 sb.Append("Drills payload: ").Append(stat.DrillsPayloadStr ?? "N/A");
-                if (stat.DrillsWarning)
+                if (stat.DrillsVolumeWarning)
                     sb.AppendLine((_cycleNumber & 0x01) == 0 ? "%  !" : "% ! !");
                 else
                     sb.AppendLine("%");
             }
-            
+
             _avgMovements[_cycleNumber & 0x0F] = stat._movementsDone;
             var samples = Math.Min(_cycleNumber + 1, 0x10);
             double avg = 0;
@@ -322,13 +340,13 @@ namespace SEScripts.ResourceExchanger2_4_1_187
             avg /= samples;
 
             sb.Append("Avg. movements: ").Append(avg.ToString("F2")).Append(" (last ").Append(samples).AppendLine(" runs)");
-            
+
             if (stat._missing.Count > 0)
                 sb.Append("Err: missing volume information for ").AppendLine(String.Join(", ", stat._missing));
 
             float cpu = Runtime.CurrentInstructionCount * 100;
             cpu /= Runtime.MaxInstructionCount;
-            sb.Append("Complexity limit usage: " + cpu.ToString("F2") + "%");
+            sb.Append("Complexity limit usage: ").Append(cpu.ToString("F2")).AppendLine("%");
 
             var tab = new char[42];
             for (int i = 0; i < 42; ++i)
@@ -368,14 +386,14 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 screen.ShowPublicTextOnScreen();
             }
         }
-        
-        private List<ConveyorNetwork> FindConveyorNetworks(IEnumerable<InventoryWrapper> inventories, bool excludeGroups)
+
+        private List<ConveyorNetwork> FindConveyorNetworks(ICollection<InventoryWrapper> inventories, HashSet<InventoryWrapper> exclude)
         {
             var result = new List<ConveyorNetwork>();
 
             foreach (var wrp in inventories)
             {
-                if (excludeGroups && AllGroupedInventories.Contains(wrp))
+                if (exclude != null && exclude.Contains(wrp))
                     continue;
 
                 bool add = true;
@@ -398,7 +416,6 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 }
             }
 
-            _numberOfNetworks += result.Count;
             return result;
         }
 
@@ -422,183 +439,59 @@ namespace SEScripts.ResourceExchanger2_4_1_187
             return result;
         }
 
-        private void ProcessReactors(BlockStore bs)
+        private int ProcessBlocks(string msg, bool enable, ICollection<InventoryWrapper> blocks, Statistics stat, string invGroup = null,
+            HashSet<InventoryWrapper> exclude = null, Func<IMyInventoryItem, bool> filter = null)
         {
-            if (!ENABLE_BALANCING_REACTORS)
+            stat._output.Append(msg);
+            if (enable)
             {
-                _output.AppendLine("Balancing reactors is disabled.");
-                return;
+                if (blocks.Count >= 2)
+                {
+                    var conveyorNetworks = FindConveyorNetworks(blocks, exclude);
+                    stat._numberOfNetworks += conveyorNetworks.Count;
+                    stat._output.Append(": ").Append(conveyorNetworks.Count).AppendLine(" conveyor networks found");
+
+                    if (invGroup != null)
+                    {
+                        foreach (var network in conveyorNetworks)
+                            BalanceInventories(stat, network.Inventories, network.No, 0, invGroup, filter);
+                    }
+                    else
+                    {
+                        foreach (var network in conveyorNetworks)
+                            foreach (var group in DivideByBlockType(network))
+                                BalanceInventories(stat, group.Inventories, network.No, group.No, group.Name, filter);
+                    }
+
+                    return conveyorNetworks.Count;
+                }
+                else
+                {
+                    stat._output.AppendLine(": nothing to do");
+                    return 0;
+                }
             }
-
-            if (Reactors.Count < 2)
+            else
             {
-                _output.AppendLine("Balancing reactors. Not enough reactors found. Nothing to do.");
-                return;
-            }
-
-            var conveyorNetworks = FindConveyorNetworks(Reactors, true);
-
-            _output.Append("Balancing reactors. Conveyor networks found: ");
-            _output.Append(conveyorNetworks.Count);
-            _output.AppendLine();
-
-            foreach (var network in conveyorNetworks)
-                foreach (var group in DivideByBlockType(network))
-                    BalanceInventories(group.Inventories, network.No, group.No, group.Name);
-        }
-
-        private void ProcessRefineries(BlockStore bs)
-        {
-            if (!ENABLE_DISTRIBUTING_ORE_IN_REFINERIES)
-            {
-                _output.AppendLine("Balancing refineries is disabled.");
-                return;
-            }
-
-            EnforceItemPriority(Refineries, TopRefineryPriority, LowestRefineryPriority);
-
-            if (Refineries.Count < 2)
-            {
-                _output.AppendLine("Balancing refineries. Not enough refineries found. Nothing to do.");
-                return;
-            }
-
-            var conveyorNetworks = FindConveyorNetworks(Refineries, true);
-
-            _output.Append("Balancing refineries. Conveyor networks found: ");
-            _output.Append(conveyorNetworks.Count);
-            _output.AppendLine();
-
-            foreach (var network in conveyorNetworks)
-                foreach (var group in DivideByBlockType(network))
-                    BalanceInventories(group.Inventories, network.No, group.No, group.Name);
-        }
-
-        private void ProcessDrills(BlockStore bs)
-        {
-            if (!ENABLE_DISTRIBUTING_ORE_IN_DRILLS)
-            {
-                _output.AppendLine("Balancing drills is disabled.");
-                return;
-            }
-
-            if (Drills.Count < 2)
-            {
-                _output.AppendLine("Balancing drills. Not enough drills found. Nothing to do.");
-                return;
-            }
-
-            var conveyorNetworks = FindConveyorNetworks(Drills, true);
-            NotConnectedDrillsFound = conveyorNetworks.Count > 1;
-
-            _output.Append("Balancing drills. Conveyor networks found: ");
-            _output.Append(conveyorNetworks.Count);
-            _output.AppendLine();
-
-            foreach (var network in conveyorNetworks)
-                BalanceInventories(network.Inventories, network.No, 0, "drills");
-        }
-
-        private void ProcessTurrets(BlockStore bs)
-        {
-            if (!ENABLE_EXCHANGING_AMMUNITION_IN_TURRETS)
-            {
-                _output.AppendLine("Exchanging ammunition in turrets is disabled.");
-                return;
-            }
-
-            if (Turrets.Count < 2)
-            {
-                _output.AppendLine("Balancing turrets. Not enough turrets found. Nothing to do.");
-                return;
-            }
-
-            var conveyorNetworks = FindConveyorNetworks(Turrets, true);
-
-            _output.Append("Balancing turrets. Conveyor networks found: ");
-            _output.Append(conveyorNetworks.Count);
-            _output.AppendLine();
-
-            foreach (var network in conveyorNetworks)
-                foreach (var group in DivideByBlockType(network))
-                    BalanceInventories(group.Inventories, network.No, group.No, group.Name);
-        }
-
-        private void ProcessOxygenGenerators(BlockStore bs)
-        {
-            if (!ENABLE_EXCHANGING_ICE_IN_OXYGEN_GENERATORS)
-            {
-                _output.AppendLine("Exchanging ice in oxygen generators is disabled.");
-                return;
-            }
-
-            if (OxygenGenerators.Count < 2)
-            {
-                _output.AppendLine("Balancing ice in oxygen generators. Not enough generators found. Nothing to do.");
-                return;
-            }
-
-            var conveyorNetworks = FindConveyorNetworks(OxygenGenerators, true);
-
-            _output.Append("Balancing oxygen generators. Conveyor networks found: ");
-            _output.Append(conveyorNetworks.Count);
-            _output.AppendLine();
-
-            foreach (var network in conveyorNetworks)
-                BalanceInventories(network.Inventories, network.No, 0, "oxygen generators",
-                    item => item.Content.TypeId.ToString() == OreType);
-        }
-
-        private void ProcessGroups(BlockStore bs)
-        {
-            if (!ENABLE_EXCHANGING_ITEMS_IN_GROUPS)
-            {
-                _output.AppendLine("Exchanging items in groups is disabled.");
-                return;
-            }
-
-            if (Groups.Count < 1)
-            {
-                _output.AppendLine("Exchanging items in groups. No groups found. Nothing to do.");
-                return;
-            }
-
-            foreach (var group in Groups)
-            {
-                var conveyorNetworks = FindConveyorNetworks(group.Value, false);
-
-                _output.Append("Balancing custom group '");
-                _output.Append(group.Key);
-                _output.Append("'. Conveyor networks found: ");
-                _output.Append(conveyorNetworks.Count);
-                _output.AppendLine();
-
-                foreach (var network in conveyorNetworks)
-                    BalanceInventories(network.Inventories, network.No, 0, group.Key);
+                stat._output.AppendLine(": disabled");
+                return -1;
             }
         }
 
-        private void ProcessDrillsLights(BlockStore bs, Statistics stat)
+        private void ProcessDrillsLights(List<InventoryWrapper> drills, List<IMyLightingBlock> lights, Statistics stat)
         {
-            if (!ENABLE_DISTRIBUTING_ORE_IN_DRILLS)
+            if (lights.Count == 0)
             {
-                _output.AppendLine("Setting color of drills payload indicators is disabled.");
+                stat._output.AppendLine("Setting color of drills payload indicators. Not enough lights found. Nothing to do.");
                 return;
             }
 
-            if (DrillsPayloadLights.Count == 0)
-            {
-                _output.AppendLine("Setting color of drills payload indicators. Not enough lights found. Nothing to do.");
-                return;
-            }
-
-            _output.AppendLine("Setting color of drills payload indicators.");
+            stat._output.AppendLine("Setting color of drills payload indicators.");
 
             Color color;
-
-            if (NotConnectedDrillsFound)
+            if (stat.NotConnectedDrillsFound)
             {
-                _output.AppendLine("Not all drills are connected.");
+                stat._output.AppendLine("Not all drills are connected.");
 
                 if (_cycleNumber % 2 == 0)
                     color = FIRST_ERROR_COLOR_WHEN_DRILLS_ARE_NOT_CONNECTED;
@@ -607,19 +500,27 @@ namespace SEScripts.ResourceExchanger2_4_1_187
             }
             else
             {
-                if (DrillsMaxVolume > 0)
+                var drillsMaxVolume = VRage.MyFixedPoint.Zero;
+                var drillsCurrentVolume = VRage.MyFixedPoint.Zero;
+                foreach (var drill in drills)
                 {
-                    var p = (float)DrillsCurrentVolume * 1000.0f;
-                    p /= (float)DrillsMaxVolume;
+                    drillsMaxVolume += drill.Inventory.MaxVolume;
+                    drillsCurrentVolume += drill.Inventory.CurrentVolume;
+                }
+
+                if (drillsMaxVolume > 0)
+                {
+                    var p = (float)drillsCurrentVolume * 1000.0f;
+                    p /= (float)drillsMaxVolume;
 
                     stat.DrillsPayloadStr = (p / 10.0f).ToString("F1");
 
-                    _output.Append("Drills space usage: ");
-                    _output.Append(stat.DrillsPayloadStr);
-                    _output.AppendLine("%");
+                    stat._output.Append("Drills space usage: ");
+                    stat._output.Append(stat.DrillsPayloadStr);
+                    stat._output.AppendLine("%");
 
-                    stat.DrillsWarning = (DrillsMaxVolume - DrillsCurrentVolume) < WARNING_LEVEL_IN_CUBIC_METERS_LEFT;
-                    if (stat.DrillsWarning)
+                    stat.DrillsVolumeWarning = (drillsMaxVolume - drillsCurrentVolume) < WARNING_LEVEL_IN_CUBIC_METERS_LEFT;
+                    if (stat.DrillsVolumeWarning)
                     {
                         if (_cycleNumber % 2 == 0)
                             color = FIRST_WARNING_COLOR_WHEN_DRILLS_ARE_FULL;
@@ -676,23 +577,23 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 }
             }
 
-            _output.Append("Drills payload indicators lights color: ");
-            _output.Append(color);
-            _output.AppendLine();
+            stat._output.Append("Drills payload indicators lights color: ");
+            stat._output.Append(color);
+            stat._output.AppendLine();
 
-            foreach (IMyLightingBlock light in DrillsPayloadLights)
+            foreach (IMyLightingBlock light in lights)
             {
                 Color currentColor = light.GetValue<Color>("Color");
                 if (currentColor != color)
                     light.SetValue<Color>("Color", color);
             }
 
-            _output.Append("Color of ");
-            _output.Append(DrillsPayloadLights.Count);
-            _output.AppendLine(" drills payload indicators has been set.");
+            stat._output.Append("Color of ");
+            stat._output.Append(lights.Count);
+            stat._output.AppendLine(" drills payload indicators has been set.");
         }
 
-        private void EnforceItemPriority(List<InventoryWrapper> group, MyDefinitionId topPriority, MyDefinitionId lowestPriority)
+        private void EnforceItemPriority(List<InventoryWrapper> group, Statistics stat, MyDefinitionId topPriority, MyDefinitionId lowestPriority)
         {
             if (topPriority == null && lowestPriority == null)
                 return;
@@ -710,15 +611,10 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                         var item = items[i];
                         if (MyDefinitionId.FromContent(item.Content).Equals(topPriority))
                         {
-                            _output.Append("Moving ");
-                            _output.Append(topPriority.SubtypeName);
-                            _output.Append(" from ");
-                            _output.Append(i + 1);
-                            _output.Append(" slot to first slot of ");
-                            _output.Append(inv.Block.CustomName);
-                            _output.AppendLine();
+                            stat._output.Append("Moving ").Append(topPriority.SubtypeName).Append(" from ")
+                                .Append(i + 1).Append(" slot to first slot of ").AppendLine(inv.Block.CustomName);
                             inv.TransferItemTo(inv, i, 0, false, item.Amount);
-                            ++_movementsDone;
+                            stat._movementsDone += 1;
                             break;
                         }
                     }
@@ -731,15 +627,10 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                         var item = items[i];
                         if (MyDefinitionId.FromContent(item.Content).Equals(lowestPriority))
                         {
-                            _output.Append("Moving ");
-                            _output.Append(lowestPriority.SubtypeName);
-                            _output.Append(" from ");
-                            _output.Append(i + 1);
-                            _output.Append(" slot to last slot of ");
-                            _output.Append(inv.Block.CustomName);
-                            _output.AppendLine();
+                            stat._output.Append("Moving ").Append(lowestPriority.SubtypeName).Append(" from ")
+                                .Append(i + 1).Append(" slot to last slot of ").AppendLine(inv.Block.CustomName);
                             inv.TransferItemTo(inv, i, items.Count, false, item.Amount);
-                            ++_movementsDone;
+                            stat._movementsDone += 1;
                             break;
                         }
                     }
@@ -747,12 +638,12 @@ namespace SEScripts.ResourceExchanger2_4_1_187
             }
         }
 
-        private void BalanceInventories(List<InventoryWrapper> group, int networkNumber, int groupNumber,
-            string groupName, Func<IMyInventoryItem, bool> filter = null)
+        private void BalanceInventories(Statistics stat, List<InventoryWrapper> group, int networkNumber,
+            int groupNumber, string groupName, Func<IMyInventoryItem, bool> filter)
         {
             if (group.Count < 2)
             {
-                _output.Append("Cannot balance conveyor network ").Append(networkNumber + 1)
+                stat._output.Append("Cannot balance conveyor network ").Append(networkNumber + 1)
                     .Append(" group ").Append(groupNumber + 1).Append(" \"").Append(groupName)
                     .AppendLine("\"")
                     .AppendLine("  because there is only one inventory.");
@@ -762,7 +653,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
             if (filter != null)
             {
                 foreach (var wrp in group)
-                    wrp.LoadVolume().FilterItems(filter, _output).CalculatePercent();
+                    wrp.LoadVolume().FilterItems(stat, filter).CalculatePercent();
             }
             else
             {
@@ -776,14 +667,14 @@ namespace SEScripts.ResourceExchanger2_4_1_187
 
             if (last.CurrentVolume < SMALL_NUMBER)
             {
-                _output.Append("Cannot balance conveyor network ").Append(networkNumber + 1)
+                stat._output.Append("Cannot balance conveyor network ").Append(networkNumber + 1)
                     .Append(" group ").Append(groupNumber + 1).Append(" \"").Append(groupName)
                     .AppendLine("\"")
                     .AppendLine("  because of lack of items in it.");
                 return; // nothing to do
             }
 
-            _output.Append("Balancing conveyor network ").Append(networkNumber + 1)
+            stat._output.Append("Balancing conveyor network ").Append(networkNumber + 1)
                 .Append(" group ").Append(groupNumber + 1)
                 .Append(" \"").Append(groupName).AppendLine("\"...");
 
@@ -804,22 +695,21 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                         / (inv1.MaxVolume + inv2.MaxVolume);
                 }
 
-                _output.Append("Inv. 1 vol: ").Append(inv1.CurrentVolume.ToString("F6")).Append("; ");
-                _output.Append("Inv. 2 vol: ").Append(inv2.CurrentVolume.ToString("F6")).Append("; ");
-                _output.Append("To move: ").Append(toMove.ToString("F6")).AppendLine();
+                stat._output.Append("Inv. 1 vol: ").Append(inv1.CurrentVolume.ToString("F6")).Append("; ");
+                stat._output.Append("Inv. 2 vol: ").Append(inv2.CurrentVolume.ToString("F6")).Append("; ");
+                stat._output.Append("To move: ").Append(toMove.ToString("F6")).AppendLine();
 
                 if (toMove < 0.0M)
-                    throw new InvalidOperationException("Something went wrong with calculations:"
-                        + " volumeDiff is " + toMove);
+                    throw new InvalidOperationException("Something went wrong with calculations: volumeDiff is " + toMove);
 
                 if (toMove < SMALL_NUMBER)
                     continue;
 
-                MoveVolume(inv2, inv1, (VRage.MyFixedPoint)toMove, filter);
+                MoveVolume(stat, inv2, inv1, (VRage.MyFixedPoint)toMove, filter);
             }
         }
 
-        private VRage.MyFixedPoint MoveVolume(InventoryWrapper from, InventoryWrapper to,
+        private VRage.MyFixedPoint MoveVolume(Statistics stat, InventoryWrapper from, InventoryWrapper to,
             VRage.MyFixedPoint volumeAmountToMove, Func<IMyInventoryItem, bool> filter)
         {
             if (volumeAmountToMove == 0)
@@ -828,12 +718,8 @@ namespace SEScripts.ResourceExchanger2_4_1_187
             if (volumeAmountToMove < 0)
                 throw new ArgumentException("Invalid volume amount", "volumeAmount");
 
-            _output.Append("Move ");
-            _output.Append(volumeAmountToMove);
-            _output.Append(" l. from ");
-            _output.Append(from.Block.CustomName);
-            _output.Append(" to ");
-            _output.AppendLine(to.Block.CustomName);
+            stat._output.Append("Move ").Append(volumeAmountToMove).Append(" l. from ")
+                .Append(from.Block.CustomName).Append(" to ").AppendLine(to.Block.CustomName);
             List<IMyInventoryItem> itemsFrom = from.Inventory.GetItems();
 
             for (int i = itemsFrom.Count - 1; i >= 0; --i)
@@ -844,12 +730,9 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                     continue;
 
                 var key = MyDefinitionId.FromContent(item.Content);
-                var data = ItemInfo.Get(key, _output);
+                var data = ItemInfo.Get(stat, key);
                 if (data == null)
-                {
-                    _missing.Add(key.ToString());
                     continue;
-                }
 
                 decimal amountToMoveRaw = (decimal)volumeAmountToMove * 1000M / data.Volume;
                 VRage.MyFixedPoint amountToMove;
@@ -878,21 +761,15 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 {
                     itemVolume = (decimal)amountToMove * data.Volume / 1000M;
                     success = from.TransferItemTo(to, i, targetItemIndex, true, amountToMove);
-                    ++_movementsDone;
-                    _output.Append("Move ");
-                    _output.Append(amountToMove);
-                    _output.Append(" -> ");
-                    _output.AppendLine(success ? "success" : "failure");
+                    stat._movementsDone += 1;
+                    stat._output.Append("Move ").Append(amountToMove).Append(" -> ").AppendLine(success ? "success" : "failure");
                 }
                 else
                 {
                     itemVolume = (decimal)item.Amount * data.Volume / 1000M;
                     success = from.TransferItemTo(to, i, targetItemIndex, true, item.Amount);
-                    ++_movementsDone;
-                    _output.Append("Move all ");
-                    _output.Append(item.Amount);
-                    _output.Append(" -> ");
-                    _output.AppendLine(success ? "success" : "failure");
+                    stat._movementsDone += 1;
+                    stat._output.Append("Move all ").Append(item.Amount).Append(" -> ").AppendLine(success ? "success" : "failure");
                 }
 
                 if (success)
@@ -901,10 +778,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                     return volumeAmountToMove;
             }
 
-            _output.Append("Cannot move ");
-            _output.Append(volumeAmountToMove);
-            _output.AppendLine(" l.");
-
+            stat._output.Append("Cannot move ").Append(volumeAmountToMove).AppendLine(" l.");
             return volumeAmountToMove;
         }
 
@@ -1216,9 +1090,6 @@ namespace SEScripts.ResourceExchanger2_4_1_187
             public readonly HashSet<InventoryWrapper> AllGroupedInventories;
             public readonly HashSet<IMyCubeGrid> AllGrids;
             public readonly List<IMyLightingBlock> DrillsPayloadLights;
-            public VRage.MyFixedPoint DrillsMaxVolume;
-            public VRage.MyFixedPoint DrillsCurrentVolume;
-            public bool NotConnectedDrillsFound;
 
             public BlockStore(Program program)
             {
@@ -1234,9 +1105,6 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 AllGroupedInventories = new HashSet<InventoryWrapper>();
                 AllGrids = new HashSet<IMyCubeGrid>();
                 DrillsPayloadLights = new List<IMyLightingBlock>();
-                DrillsMaxVolume = 0;
-                DrillsCurrentVolume = 0;
-                NotConnectedDrillsFound = false;
             }
 
             public bool CollectContainer(IMyCargoContainer myCargoContainer)
@@ -1244,7 +1112,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 if (myCargoContainer == null)
                     return false;
 
-                if (!_program.ENABLE_EXCHANGING_ITEMS_IN_GROUPS)
+                if (!_program.EnableGroups)
                     return true;
 
                 var inv = InventoryWrapper.Create(_program, myCargoContainer);
@@ -1262,7 +1130,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 if (myRefinery == null)
                     return false;
 
-                if (!_program.ENABLE_DISTRIBUTING_ORE_IN_REFINERIES || !myRefinery.UseConveyorSystem)
+                if (!_program.EnableRefineries || !myRefinery.UseConveyorSystem)
                     return true;
 
                 var inv = InventoryWrapper.Create(_program, myRefinery);
@@ -1270,7 +1138,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 {
                     Refineries.Add(inv);
                     AllGrids.Add(myRefinery.CubeGrid);
-                    if (_program.ENABLE_EXCHANGING_ITEMS_IN_GROUPS)
+                    if (_program.EnableGroups)
                         AddToGroup(inv);
                 }
                 return true;
@@ -1281,7 +1149,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 if (myReactor == null)
                     return false;
 
-                if (!_program.ENABLE_BALANCING_REACTORS || !myReactor.UseConveyorSystem)
+                if (!_program.EnableReactors || !myReactor.UseConveyorSystem)
                     return true;
 
                 var inv = InventoryWrapper.Create(_program, myReactor);
@@ -1289,7 +1157,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 {
                     Reactors.Add(inv);
                     AllGrids.Add(myReactor.CubeGrid);
-                    if (_program.ENABLE_EXCHANGING_ITEMS_IN_GROUPS)
+                    if (_program.EnableGroups)
                         AddToGroup(inv);
                 }
                 return true;
@@ -1300,7 +1168,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 if (myDrill == null)
                     return false;
 
-                if (!_program.ENABLE_DISTRIBUTING_ORE_IN_DRILLS || !myDrill.UseConveyorSystem)
+                if (!_program.EnableDrills || !myDrill.UseConveyorSystem)
                     return true;
 
                 var inv = InventoryWrapper.Create(_program, myDrill);
@@ -1308,11 +1176,8 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 {
                     Drills.Add(inv);
                     AllGrids.Add(myDrill.CubeGrid);
-                    if (_program.ENABLE_EXCHANGING_ITEMS_IN_GROUPS)
+                    if (_program.EnableGroups)
                         AddToGroup(inv);
-
-                    DrillsMaxVolume += inv.Inventory.MaxVolume;
-                    DrillsCurrentVolume += inv.Inventory.CurrentVolume;
                 }
                 return true;
             }
@@ -1322,7 +1187,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 if (myTurret == null)
                     return false;
 
-                if (!_program.ENABLE_EXCHANGING_AMMUNITION_IN_TURRETS || myTurret is SpaceEngineers.Game.ModAPI.Ingame.IMyLargeInteriorTurret)
+                if (!_program.EnableTurrets || myTurret is IMyLargeInteriorTurret)
                     return true;
 
                 var inv = InventoryWrapper.Create(_program, myTurret);
@@ -1330,7 +1195,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 {
                     Turrets.Add(inv);
                     AllGrids.Add(myTurret.CubeGrid);
-                    if (_program.ENABLE_EXCHANGING_ITEMS_IN_GROUPS)
+                    if (_program.EnableGroups)
                         AddToGroup(inv);
                 }
                 return true;
@@ -1341,7 +1206,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 if (myOxygenGenerator == null)
                     return false;
 
-                if (!_program.ENABLE_EXCHANGING_ICE_IN_OXYGEN_GENERATORS)
+                if (!_program.EnableOxygenGenerators)
                     return true;
 
                 var inv = InventoryWrapper.Create(_program, myOxygenGenerator);
@@ -1349,7 +1214,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 {
                     OxygenGenerators.Add(inv);
                     AllGrids.Add(myOxygenGenerator.CubeGrid);
-                    if (_program.ENABLE_EXCHANGING_ITEMS_IN_GROUPS)
+                    if (_program.EnableGroups)
                         AddToGroup(inv);
                 }
                 return true;
@@ -1378,12 +1243,37 @@ namespace SEScripts.ResourceExchanger2_4_1_187
             public int _numberOfNetworks;
             public int _movementsDone;
             public string DrillsPayloadStr;
-            internal bool DrillsWarning;
+            public bool NotConnectedDrillsFound;
+            public bool DrillsVolumeWarning;
 
             public Statistics()
             {
                 _output = new StringBuilder();
                 _missing = new HashSet<string>();
+            }
+        }
+
+        private class Config
+        {
+            public bool EnableReactors = true;
+            public bool EnableRefineries = true;
+            public bool EnableDrills = true;
+            public bool EnableTurrets = true;
+            public bool EnableOxygenGenerators = true;
+            public bool EnableGroups = true;
+
+            public void Read(Program program, string content)
+            {
+                MyIniParseResult result;
+                var ini = new MyIni();
+                if (ini.TryParse(content, out result))
+                {
+                }
+                else
+                {
+                    var msg = String.Format("Err: invalid config in line {0}: {1}", result.LineNo, result.Error);
+                    program.Echo(msg);
+                }
             }
         }
 
@@ -1435,15 +1325,16 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 }
             }
 
-            public static ItemInfo Get(MyDefinitionId key, StringBuilder output)
+            public static ItemInfo Get(Statistics stat, MyDefinitionId key)
             {
                 ItemInfo data;
                 if (_itemInfoDict.TryGetValue(key, out data))
                     return data;
 
-                output.Append("Volume to amount ratio for ");
-                output.Append(key);
-                output.AppendLine(" is not known.");
+                stat._output.Append("Volume to amount ratio for ");
+                stat._output.Append(key);
+                stat._output.AppendLine(" is not known.");
+                stat._missing.Add(key.ToString());
                 return null;
             }
         }
@@ -1523,7 +1414,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 return this;
             }
 
-            public InventoryWrapper FilterItems(Func<IMyInventoryItem, bool> filter, StringBuilder output)
+            public InventoryWrapper FilterItems(Statistics stat, Func<IMyInventoryItem, bool> filter)
             {
                 decimal volumeBlocked = 0.0M;
                 foreach (var item in Inventory.GetItems())
@@ -1532,7 +1423,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                         continue;
 
                     var key = MyDefinitionId.FromContent(item.Content);
-                    var data = ItemInfo.Get(key, output);
+                    var data = ItemInfo.Get(stat, key);
                     if (data == null)
                         continue;
 
@@ -1543,8 +1434,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 {
                     CurrentVolume -= volumeBlocked;
                     MaxVolume -= volumeBlocked;
-                    output.Append("volumeBlocked ");
-                    output.AppendLine(volumeBlocked.ToString("N6"));
+                    stat._output.Append("volumeBlocked ").AppendLine(volumeBlocked.ToString("N6"));
                 }
                 return this;
             }
@@ -1554,7 +1444,8 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 Percent = CurrentVolume / MaxVolume;
             }
 
-            public bool TransferItemTo(InventoryWrapper dst, int sourceItemIndex, int? targetItemIndex = null, bool? stackIfPossible = null, VRage.MyFixedPoint? amount = null)
+            public bool TransferItemTo(InventoryWrapper dst, int sourceItemIndex, int? targetItemIndex = null,
+                bool? stackIfPossible = null, VRage.MyFixedPoint? amount = null)
             {
                 return Inventory.TransferItemTo(dst.Inventory, sourceItemIndex, targetItemIndex, stackIfPossible, amount);
             }
@@ -1591,20 +1482,21 @@ namespace SEScripts.ResourceExchanger2_4_1_187
     {
         private static Type[] ImplicitIngameNamespacesFromTypes = new Type[] {
             typeof(Object),
-            typeof(StringBuilder),
-            typeof(Enumerable),
             typeof(IEnumerable),
             typeof(IEnumerable<>),
-            typeof(Vector2),
-            typeof(Game),
-            typeof(ITerminalAction),
-            typeof(IMyGridTerminalSystem),
+            typeof(Enumerable),
+            typeof(StringBuilder),
             typeof(MyModelComponent),
-            typeof(IMyComponentAggregate),
-            typeof(ListReader<>),
-            typeof(MyObjectBuilder_FactionDefinition),
-            typeof(IMyCubeBlock),
+            typeof(IMyGridTerminalSystem),
+            typeof(ITerminalAction),
             typeof(IMyAirVent),
+            typeof(ListReader<>),
+            typeof(Game),
+            typeof(IMyComponentAggregate),
+            typeof(IMyCubeBlock),
+            typeof(MyIni),
+            typeof(MyObjectBuilder_FactionDefinition),
+            typeof(Vector2),
         };
     }
 }

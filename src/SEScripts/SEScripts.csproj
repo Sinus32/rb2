@@ -99,7 +99,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DeadMansSwitch_1_0_186\Program.cs" />
     <Compile Include="DoorAutoClose\Program.cs" />
     <Compile Include="ItemMover\Program.cs" />
     <Compile Include="MassRenamer\Program.cs" />
@@ -116,6 +115,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="DeadMansSwitch_1_0_186\" />
     <Folder Include="ResourceExchanger2_1_139\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
