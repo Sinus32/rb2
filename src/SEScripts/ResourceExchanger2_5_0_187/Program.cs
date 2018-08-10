@@ -15,117 +15,36 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
-namespace SEScripts.ResourceExchanger2_4_1_187
+namespace SEScripts.ResourceExchanger2_5_0_187
 {
     public class Program : MyGridProgram
     {
-        /// Resource Exchanger version 2.4.1 2018-??-?? for SE 1.187+
+        /// Resource Exchanger version 2.5.0 2018-??-?? for SE 1.187+
         /// Made by Sinus32
         /// http://steamcommunity.com/sharedfiles/filedetails/546221822
         ///
         /// Attention! This script does not require any timer blocks and will run immediately.
         /// If you want to stop it just switch the programmable block off.
-
-        /** Configuration section starts here. ******************************************/
-
-        /// Optional name of a group of blocks that will be affected by the script.
-        /// By default all blocks connected to grid are processed.
-        /// You can use this variable to limit the script to affect only certain blocks.
-        public string MANAGED_BLOCKS_GROUP = null;
-
-        /// Limit affected blocks to only these that are connected to the same ship/station as the
-        /// the programmable block. Set to true if blocks on ships connected by connectors
-        /// or rotors should not be affected.
-        public bool MY_GRID_ONLY = false;
-
-        /// Set this variable to false to disable exchanging uranium between reactors.
-        public bool EnableReactors = true;
-
-        /// Set this variable to false to disable exchanging ore
-        /// between refineries and arc furnaces.
-        public bool EnableRefineries = true;
-
-        /// Set this variable to false to disable exchanging ore between drills and
-        /// to disable processing lights that indicates how much free space left in drills.
-        public bool EnableDrills = true;
-
-        /// Set this variable to false to disable exchanging ammunition between turrets and launchers.
-        public bool EnableTurrets = true;
-
-        /// Set this variable to false to disable exchanging ice (and only ice - not bottles)
-        /// between oxygen generators.
-        public bool EnableOxygenGenerators = true;
-
-        /// Set this variable to false to disable exchanging items in blocks of custom groups.
-        public bool EnableGroups = true;
-
-        /// Maximum number of items movements to do per each group of inventories.
-        /// This setting has significant impact to performance.
-        /// Bigger values may implicit server lags.
-        public int MAX_MOVEMENTS_PER_GROUP = 2;
-
-        /// Group of wide LCD screens that will act as debugger output for this script.
-        /// You can name this screens as you wish, but pay attention that
-        /// they will be used in alphabetical order according to their names.
-        public const string DISPLAY_LCD_GROUP = "Resource exchanger output";
-
-        /// Name of a group of lights that will be used as indicators of space left in drills.
-        /// Both Interior Light and Spotlight are supported.
-        /// The lights will change colors to tell you how much free space left:
-        /// White - All drills are connected to each other and they are empty.
-        /// Yellow - Drills are full in a half.
-        /// Red - Drills are almost full (95%).
-        /// Purple - Less than WARNING_LEVEL_IN_KILOLITERS_LEFT m3 of free space left.
-        /// Cyan - Some drills are not connected to each other.
-        /// You can change this colors a few lines below
         ///
-        /// Set this variable to null to disable this feature
-        public string DRILLS_PAYLOAD_LIGHTS_GROUP = "Payload indicators";
+        /// Configuration can be changed in custom data of the programmable block
 
-        /// Amount of free space left in drills when the lights turn into purple
-        /// Measured in cubic meters
-        /// Default is 5 with means the lights from DRILLS_PAYLOAD_LIGHTS_GROUP will turn
-        /// into purple when there will be only 5,000 liters of free space
-        /// left in drills (or less)
-        public VRage.MyFixedPoint WARNING_LEVEL_IN_CUBIC_METERS_LEFT = 5;
+        /** Default configuration *****************************************************************/
 
-        /// Configuration of lights colors
-        /// Values are in RGB format
-        /// Minimum value of any color component is 0, and maximum is 255
-        public Color COLOR_WHEN_DRILLS_ARE_EMPTY = new Color(255, 255, 255);
+        public bool MyGridOnly = false;
+        public string ManagedBlocksGroup = "";
+        public bool EnableReactors = true;
+        public bool EnableRefineries = true;
+        public bool EnableDrills = true;
+        public bool EnableTurrets = true;
+        public bool EnableOxygenGenerators = true;
+        public bool EnableGroups = true;
+        public string DrillsPayloadLightsGroup = "Payload indicators";
+        public string TopRefineryPriority = "MyObjectBuilder_Ore/Iron";
+        public string LowestRefineryPriority = "MyObjectBuilder_Ore/Stone";
+        public string GroupTagPattern = @"\bGR\d{1,3}\b";
+        public string DisplayLcdGroup = "Resource exchanger output";
 
-        public Color COLOR_WHEN_DRILLS_ARE_FULL_IN_A_HALF = new Color(255, 255, 0);
-        public Color COLOR_WHEN_DRILLS_ARE_ALMOST_FULL = new Color(255, 0, 0);
-        public Color FIRST_WARNING_COLOR_WHEN_DRILLS_ARE_FULL = new Color(128, 0, 128);
-        public Color SECOND_WARNING_COLOR_WHEN_DRILLS_ARE_FULL = new Color(128, 0, 64);
-        public Color FIRST_ERROR_COLOR_WHEN_DRILLS_ARE_NOT_CONNECTED = new Color(0, 128, 128);
-        public Color SECOND_ERROR_COLOR_WHEN_DRILLS_ARE_NOT_CONNECTED = new Color(0, 64, 128);
-
-        /// Number of lines displayed on single LCD wide panel from DISPLAY_LCD_GROUP.
-        /// The default value of 17 is designated for panels with font size set to 1.0
-        public const int LINES_PER_DEBUG_SCREEN = 17;
-
-        /// Top priority item type to process in refineries and/or arc furnaces.
-        /// The script will move an item of this type to the first slot of a refinery or arc
-        /// furnace if it find that item in the refinery (or arc furnace) processing queue.
-        /// You can find definitions of other materials in line 1025 and below.
-        /// Set this variable to null to disable this feature
-        public readonly MyDefinitionId TopRefineryPriority = MyDefinitionId.Parse(OreType + "/" + IRON);
-
-        /// Lowest priority item type to process in refineries and/or arc furnaces.
-        /// The script will move an item of this type to the last slot of a refinery or arc
-        /// furnace if it find that item in the refinery (or arc furnace) processing queue.
-        /// You can find definitions of other materials in line 1025 and below.
-        /// Set this variable to null to disable this feature
-        public readonly MyDefinitionId LowestRefineryPriority = MyDefinitionId.Parse(OreType + "/" + STONE);
-
-        /// Regular expression used to recognize groups
-        public readonly System.Text.RegularExpressions.Regex GROUP_TAG_PATTERN
-            = new System.Text.RegularExpressions.Regex(@"\bGR\d{1,3}\b",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-
-        /* Configuration section ends here. *********************************************/
-        // The rest of the code does the magic.
+        /** Implementation ************************************************************************/
 
         private const decimal SMALL_NUMBER = 0.000003M;
         private readonly Dictionary<MyDefinitionId, ulong[]> _blockToGroupIdMap;
@@ -141,19 +60,99 @@ namespace SEScripts.ResourceExchanger2_4_1_187
 
             BuildItemInfoDict();
             //Runtime.UpdateFrequency = UpdateFrequency.Update100;
-
-            //Sandbox.Definitions.MyPhysicalItemDefinition def;
-            //ListReader<int> listA;
-            //ListReader<Sandbox.Definitions.MyPhysicalItemDefinition> listB;
-            //listB = Sandbox.Definitions.MyDefinitionManager.Static.GetPhysicalItemDefinitions();
         }
 
         public void Save()
         { }
 
+        public void ReadConfig()
+        {
+            const string myGridOnlyComment = "Limit affected blocks to only these that are connected to the same ship/station as the"
+                + "\nthe programmable block. Set to true if blocks on ships connected by connectors"
+                + "\nor rotors should not be affected.";
+            const string managedGroupComment = "Optional name of a group of blocks that will be affected by the script."
+                + "\nBy default all blocks connected to the grid are processed, but you can set this"
+                + "\nto force the script to affect only certain blocks.";
+            const string reactorsComment = "Enables exchanging uranium between reactors";
+            const string refineriesComment = "Enables exchanging ore between refineries and arc furnaces";
+            const string drillsComment = "Enables exchanging ore between drills and"
+                + "\nprocessing lights that indicates how much free space left in drills";
+            const string turretsComment = "Enables exchanging ammunition between turrets and launchers";
+            const string oxygenGeneratorsComment = "Enables exchanging ice between oxygen generators";
+            const string groupsComment = "Enables exchanging items in blocks of custom groups";
+            const string drillsPayloadLightsGroupComment = "Name of a group of lights that will be used as indicators of space left in drills."
+                + "\nBoth Interior Light and Spotlight are supported."
+                + "\nThe lights will change colors to tell you how much free space left:"
+                + "\nWhite - All drills are connected to each other and they are empty."
+                + "\nYellow - Drills are full in a half."
+                + "\nRed - Drills are almost full (95%)."
+                + "\nPurple - Less than WARNING_LEVEL_IN_KILOLITERS_LEFT m3 of free space left."
+                + "\nCyan - Some drills are not connected to each other.";
+            const string topRefineryPriorityComment = "Top priority item type to process in refineries and/or arc furnaces."
+                + "\nThe script will move an item of this type to the first slot of a refinery or arc"
+                + "\nfurnace if it find that item in the refinery (or arc furnace) processing queue.";
+            const string lowestRefineryPriorityComment = "Lowest priority item type to process in refineries and/or arc furnaces."
+                + "\nThe script will move an item of this type to the last slot of a refinery or arc"
+                + "\nfurnace if it find that item in the refinery (or arc furnace) processing queue.";
+            const string groupTagPatternComment = "Regular expression used to recognize groups";
+            const string displayLcdGroupComment = "Group of wide LCD screens that will act as debugger output for this script."
+                + "\nYou can name this screens as you wish, but pay attention that"
+                + "\nthey will be used in alphabetical order according to their names.";
+
+            MyIniParseResult result;
+            var ini = new MyIni();
+            if (!ini.TryParse(Me.CustomData, out result))
+            {
+                Echo(String.Format("Err: invalid config in line {0}: {1}", result.LineNo, result.Error));
+                return;
+            }
+
+            ReadConfigBoolean(ini, nameof(MyGridOnly), ref MyGridOnly, myGridOnlyComment);
+            ReadConfigString(ini, nameof(ManagedBlocksGroup), ref ManagedBlocksGroup, managedGroupComment);
+            ReadConfigBoolean(ini, nameof(EnableReactors), ref EnableReactors, reactorsComment);
+            ReadConfigBoolean(ini, nameof(EnableRefineries), ref EnableRefineries, refineriesComment);
+            ReadConfigBoolean(ini, nameof(EnableDrills), ref EnableDrills, drillsComment);
+            ReadConfigBoolean(ini, nameof(EnableTurrets), ref EnableTurrets, turretsComment);
+            ReadConfigBoolean(ini, nameof(EnableOxygenGenerators), ref EnableOxygenGenerators, oxygenGeneratorsComment);
+            ReadConfigBoolean(ini, nameof(EnableGroups), ref EnableGroups, groupsComment);
+            ReadConfigString(ini, nameof(DrillsPayloadLightsGroup), ref DrillsPayloadLightsGroup, drillsPayloadLightsGroupComment);
+            ReadConfigString(ini, nameof(TopRefineryPriority), ref TopRefineryPriority, topRefineryPriorityComment);
+            ReadConfigString(ini, nameof(LowestRefineryPriority), ref LowestRefineryPriority, lowestRefineryPriorityComment);
+            ReadConfigString(ini, nameof(GroupTagPattern), ref GroupTagPattern, groupTagPatternComment);
+            ReadConfigString(ini, nameof(DisplayLcdGroup), ref DisplayLcdGroup, displayLcdGroupComment);
+
+            Me.CustomData = ini.ToString();
+        }
+
+        public void ReadConfigBoolean(MyIni ini, string name, ref bool value, string comment)
+        {
+            const string section = "ResourceExchanger";
+            var key = new MyIniKey(section, name);
+            MyIniValue val = ini.Get(key);
+            bool tmp;
+            if (val.TryGetBoolean(out tmp))
+                value = tmp;
+            else
+                ini.Set(key, value);
+            ini.SetComment(key, comment);
+        }
+
+        public void ReadConfigString(MyIni ini, string name, ref string value, string comment)
+        {
+            const string section = "ResourceExchanger";
+            var key = new MyIniKey(section, name);
+            MyIniValue val = ini.Get(key);
+            string tmp;
+            if (val.TryGetString(out tmp))
+                value = tmp.Trim();
+            else
+                ini.Set(key, value);
+            ini.SetComment(key, comment);
+        }
+
         public void Main(string argument, UpdateType updateSource)
         {
-            new Config().Read(this, "");
+            ReadConfig();
 
             var bs = new BlockStore(this);
             var stat = new Statistics();
@@ -174,11 +173,29 @@ namespace SEScripts.ResourceExchanger2_4_1_187
             }
             else
             {
-                stat._output.AppendLine("Balancing groups: disabled");
+                stat.Output.AppendLine("Balancing groups: disabled");
             }
 
             if (EnableRefineries)
-                EnforceItemPriority(bs.Refineries, stat, TopRefineryPriority, LowestRefineryPriority);
+            {
+                MyDefinitionId tmp;
+                MyDefinitionId? topPriority = null, lowestPriority = null;
+                if (String.IsNullOrEmpty(TopRefineryPriority))
+                {
+                    if (MyDefinitionId.TryParse(TopRefineryPriority, out tmp))
+                        topPriority = tmp;
+                    else
+                        Echo("Err: type is invalid: " + TopRefineryPriority);
+                }
+                if (String.IsNullOrEmpty(LowestRefineryPriority))
+                {
+                    if (MyDefinitionId.TryParse(LowestRefineryPriority, out tmp))
+                        lowestPriority = tmp;
+                    else
+                        Echo("Err: type is invalid: " + LowestRefineryPriority);
+                }
+                EnforceItemPriority(bs.Refineries, stat, topPriority, lowestPriority);
+            }
 
             if (dcn >= 1)
             {
@@ -193,44 +210,37 @@ namespace SEScripts.ResourceExchanger2_4_1_187
         {
             var blocks = new List<IMyTerminalBlock>();
 
-            if (String.IsNullOrEmpty(MANAGED_BLOCKS_GROUP))
+            if (String.IsNullOrEmpty(ManagedBlocksGroup))
             {
                 GridTerminalSystem.GetBlocksOfType(blocks, MyTerminalBlockFilter);
             }
             else
             {
-                var group = GridTerminalSystem.GetBlockGroupWithName(MANAGED_BLOCKS_GROUP);
+                var group = GridTerminalSystem.GetBlockGroupWithName(ManagedBlocksGroup);
                 if (group == null)
-                    stat._output.Append("Error: a group ").Append(MANAGED_BLOCKS_GROUP).AppendLine(" has not been found");
+                    stat.Output.Append("Error: a group ").Append(ManagedBlocksGroup).AppendLine(" has not been found");
                 else
                     group.GetBlocksOfType(blocks, MyTerminalBlockFilter);
             }
 
             foreach (var dt in blocks)
-            {
-                var collected = bs.CollectContainer(dt as IMyCargoContainer)
-                    || bs.CollectRefinery(dt as IMyRefinery)
-                    || bs.CollectReactor(dt as IMyReactor)
-                    || bs.CollectDrill(dt as IMyShipDrill)
-                    || bs.CollectTurret(dt as IMyUserControllableGun)
-                    || bs.CollectOxygenGenerator(dt as IMyGasGenerator);
-            }
+                bs.Collect(dt);
 
-            if (!String.IsNullOrEmpty(DISPLAY_LCD_GROUP))
+            if (!String.IsNullOrEmpty(DisplayLcdGroup))
             {
-                var group = GridTerminalSystem.GetBlockGroupWithName(DISPLAY_LCD_GROUP);
+                var group = GridTerminalSystem.GetBlockGroupWithName(DisplayLcdGroup);
                 if (group != null)
                     group.GetBlocksOfType<IMyTextPanel>(bs.DebugScreen, MyTerminalBlockFilter);
             }
 
-            if (!String.IsNullOrEmpty(DRILLS_PAYLOAD_LIGHTS_GROUP))
+            if (!String.IsNullOrEmpty(DrillsPayloadLightsGroup))
             {
-                var group = GridTerminalSystem.GetBlockGroupWithName(DRILLS_PAYLOAD_LIGHTS_GROUP);
+                var group = GridTerminalSystem.GetBlockGroupWithName(DrillsPayloadLightsGroup);
                 if (group != null)
                     group.GetBlocksOfType<IMyLightingBlock>(bs.DrillsPayloadLights, MyTerminalBlockFilter);
             }
 
-            stat._output.Append("Resource exchanger 2.4.1. Blocks managed:")
+            stat.Output.Append("Resource exchanger 2.5.0. Blocks managed:")
                 .Append(" reactors: ").Append(CountOrNA(bs.Reactors, EnableReactors))
                 .Append(", refineries: ").Append(CountOrNA(bs.Refineries, EnableRefineries)).AppendLine(",")
                 .Append("oxygen gen.: ").Append(CountOrNA(bs.OxygenGenerators, EnableOxygenGenerators))
@@ -249,7 +259,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
 
         private bool MyTerminalBlockFilter(IMyTerminalBlock myTerminalBlock)
         {
-            return myTerminalBlock.IsFunctional && (!MY_GRID_ONLY || myTerminalBlock.CubeGrid == Me.CubeGrid);
+            return myTerminalBlock.IsFunctional && (!MyGridOnly || myTerminalBlock.CubeGrid == Me.CubeGrid);
         }
 
         private void PrintOnlineStatus(BlockStore bs, Statistics stat)
@@ -257,12 +267,12 @@ namespace SEScripts.ResourceExchanger2_4_1_187
             var sb = new StringBuilder(4096);
 
             sb.Append("Grids connected: ").Append(bs.AllGrids.Count);
-            if (MY_GRID_ONLY)
+            if (MyGridOnly)
                 sb.Append(" (MGO)");
 
             sb.AppendLine()
                 .Append("Conveyor networks: ")
-                .Append(stat._numberOfNetworks);
+                .Append(stat.NumberOfNetworks);
 
             var blocksAffected = bs.Reactors.Count
                 + bs.Refineries.Count
@@ -332,7 +342,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                     sb.AppendLine("%");
             }
 
-            _avgMovements[_cycleNumber & 0x0F] = stat._movementsDone;
+            _avgMovements[_cycleNumber & 0x0F] = stat.MovementsDone;
             var samples = Math.Min(_cycleNumber + 1, 0x10);
             double avg = 0;
             for (int i = 0; i < samples; ++i)
@@ -341,8 +351,8 @@ namespace SEScripts.ResourceExchanger2_4_1_187
 
             sb.Append("Avg. movements: ").Append(avg.ToString("F2")).Append(" (last ").Append(samples).AppendLine(" runs)");
 
-            if (stat._missing.Count > 0)
-                sb.Append("Err: missing volume information for ").AppendLine(String.Join(", ", stat._missing));
+            if (stat.MissingInfo.Count > 0)
+                sb.Append("Err: missing volume information for ").AppendLine(String.Join(", ", stat.MissingInfo));
 
             float cpu = Runtime.CurrentInstructionCount * 100;
             cpu /= Runtime.MaxInstructionCount;
@@ -366,21 +376,23 @@ namespace SEScripts.ResourceExchanger2_4_1_187
 
         private void WriteOutput(BlockStore bs, Statistics stat)
         {
+            const int linesPerDebugScreen = 17;
+
             if (bs.DebugScreen.Count == 0)
                 return;
 
             bs.DebugScreen.Sort(MyTextPanelNameComparer.Instance);
-            string[] lines = stat._output.ToString().Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] lines = stat.Output.ToString().Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
-            int totalScreens = lines.Length + LINES_PER_DEBUG_SCREEN - 1;
-            totalScreens /= LINES_PER_DEBUG_SCREEN;
+            int totalScreens = lines.Length + linesPerDebugScreen - 1;
+            totalScreens /= linesPerDebugScreen;
 
             for (int i = 0; i < bs.DebugScreen.Count; ++i)
             {
                 var screen = bs.DebugScreen[i];
                 var sb = new StringBuilder();
-                int firstLine = i * LINES_PER_DEBUG_SCREEN;
-                for (int j = 0; j < LINES_PER_DEBUG_SCREEN && firstLine + j < lines.Length; ++j)
+                int firstLine = i * linesPerDebugScreen;
+                for (int j = 0; j < linesPerDebugScreen && firstLine + j < lines.Length; ++j)
                     sb.AppendLine(lines[firstLine + j].Trim());
                 screen.WritePublicText(sb.ToString());
                 screen.ShowPublicTextOnScreen();
@@ -442,14 +454,14 @@ namespace SEScripts.ResourceExchanger2_4_1_187
         private int ProcessBlocks(string msg, bool enable, ICollection<InventoryWrapper> blocks, Statistics stat, string invGroup = null,
             HashSet<InventoryWrapper> exclude = null, Func<IMyInventoryItem, bool> filter = null)
         {
-            stat._output.Append(msg);
+            stat.Output.Append(msg);
             if (enable)
             {
                 if (blocks.Count >= 2)
                 {
                     var conveyorNetworks = FindConveyorNetworks(blocks, exclude);
-                    stat._numberOfNetworks += conveyorNetworks.Count;
-                    stat._output.Append(": ").Append(conveyorNetworks.Count).AppendLine(" conveyor networks found");
+                    stat.NumberOfNetworks += conveyorNetworks.Count;
+                    stat.Output.Append(": ").Append(conveyorNetworks.Count).AppendLine(" conveyor networks found");
 
                     if (invGroup != null)
                     {
@@ -467,36 +479,38 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 }
                 else
                 {
-                    stat._output.AppendLine(": nothing to do");
+                    stat.Output.AppendLine(": nothing to do");
                     return 0;
                 }
             }
             else
             {
-                stat._output.AppendLine(": disabled");
+                stat.Output.AppendLine(": disabled");
                 return -1;
             }
         }
 
         private void ProcessDrillsLights(List<InventoryWrapper> drills, List<IMyLightingBlock> lights, Statistics stat)
         {
+            VRage.MyFixedPoint warningLevelInCubicMetersLeft = 5;
+
             if (lights.Count == 0)
             {
-                stat._output.AppendLine("Setting color of drills payload indicators. Not enough lights found. Nothing to do.");
+                stat.Output.AppendLine("Setting color of drills payload indicators. Not enough lights found. Nothing to do.");
                 return;
             }
 
-            stat._output.AppendLine("Setting color of drills payload indicators.");
+            stat.Output.AppendLine("Setting color of drills payload indicators.");
 
             Color color;
             if (stat.NotConnectedDrillsFound)
             {
-                stat._output.AppendLine("Not all drills are connected.");
+                stat.Output.AppendLine("Not all drills are connected.");
 
                 if (_cycleNumber % 2 == 0)
-                    color = FIRST_ERROR_COLOR_WHEN_DRILLS_ARE_NOT_CONNECTED;
+                    color = new Color(0, 128, 128);
                 else
-                    color = SECOND_ERROR_COLOR_WHEN_DRILLS_ARE_NOT_CONNECTED;
+                    color = new Color(0, 64, 128);
             }
             else
             {
@@ -508,6 +522,9 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                     drillsCurrentVolume += drill.Inventory.CurrentVolume;
                 }
 
+                Func<Color> step0 = () => new Color(255, 255, 255);
+                Func<Color> step1 = () => new Color(255, 255, 0);
+                Func<Color> step2 = () => new Color(255, 0, 0);
                 if (drillsMaxVolume > 0)
                 {
                     var p = (float)drillsCurrentVolume * 1000.0f;
@@ -515,17 +532,17 @@ namespace SEScripts.ResourceExchanger2_4_1_187
 
                     stat.DrillsPayloadStr = (p / 10.0f).ToString("F1");
 
-                    stat._output.Append("Drills space usage: ");
-                    stat._output.Append(stat.DrillsPayloadStr);
-                    stat._output.AppendLine("%");
+                    stat.Output.Append("Drills space usage: ");
+                    stat.Output.Append(stat.DrillsPayloadStr);
+                    stat.Output.AppendLine("%");
 
-                    stat.DrillsVolumeWarning = (drillsMaxVolume - drillsCurrentVolume) < WARNING_LEVEL_IN_CUBIC_METERS_LEFT;
+                    stat.DrillsVolumeWarning = (drillsMaxVolume - drillsCurrentVolume) < warningLevelInCubicMetersLeft;
                     if (stat.DrillsVolumeWarning)
                     {
                         if (_cycleNumber % 2 == 0)
-                            color = FIRST_WARNING_COLOR_WHEN_DRILLS_ARE_FULL;
+                            color = new Color(128, 0, 128);
                         else
-                            color = SECOND_WARNING_COLOR_WHEN_DRILLS_ARE_FULL;
+                            color = new Color(128, 0, 64);
                     }
                     else
                     {
@@ -534,15 +551,15 @@ namespace SEScripts.ResourceExchanger2_4_1_187
 
                         if (p < 500.0f)
                         {
-                            c1 = COLOR_WHEN_DRILLS_ARE_EMPTY;
-                            c2 = COLOR_WHEN_DRILLS_ARE_FULL_IN_A_HALF;
+                            c1 = step0();
+                            c2 = step1();
                             m2 = p / 500.0f;
                             m1 = 1.0f - m2;
                         }
                         else
                         {
-                            c1 = COLOR_WHEN_DRILLS_ARE_ALMOST_FULL;
-                            c2 = COLOR_WHEN_DRILLS_ARE_FULL_IN_A_HALF;
+                            c1 = step2();
+                            c2 = step1();
                             m1 = (p - 500.0f) / 450.0f;
                             if (m1 > 1.0f)
                                 m1 = 1.0f;
@@ -573,13 +590,13 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 }
                 else
                 {
-                    color = COLOR_WHEN_DRILLS_ARE_EMPTY;
+                    color = step0();
                 }
             }
 
-            stat._output.Append("Drills payload indicators lights color: ");
-            stat._output.Append(color);
-            stat._output.AppendLine();
+            stat.Output.Append("Drills payload indicators lights color: ");
+            stat.Output.Append(color);
+            stat.Output.AppendLine();
 
             foreach (IMyLightingBlock light in lights)
             {
@@ -588,12 +605,12 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                     light.SetValue<Color>("Color", color);
             }
 
-            stat._output.Append("Color of ");
-            stat._output.Append(lights.Count);
-            stat._output.AppendLine(" drills payload indicators has been set.");
+            stat.Output.Append("Color of ");
+            stat.Output.Append(lights.Count);
+            stat.Output.AppendLine(" drills payload indicators has been set.");
         }
 
-        private void EnforceItemPriority(List<InventoryWrapper> group, Statistics stat, MyDefinitionId topPriority, MyDefinitionId lowestPriority)
+        private void EnforceItemPriority(List<InventoryWrapper> group, Statistics stat, MyDefinitionId? topPriority, MyDefinitionId? lowestPriority)
         {
             if (topPriority == null && lowestPriority == null)
                 return;
@@ -604,33 +621,33 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 if (items.Count < 2)
                     continue;
 
-                if (topPriority != null && !MyDefinitionId.FromContent(items[0].Content).Equals(topPriority))
+                if (topPriority.HasValue && !MyDefinitionId.FromContent(items[0].Content).Equals(topPriority.Value))
                 {
                     for (int i = 1; i < items.Count; ++i)
                     {
                         var item = items[i];
-                        if (MyDefinitionId.FromContent(item.Content).Equals(topPriority))
+                        if (MyDefinitionId.FromContent(item.Content).Equals(topPriority.Value))
                         {
-                            stat._output.Append("Moving ").Append(topPriority.SubtypeName).Append(" from ")
+                            stat.Output.Append("Moving ").Append(topPriority.Value.SubtypeName).Append(" from ")
                                 .Append(i + 1).Append(" slot to first slot of ").AppendLine(inv.Block.CustomName);
                             inv.TransferItemTo(inv, i, 0, false, item.Amount);
-                            stat._movementsDone += 1;
+                            stat.MovementsDone += 1;
                             break;
                         }
                     }
                 }
 
-                if (lowestPriority != null && !MyDefinitionId.FromContent(items[items.Count - 1].Content).Equals(lowestPriority))
+                if (lowestPriority.HasValue && !MyDefinitionId.FromContent(items[items.Count - 1].Content).Equals(lowestPriority.Value))
                 {
                     for (int i = items.Count - 2; i >= 0; --i)
                     {
                         var item = items[i];
-                        if (MyDefinitionId.FromContent(item.Content).Equals(lowestPriority))
+                        if (MyDefinitionId.FromContent(item.Content).Equals(lowestPriority.Value))
                         {
-                            stat._output.Append("Moving ").Append(lowestPriority.SubtypeName).Append(" from ")
+                            stat.Output.Append("Moving ").Append(lowestPriority.Value.SubtypeName).Append(" from ")
                                 .Append(i + 1).Append(" slot to last slot of ").AppendLine(inv.Block.CustomName);
                             inv.TransferItemTo(inv, i, items.Count, false, item.Amount);
-                            stat._movementsDone += 1;
+                            stat.MovementsDone += 1;
                             break;
                         }
                     }
@@ -641,9 +658,11 @@ namespace SEScripts.ResourceExchanger2_4_1_187
         private void BalanceInventories(Statistics stat, List<InventoryWrapper> group, int networkNumber,
             int groupNumber, string groupName, Func<IMyInventoryItem, bool> filter)
         {
+            const int maxMovementsPerGroup = 2;
+
             if (group.Count < 2)
             {
-                stat._output.Append("Cannot balance conveyor network ").Append(networkNumber + 1)
+                stat.Output.Append("Cannot balance conveyor network ").Append(networkNumber + 1)
                     .Append(" group ").Append(groupNumber + 1).Append(" \"").Append(groupName)
                     .AppendLine("\"")
                     .AppendLine("  because there is only one inventory.");
@@ -667,18 +686,18 @@ namespace SEScripts.ResourceExchanger2_4_1_187
 
             if (last.CurrentVolume < SMALL_NUMBER)
             {
-                stat._output.Append("Cannot balance conveyor network ").Append(networkNumber + 1)
+                stat.Output.Append("Cannot balance conveyor network ").Append(networkNumber + 1)
                     .Append(" group ").Append(groupNumber + 1).Append(" \"").Append(groupName)
                     .AppendLine("\"")
                     .AppendLine("  because of lack of items in it.");
                 return; // nothing to do
             }
 
-            stat._output.Append("Balancing conveyor network ").Append(networkNumber + 1)
+            stat.Output.Append("Balancing conveyor network ").Append(networkNumber + 1)
                 .Append(" group ").Append(groupNumber + 1)
                 .Append(" \"").Append(groupName).AppendLine("\"...");
 
-            for (int i = 0; i < MAX_MOVEMENTS_PER_GROUP && i < group.Count / 2; ++i)
+            for (int i = 0; i < maxMovementsPerGroup && i < group.Count / 2; ++i)
             {
                 var inv1 = group[i];
                 var inv2 = group[group.Count - i - 1];
@@ -695,9 +714,9 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                         / (inv1.MaxVolume + inv2.MaxVolume);
                 }
 
-                stat._output.Append("Inv. 1 vol: ").Append(inv1.CurrentVolume.ToString("F6")).Append("; ");
-                stat._output.Append("Inv. 2 vol: ").Append(inv2.CurrentVolume.ToString("F6")).Append("; ");
-                stat._output.Append("To move: ").Append(toMove.ToString("F6")).AppendLine();
+                stat.Output.Append("Inv. 1 vol: ").Append(inv1.CurrentVolume.ToString("F6")).Append("; ");
+                stat.Output.Append("Inv. 2 vol: ").Append(inv2.CurrentVolume.ToString("F6")).Append("; ");
+                stat.Output.Append("To move: ").Append(toMove.ToString("F6")).AppendLine();
 
                 if (toMove < 0.0M)
                     throw new InvalidOperationException("Something went wrong with calculations: volumeDiff is " + toMove);
@@ -718,7 +737,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
             if (volumeAmountToMove < 0)
                 throw new ArgumentException("Invalid volume amount", "volumeAmount");
 
-            stat._output.Append("Move ").Append(volumeAmountToMove).Append(" l. from ")
+            stat.Output.Append("Move ").Append(volumeAmountToMove).Append(" l. from ")
                 .Append(from.Block.CustomName).Append(" to ").AppendLine(to.Block.CustomName);
             List<IMyInventoryItem> itemsFrom = from.Inventory.GetItems();
 
@@ -761,15 +780,15 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 {
                     itemVolume = (decimal)amountToMove * data.Volume / 1000M;
                     success = from.TransferItemTo(to, i, targetItemIndex, true, amountToMove);
-                    stat._movementsDone += 1;
-                    stat._output.Append("Move ").Append(amountToMove).Append(" -> ").AppendLine(success ? "success" : "failure");
+                    stat.MovementsDone += 1;
+                    stat.Output.Append("Move ").Append(amountToMove).Append(" -> ").AppendLine(success ? "success" : "failure");
                 }
                 else
                 {
                     itemVolume = (decimal)item.Amount * data.Volume / 1000M;
                     success = from.TransferItemTo(to, i, targetItemIndex, true, item.Amount);
-                    stat._movementsDone += 1;
-                    stat._output.Append("Move all ").Append(item.Amount).Append(" -> ").AppendLine(success ? "success" : "failure");
+                    stat.MovementsDone += 1;
+                    stat.Output.Append("Move all ").Append(item.Amount).Append(" -> ").AppendLine(success ? "success" : "failure");
                 }
 
                 if (success)
@@ -778,31 +797,17 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                     return volumeAmountToMove;
             }
 
-            stat._output.Append("Cannot move ").Append(volumeAmountToMove).AppendLine(" l.");
+            stat.Output.Append("Cannot move ").Append(volumeAmountToMove).AppendLine(" l.");
             return volumeAmountToMove;
         }
 
         private const string OreType = "MyObjectBuilder_Ore";
         private const string IngotType = "MyObjectBuilder_Ingot";
         private const string ComponentType = "MyObjectBuilder_Component";
-        private const string AmmoMagazineType = "MyObjectBuilder_AmmoMagazine";
-        private const string PhysicalGunObjectType = "MyObjectBuilder_PhysicalGunObject";
-        private const string OxygenContainerObjectType = "MyObjectBuilder_OxygenContainerObject";
-        private const string GasContainerObjectType = "MyObjectBuilder_GasContainerObject";
-
-        private const string COBALT = "Cobalt";
-        private const string GOLD = "Gold";
-        private const string ICE = "Ice";
-        private const string IRON = "Iron";
-        private const string MAGNESIUM = "Magnesium";
-        private const string NICKEL = "Nickel";
-        private const string ORGANIC = "Organic";
-        private const string PLATINUM = "Platinum";
-        private const string SCRAP = "Scrap";
-        private const string SILICON = "Silicon";
-        private const string SILVER = "Silver";
-        private const string STONE = "Stone";
-        private const string URANIUM = "Uranium";
+        private const string AmmoType = "MyObjectBuilder_AmmoMagazine";
+        private const string GunType = "MyObjectBuilder_PhysicalGunObject";
+        private const string OxygenType = "MyObjectBuilder_OxygenContainerObject";
+        private const string GasType = "MyObjectBuilder_GasContainerObject";
 
         private void BuildItemInfoDict()
         {
@@ -932,111 +937,111 @@ namespace SEScripts.ResourceExchanger2_4_1_187
             ItemInfo.Add(ComponentType, "WaterTankComponent", 200M, 160M, true, true); // Industrial Centrifuge (stable/dev)
             ItemInfo.Add(ComponentType, "ZPM", 50M, 60M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
 
-            ItemInfo.Add(AmmoMagazineType, "250shell", 128M, 64M, true, true); // CSD Battlecannon
-            ItemInfo.Add(AmmoMagazineType, "300mmShell_AP", 35M, 25M, true, true); // Battle Cannon and Turrets (DX11)
-            ItemInfo.Add(AmmoMagazineType, "300mmShell_HE", 35M, 25M, true, true); // Battle Cannon and Turrets (DX11)
-            ItemInfo.Add(AmmoMagazineType, "88hekc", 16M, 16M, true, true); // CSD Battlecannon
-            ItemInfo.Add(AmmoMagazineType, "88shell", 16M, 16M, true, true); // CSD Battlecannon
-            ItemInfo.Add(AmmoMagazineType, "900mmShell_AP", 210M, 75M, true, true); // Battle Cannon and Turrets (DX11)
-            ItemInfo.Add(AmmoMagazineType, "900mmShell_HE", 210M, 75M, true, true); // Battle Cannon and Turrets (DX11)
-            ItemInfo.Add(AmmoMagazineType, "Aden30x113", 35M, 16M, true, true); // Battle Cannon and Turrets (DX11)
-            ItemInfo.Add(AmmoMagazineType, "AFmagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
-            ItemInfo.Add(AmmoMagazineType, "AZ_Missile_AA", 45M, 60M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
-            ItemInfo.Add(AmmoMagazineType, "AZ_Missile200mm", 45M, 60M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
-            ItemInfo.Add(AmmoMagazineType, "BatteryCannonAmmo1", 50M, 50M, true, true); // MWI - Weapon Collection (DX11)
-            ItemInfo.Add(AmmoMagazineType, "BatteryCannonAmmo2", 200M, 200M, true, true); // MWI - Weapon Collection (DX11)
-            ItemInfo.Add(AmmoMagazineType, "BigBertha", 3600M, 2800M, true, true); // Battle Cannon and Turrets (DX11)
-            ItemInfo.Add(AmmoMagazineType, "BlasterCell", 1M, 1M, true, true); // [SEI] Weapon Pack DX11
-            ItemInfo.Add(AmmoMagazineType, "Bofors40mm", 36M, 28M, true, true); // Battle Cannon and Turrets (DX11)
-            ItemInfo.Add(AmmoMagazineType, "ConcreteMix", 2M, 2M, true, true); // Concrete Tool - placing voxels in survival
-            ItemInfo.Add(AmmoMagazineType, "Eikester_Missile120mm", 25M, 30M, true, true); // (DX11) Small Missile Turret
-            ItemInfo.Add(AmmoMagazineType, "Eikester_Nuke", 1800M, 8836M, true, true); // (DX11) Nuke Launcher [WiP]
-            ItemInfo.Add(AmmoMagazineType, "EmergencyBlasterMagazine", 0.45M, 0.2M, true, true); // Independent Survival
-            ItemInfo.Add(AmmoMagazineType, "Flak130mm", 2M, 3M, true, true); // [SEI] Weapon Pack DX11
-            ItemInfo.Add(AmmoMagazineType, "Flak200mm", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
-            ItemInfo.Add(AmmoMagazineType, "Flak500mm", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
-            ItemInfo.Add(AmmoMagazineType, "HDTCannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
-            ItemInfo.Add(AmmoMagazineType, "HighDamageGatlingAmmo", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
-            ItemInfo.Add(AmmoMagazineType, "ISM_FusionAmmo", 35M, 10M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-            ItemInfo.Add(AmmoMagazineType, "ISM_GrendelAmmo", 35M, 2M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-            ItemInfo.Add(AmmoMagazineType, "ISM_Hellfire", 45M, 60M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-            ItemInfo.Add(AmmoMagazineType, "ISM_LongbowAmmo", 35M, 2M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-            ItemInfo.Add(AmmoMagazineType, "ISM_MinigunAmmo", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-            ItemInfo.Add(AmmoMagazineType, "ISMNeedles", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-            ItemInfo.Add(AmmoMagazineType, "ISMTracer", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-            ItemInfo.Add(AmmoMagazineType, "LargeKlingonCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoMagazineType, "LargeShipShotGunAmmo", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
-            ItemInfo.Add(AmmoMagazineType, "LargeShotGunAmmoTracer", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
-            ItemInfo.Add(AmmoMagazineType, "LaserAmmo", 0.001M, 0.01M, true, true); // (DX11)Laser Turret
-            ItemInfo.Add(AmmoMagazineType, "LaserArrayFlakMagazine", 45M, 30M, true, true); // White Dwarf - Directed Energy Platform [DX11]
-            ItemInfo.Add(AmmoMagazineType, "LaserArrayShellMagazine", 45M, 120M, true, true); // White Dwarf - Directed Energy Platform [DX11]
-            ItemInfo.Add(AmmoMagazineType, "Liquid Naquadah", 0.25M, 0.1M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
-            ItemInfo.Add(AmmoMagazineType, "LittleDavid", 360M, 280M, true, true); // Battle Cannon and Turrets (DX11)
-            ItemInfo.Add(AmmoMagazineType, "MinotaurAmmo", 360M, 128M, true, true); // (DX11)Minotaur Cannon
-            ItemInfo.Add(AmmoMagazineType, "Missile200mm", 45M, 60M, true, true); // Space Engineers
-            ItemInfo.Add(AmmoMagazineType, "MK1CannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
-            ItemInfo.Add(AmmoMagazineType, "MK2CannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
-            ItemInfo.Add(AmmoMagazineType, "MK3CannonMagazineAP", 100M, 100M, true, true); // MWI - Weapon Collection (DX11)
-            ItemInfo.Add(AmmoMagazineType, "MK3CannonMagazineHE", 300M, 100M, true, true); // MWI - Weapon Collection (DX11)
-            ItemInfo.Add(AmmoMagazineType, "NATO_25x184mm", 35M, 16M, true, true); // Space Engineers
-            ItemInfo.Add(AmmoMagazineType, "NATO_5p56x45mm", 0.45M, 0.2M, true, true); // Space Engineers
-            ItemInfo.Add(AmmoMagazineType, "NiFeDUSlugMagazineLZM", 45M, 50M, true, true); // Large Ship Railguns
-            ItemInfo.Add(AmmoMagazineType, "Phaser2Charge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoMagazineType, "Phaser2ChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoMagazineType, "PhaserCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoMagazineType, "PhaserChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoMagazineType, "Plasma_Hydrogen", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
-            ItemInfo.Add(AmmoMagazineType, "PlasmaCutterCell", 1M, 1M, true, true); // [SEI] Weapon Pack DX11
-            ItemInfo.Add(AmmoMagazineType, "RB_NATO_125x920mm", 875M, 160M, true, true); // RB Weapon Collection [DX11]
-            ItemInfo.Add(AmmoMagazineType, "RB_Rocket100mm", 11.25M, 15M, true, true); // RB Weapon Collection [DX11]
-            ItemInfo.Add(AmmoMagazineType, "RB_Rocket400mm", 180M, 240M, true, true); // RB Weapon Collection [DX11]
-            ItemInfo.Add(AmmoMagazineType, "RomulanCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoMagazineType, "RomulanChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoMagazineType, "SmallKlingonCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoMagazineType, "SmallShotGunAmmo", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
-            ItemInfo.Add(AmmoMagazineType, "SmallShotGunAmmoTracer", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
-            ItemInfo.Add(AmmoMagazineType, "SniperRoundHighSpeedLowDamage", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
-            ItemInfo.Add(AmmoMagazineType, "SniperRoundHighSpeedLowDamageSmallShip", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
-            ItemInfo.Add(AmmoMagazineType, "SniperRoundLowSpeedHighDamage", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
-            ItemInfo.Add(AmmoMagazineType, "SniperRoundLowSpeedHighDamageSmallShip", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
-            ItemInfo.Add(AmmoMagazineType, "TankCannonAmmoSEM4", 35M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
-            ItemInfo.Add(AmmoMagazineType, "TelionAF_PMagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
-            ItemInfo.Add(AmmoMagazineType, "TelionAMMagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
-            ItemInfo.Add(AmmoMagazineType, "TritiumMissile", 72M, 60M, true, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
-            ItemInfo.Add(AmmoMagazineType, "TritiumShot", 3M, 3M, true, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
-            ItemInfo.Add(AmmoMagazineType, "TungstenBolt", 4812M, 250M, true, true); // (DX11)Mass Driver
-            ItemInfo.Add(AmmoMagazineType, "Vulcan20x102", 35M, 16M, true, true); // Battle Cannon and Turrets (DX11)
+            ItemInfo.Add(AmmoType, "250shell", 128M, 64M, true, true); // [DEPRECATED] CSD Battlecannon
+            ItemInfo.Add(AmmoType, "300mmShell_AP", 35M, 25M, true, true); // Battle Cannon and Turrets (DX11)
+            ItemInfo.Add(AmmoType, "300mmShell_HE", 35M, 25M, true, true); // Battle Cannon and Turrets (DX11)
+            ItemInfo.Add(AmmoType, "88hekc", 16M, 16M, true, true); // [DEPRECATED] CSD Battlecannon
+            ItemInfo.Add(AmmoType, "88shell", 16M, 16M, true, true); // [DEPRECATED] CSD Battlecannon
+            ItemInfo.Add(AmmoType, "900mmShell_AP", 210M, 75M, true, true); // Battle Cannon and Turrets (DX11)
+            ItemInfo.Add(AmmoType, "900mmShell_HE", 210M, 75M, true, true); // Battle Cannon and Turrets (DX11)
+            ItemInfo.Add(AmmoType, "Aden30x113", 35M, 16M, true, true); // Battle Cannon and Turrets (DX11)
+            ItemInfo.Add(AmmoType, "AFmagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
+            ItemInfo.Add(AmmoType, "AZ_Missile_AA", 45M, 60M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+            ItemInfo.Add(AmmoType, "AZ_Missile200mm", 45M, 60M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+            ItemInfo.Add(AmmoType, "BatteryCannonAmmo1", 50M, 50M, true, true); // MWI - Weapon Collection (DX11)
+            ItemInfo.Add(AmmoType, "BatteryCannonAmmo2", 200M, 200M, true, true); // MWI - Weapon Collection (DX11)
+            ItemInfo.Add(AmmoType, "BigBertha", 3600M, 2800M, true, true); // Battle Cannon and Turrets (DX11)
+            ItemInfo.Add(AmmoType, "BlasterCell", 1M, 1M, true, true); // [SEI] Weapon Pack DX11
+            ItemInfo.Add(AmmoType, "Bofors40mm", 36M, 28M, true, true); // Battle Cannon and Turrets (DX11)
+            ItemInfo.Add(AmmoType, "ConcreteMix", 2M, 2M, true, true); // Concrete Tool - placing voxels in survival
+            ItemInfo.Add(AmmoType, "Eikester_Missile120mm", 25M, 30M, true, true); // (DX11) Small Missile Turret
+            ItemInfo.Add(AmmoType, "Eikester_Nuke", 1800M, 8836M, true, true); // (DX11) Nuke Launcher [WiP]
+            ItemInfo.Add(AmmoType, "EmergencyBlasterMagazine", 0.45M, 0.2M, true, true); // Independent Survival
+            ItemInfo.Add(AmmoType, "Flak130mm", 2M, 3M, true, true); // [SEI] Weapon Pack DX11
+            ItemInfo.Add(AmmoType, "Flak200mm", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
+            ItemInfo.Add(AmmoType, "Flak500mm", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
+            ItemInfo.Add(AmmoType, "HDTCannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
+            ItemInfo.Add(AmmoType, "HighDamageGatlingAmmo", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+            ItemInfo.Add(AmmoType, "ISM_FusionAmmo", 35M, 10M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+            ItemInfo.Add(AmmoType, "ISM_GrendelAmmo", 35M, 2M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+            ItemInfo.Add(AmmoType, "ISM_Hellfire", 45M, 60M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+            ItemInfo.Add(AmmoType, "ISM_LongbowAmmo", 35M, 2M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+            ItemInfo.Add(AmmoType, "ISM_MinigunAmmo", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+            ItemInfo.Add(AmmoType, "ISMNeedles", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+            ItemInfo.Add(AmmoType, "ISMTracer", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+            ItemInfo.Add(AmmoType, "LargeKlingonCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+            ItemInfo.Add(AmmoType, "LargeShipShotGunAmmo", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+            ItemInfo.Add(AmmoType, "LargeShotGunAmmoTracer", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+            ItemInfo.Add(AmmoType, "LaserAmmo", 0.001M, 0.01M, true, true); // (DX11)Laser Turret
+            ItemInfo.Add(AmmoType, "LaserArrayFlakMagazine", 45M, 30M, true, true); // White Dwarf - Directed Energy Platform [DX11]
+            ItemInfo.Add(AmmoType, "LaserArrayShellMagazine", 45M, 120M, true, true); // White Dwarf - Directed Energy Platform [DX11]
+            ItemInfo.Add(AmmoType, "Liquid Naquadah", 0.25M, 0.1M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
+            ItemInfo.Add(AmmoType, "LittleDavid", 360M, 280M, true, true); // Battle Cannon and Turrets (DX11)
+            ItemInfo.Add(AmmoType, "MinotaurAmmo", 360M, 128M, true, true); // (DX11)Minotaur Cannon
+            ItemInfo.Add(AmmoType, "Missile200mm", 45M, 60M, true, true); // Space Engineers
+            ItemInfo.Add(AmmoType, "MK1CannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
+            ItemInfo.Add(AmmoType, "MK2CannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
+            ItemInfo.Add(AmmoType, "MK3CannonMagazineAP", 100M, 100M, true, true); // MWI - Weapon Collection (DX11)
+            ItemInfo.Add(AmmoType, "MK3CannonMagazineHE", 300M, 100M, true, true); // MWI - Weapon Collection (DX11)
+            ItemInfo.Add(AmmoType, "NATO_25x184mm", 35M, 16M, true, true); // Space Engineers
+            ItemInfo.Add(AmmoType, "NATO_5p56x45mm", 0.45M, 0.2M, true, true); // Space Engineers
+            ItemInfo.Add(AmmoType, "NiFeDUSlugMagazineLZM", 45M, 50M, true, true); // Large Ship Railguns [Deprecated, link inside]
+            ItemInfo.Add(AmmoType, "Phaser2Charge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+            ItemInfo.Add(AmmoType, "Phaser2ChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+            ItemInfo.Add(AmmoType, "PhaserCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+            ItemInfo.Add(AmmoType, "PhaserChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+            ItemInfo.Add(AmmoType, "Plasma_Hydrogen", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
+            ItemInfo.Add(AmmoType, "PlasmaCutterCell", 1M, 1M, true, true); // [SEI] Weapon Pack DX11
+            ItemInfo.Add(AmmoType, "RB_NATO_125x920mm", 875M, 160M, true, true); // RB Weapon Collection [DX11]
+            ItemInfo.Add(AmmoType, "RB_Rocket100mm", 11.25M, 15M, true, true); // RB Weapon Collection [DX11]
+            ItemInfo.Add(AmmoType, "RB_Rocket400mm", 180M, 240M, true, true); // RB Weapon Collection [DX11]
+            ItemInfo.Add(AmmoType, "RomulanCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+            ItemInfo.Add(AmmoType, "RomulanChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+            ItemInfo.Add(AmmoType, "SmallKlingonCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+            ItemInfo.Add(AmmoType, "SmallShotGunAmmo", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+            ItemInfo.Add(AmmoType, "SmallShotGunAmmoTracer", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+            ItemInfo.Add(AmmoType, "SniperRoundHighSpeedLowDamage", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+            ItemInfo.Add(AmmoType, "SniperRoundHighSpeedLowDamageSmallShip", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+            ItemInfo.Add(AmmoType, "SniperRoundLowSpeedHighDamage", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+            ItemInfo.Add(AmmoType, "SniperRoundLowSpeedHighDamageSmallShip", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+            ItemInfo.Add(AmmoType, "TankCannonAmmoSEM4", 35M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+            ItemInfo.Add(AmmoType, "TelionAF_PMagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
+            ItemInfo.Add(AmmoType, "TelionAMMagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
+            ItemInfo.Add(AmmoType, "TritiumMissile", 72M, 60M, true, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+            ItemInfo.Add(AmmoType, "TritiumShot", 3M, 3M, true, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+            ItemInfo.Add(AmmoType, "TungstenBolt", 4812M, 250M, true, true); // (DX11)Mass Driver
+            ItemInfo.Add(AmmoType, "Vulcan20x102", 35M, 16M, true, true); // Battle Cannon and Turrets (DX11)
 
-            ItemInfo.Add(PhysicalGunObjectType, "AngleGrinder2Item", 3M, 20M, true, false); // Space Engineers
-            ItemInfo.Add(PhysicalGunObjectType, "AngleGrinder3Item", 3M, 20M, true, false); // Space Engineers
-            ItemInfo.Add(PhysicalGunObjectType, "AngleGrinder4Item", 3M, 20M, true, false); // Space Engineers
-            ItemInfo.Add(PhysicalGunObjectType, "AngleGrinderItem", 3M, 20M, true, false); // Space Engineers
-            ItemInfo.Add(PhysicalGunObjectType, "AutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
-            ItemInfo.Add(PhysicalGunObjectType, "CubePlacerItem", 1M, 1M, true, false); // Space Engineers
-            ItemInfo.Add(PhysicalGunObjectType, "EmergencyBlasterItem", 3M, 14M, true, false); // Independent Survival
-            ItemInfo.Add(PhysicalGunObjectType, "GoodAIRewardPunishmentTool", 0.1M, 1M, true, false); // Space Engineers
-            ItemInfo.Add(PhysicalGunObjectType, "HandDrill2Item", 22M, 25M, true, false); // Space Engineers
-            ItemInfo.Add(PhysicalGunObjectType, "HandDrill3Item", 22M, 25M, true, false); // Space Engineers
-            ItemInfo.Add(PhysicalGunObjectType, "HandDrill4Item", 22M, 25M, true, false); // Space Engineers
-            ItemInfo.Add(PhysicalGunObjectType, "HandDrillItem", 22M, 25M, true, false); // Space Engineers
-            ItemInfo.Add(PhysicalGunObjectType, "P90", 3M, 12M, true, false); // [New Version] Stargate Modpack (Server admin block filtering)
-            ItemInfo.Add(PhysicalGunObjectType, "PhysicalConcreteTool", 5M, 15M, true, false); // Concrete Tool - placing voxels in survival
-            ItemInfo.Add(PhysicalGunObjectType, "PreciseAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
-            ItemInfo.Add(PhysicalGunObjectType, "RapidFireAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
-            ItemInfo.Add(PhysicalGunObjectType, "Staff", 3M, 16M, true, false); // [New Version] Stargate Modpack (Server admin block filtering)
-            ItemInfo.Add(PhysicalGunObjectType, "TritiumAutomaticRifleItem", 6M, 21M, true, false); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
-            ItemInfo.Add(PhysicalGunObjectType, "UltimateAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
-            ItemInfo.Add(PhysicalGunObjectType, "Welder2Item", 5M, 8M, true, false); // Space Engineers
-            ItemInfo.Add(PhysicalGunObjectType, "Welder3Item", 5M, 8M, true, false); // Space Engineers
-            ItemInfo.Add(PhysicalGunObjectType, "Welder4Item", 5M, 8M, true, false); // Space Engineers
-            ItemInfo.Add(PhysicalGunObjectType, "WelderItem", 5M, 8M, true, false); // Space Engineers
-            ItemInfo.Add(PhysicalGunObjectType, "Zat", 3M, 12M, true, false); // [New Version] Stargate Modpack (Server admin block filtering)
+            ItemInfo.Add(GunType, "AngleGrinder2Item", 3M, 20M, true, false); // Space Engineers
+            ItemInfo.Add(GunType, "AngleGrinder3Item", 3M, 20M, true, false); // Space Engineers
+            ItemInfo.Add(GunType, "AngleGrinder4Item", 3M, 20M, true, false); // Space Engineers
+            ItemInfo.Add(GunType, "AngleGrinderItem", 3M, 20M, true, false); // Space Engineers
+            ItemInfo.Add(GunType, "AutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
+            ItemInfo.Add(GunType, "CubePlacerItem", 1M, 1M, true, false); // Space Engineers
+            ItemInfo.Add(GunType, "EmergencyBlasterItem", 3M, 14M, true, false); // Independent Survival
+            ItemInfo.Add(GunType, "GoodAIRewardPunishmentTool", 0.1M, 1M, true, false); // Space Engineers
+            ItemInfo.Add(GunType, "HandDrill2Item", 22M, 25M, true, false); // Space Engineers
+            ItemInfo.Add(GunType, "HandDrill3Item", 22M, 25M, true, false); // Space Engineers
+            ItemInfo.Add(GunType, "HandDrill4Item", 22M, 25M, true, false); // Space Engineers
+            ItemInfo.Add(GunType, "HandDrillItem", 22M, 25M, true, false); // Space Engineers
+            ItemInfo.Add(GunType, "P90", 3M, 12M, true, false); // [New Version] Stargate Modpack (Server admin block filtering)
+            ItemInfo.Add(GunType, "PhysicalConcreteTool", 5M, 15M, true, false); // Concrete Tool - placing voxels in survival
+            ItemInfo.Add(GunType, "PreciseAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
+            ItemInfo.Add(GunType, "RapidFireAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
+            ItemInfo.Add(GunType, "Staff", 3M, 16M, true, false); // [New Version] Stargate Modpack (Server admin block filtering)
+            ItemInfo.Add(GunType, "TritiumAutomaticRifleItem", 6M, 21M, true, false); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+            ItemInfo.Add(GunType, "UltimateAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
+            ItemInfo.Add(GunType, "Welder2Item", 5M, 8M, true, false); // Space Engineers
+            ItemInfo.Add(GunType, "Welder3Item", 5M, 8M, true, false); // Space Engineers
+            ItemInfo.Add(GunType, "Welder4Item", 5M, 8M, true, false); // Space Engineers
+            ItemInfo.Add(GunType, "WelderItem", 5M, 8M, true, false); // Space Engineers
+            ItemInfo.Add(GunType, "Zat", 3M, 12M, true, false); // [New Version] Stargate Modpack (Server admin block filtering)
 
-            ItemInfo.Add(OxygenContainerObjectType, "GrapheneOxygenBottle", 20M, 100M, true, false); // Graphene Armor [Core] [Beta]
-            ItemInfo.Add(OxygenContainerObjectType, "OxygenBottle", 30M, 120M, true, false); // Space Engineers
+            ItemInfo.Add(OxygenType, "GrapheneOxygenBottle", 20M, 100M, true, false); // Graphene Armor [Core] [Beta]
+            ItemInfo.Add(OxygenType, "OxygenBottle", 30M, 120M, true, false); // Space Engineers
 
-            ItemInfo.Add(GasContainerObjectType, "GrapheneHydrogenBottle", 20M, 100M, true, false); // Graphene Armor [Beta]
-            ItemInfo.Add(GasContainerObjectType, "HydrogenBottle", 30M, 120M, true, false); // Space Engineers
+            ItemInfo.Add(GasType, "GrapheneHydrogenBottle", 20M, 100M, true, false); // Graphene Armor [Core] [Beta]
+            ItemInfo.Add(GasType, "HydrogenBottle", 30M, 120M, true, false); // Space Engineers
         }
 
         private string FindInvGroupName(MyDefinitionId def, IMyInventory inv)
@@ -1090,6 +1095,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
             public readonly HashSet<InventoryWrapper> AllGroupedInventories;
             public readonly HashSet<IMyCubeGrid> AllGrids;
             public readonly List<IMyLightingBlock> DrillsPayloadLights;
+            private System.Text.RegularExpressions.Regex _groupTagPattern;
 
             public BlockStore(Program program)
             {
@@ -1107,7 +1113,17 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 DrillsPayloadLights = new List<IMyLightingBlock>();
             }
 
-            public bool CollectContainer(IMyCargoContainer myCargoContainer)
+            public void Collect(IMyTerminalBlock block)
+            {
+                var collected = CollectContainer(block as IMyCargoContainer)
+                    || CollectRefinery(block as IMyRefinery)
+                    || CollectReactor(block as IMyReactor)
+                    || CollectDrill(block as IMyShipDrill)
+                    || CollectTurret(block as IMyUserControllableGun)
+                    || CollectOxygenGenerator(block as IMyGasGenerator);
+            }
+
+            private bool CollectContainer(IMyCargoContainer myCargoContainer)
             {
                 if (myCargoContainer == null)
                     return false;
@@ -1125,7 +1141,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 return true;
             }
 
-            public bool CollectRefinery(IMyRefinery myRefinery)
+            private bool CollectRefinery(IMyRefinery myRefinery)
             {
                 if (myRefinery == null)
                     return false;
@@ -1144,7 +1160,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 return true;
             }
 
-            public bool CollectReactor(IMyReactor myReactor)
+            private bool CollectReactor(IMyReactor myReactor)
             {
                 if (myReactor == null)
                     return false;
@@ -1163,7 +1179,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 return true;
             }
 
-            public bool CollectDrill(IMyShipDrill myDrill)
+            private bool CollectDrill(IMyShipDrill myDrill)
             {
                 if (myDrill == null)
                     return false;
@@ -1182,7 +1198,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 return true;
             }
 
-            public bool CollectTurret(IMyUserControllableGun myTurret)
+            private bool CollectTurret(IMyUserControllableGun myTurret)
             {
                 if (myTurret == null)
                     return false;
@@ -1201,7 +1217,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 return true;
             }
 
-            public bool CollectOxygenGenerator(IMyGasGenerator myOxygenGenerator)
+            private bool CollectOxygenGenerator(IMyGasGenerator myOxygenGenerator)
             {
                 if (myOxygenGenerator == null)
                     return false;
@@ -1222,7 +1238,16 @@ namespace SEScripts.ResourceExchanger2_4_1_187
 
             private void AddToGroup(InventoryWrapper inv)
             {
-                foreach (System.Text.RegularExpressions.Match dt in _program.GROUP_TAG_PATTERN.Matches(inv.Block.CustomName))
+                const string MatchNothingExpr = @"a^";
+
+                if (_groupTagPattern == null)
+                {
+                    var expr = String.IsNullOrEmpty(_program.GroupTagPattern) ? MatchNothingExpr : _program.GroupTagPattern;
+                    _groupTagPattern = new System.Text.RegularExpressions.Regex(expr,
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                }
+
+                foreach (System.Text.RegularExpressions.Match dt in _groupTagPattern.Matches(inv.Block.CustomName))
                 {
                     HashSet<InventoryWrapper> tmp;
                     if (!Groups.TryGetValue(dt.Value, out tmp))
@@ -1238,42 +1263,18 @@ namespace SEScripts.ResourceExchanger2_4_1_187
 
         private class Statistics
         {
-            public readonly StringBuilder _output;
-            public readonly HashSet<string> _missing;
-            public int _numberOfNetworks;
-            public int _movementsDone;
+            public readonly StringBuilder Output;
+            public readonly HashSet<string> MissingInfo;
+            public int NumberOfNetworks;
+            public int MovementsDone;
             public string DrillsPayloadStr;
             public bool NotConnectedDrillsFound;
             public bool DrillsVolumeWarning;
 
             public Statistics()
             {
-                _output = new StringBuilder();
-                _missing = new HashSet<string>();
-            }
-        }
-
-        private class Config
-        {
-            public bool EnableReactors = true;
-            public bool EnableRefineries = true;
-            public bool EnableDrills = true;
-            public bool EnableTurrets = true;
-            public bool EnableOxygenGenerators = true;
-            public bool EnableGroups = true;
-
-            public void Read(Program program, string content)
-            {
-                MyIniParseResult result;
-                var ini = new MyIni();
-                if (ini.TryParse(content, out result))
-                {
-                }
-                else
-                {
-                    var msg = String.Format("Err: invalid config in line {0}: {1}", result.LineNo, result.Error);
-                    program.Echo(msg);
-                }
+                Output = new StringBuilder();
+                MissingInfo = new HashSet<string>();
             }
         }
 
@@ -1331,10 +1332,10 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 if (_itemInfoDict.TryGetValue(key, out data))
                     return data;
 
-                stat._output.Append("Volume to amount ratio for ");
-                stat._output.Append(key);
-                stat._output.AppendLine(" is not known.");
-                stat._missing.Add(key.ToString());
+                stat.Output.Append("Volume to amount ratio for ");
+                stat.Output.Append(key);
+                stat.Output.AppendLine(" is not known.");
+                stat.MissingInfo.Add(key.ToString());
                 return null;
             }
         }
@@ -1434,7 +1435,7 @@ namespace SEScripts.ResourceExchanger2_4_1_187
                 {
                     CurrentVolume -= volumeBlocked;
                     MaxVolume -= volumeBlocked;
-                    stat._output.Append("volumeBlocked ").AppendLine(volumeBlocked.ToString("N6"));
+                    stat.Output.Append("volumeBlocked ").AppendLine(volumeBlocked.ToString("N6"));
                 }
                 return this;
             }
