@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ItemInfoFinder
 {
-    public class ItemInfo : IEquatable<ItemInfo>
+    public class ItemInfo
     {
         public ItemInfo(long modId, MainType typeId, string subtypeId, string mass, string volume)
         {
@@ -27,23 +27,14 @@ namespace ItemInfoFinder
 
         public string Volume { get; }
 
-        public bool HasIntegralAmounts { get { return TypeId.HasIntegralAmounts; } }
-
-        public bool IsStackable { get { return TypeId.IsStackable; } }
-
-        public bool Equals(ItemInfo other)
+        public bool HasIntegralAmounts
         {
-            return TypeId == other.TypeId && SubtypeId == other.SubtypeId && Mass == other.Mass && Volume == other.Volume;
+            get { return TypeId.HasIntegralAmounts; }
         }
 
-        public override bool Equals(object obj)
+        public bool IsStackable
         {
-            return Equals((ItemInfo)obj);
-        }
-
-        public override int GetHashCode()
-        {
-            return TypeId.GetHashCode() + SubtypeId.GetHashCode() + Mass.GetHashCode() + Volume.GetHashCode();
+            get { return TypeId.IsStackable; }
         }
     }
 }

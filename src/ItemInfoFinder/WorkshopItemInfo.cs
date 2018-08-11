@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -100,8 +101,15 @@ namespace ItemInfoFinder
 
                     using (var reader = new StringReader(node.OuterXml))
                     {
-                        var item = (PublishedFileNode)ser.Deserialize(reader);
-                        Data.Add(item);
+                        try
+                        {
+                            var item = (PublishedFileNode)ser.Deserialize(reader);
+                            Data.Add(item);
+                        }
+                        catch (Exception)
+                        {
+                            Debugger.Break();
+                        }
                     }
                 }
             }

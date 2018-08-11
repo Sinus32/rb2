@@ -40,7 +40,7 @@ namespace ItemInfoFinder
         public string PreviewUrl { get; set; }
 
         [XmlElement("hcontent_preview")]
-        public long HContentPreview { get; set; }
+        public string HContentPreview { get; set; }
 
         [XmlElement("title")]
         public string Title { get; set; }

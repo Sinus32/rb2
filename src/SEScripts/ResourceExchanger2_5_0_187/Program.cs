@@ -848,7 +848,6 @@ namespace SEScripts.ResourceExchanger2_5_0_187
             ItemInfo.Add(OreType, "Wadsleyite", 1M, 0.37M, false, true); // Better Stone v6.9.2
 
             ItemInfo.Add(IngotType, "Carbon", 1M, 0.025M, false, true); // Graphene Armor [Core] [Beta]
-            ItemInfo.Add(IngotType, "Carbon", 1M, 0.052M, false, true); // TVSI-Tech Diamond Bonded Glass (Survival) [DX11]
             ItemInfo.Add(IngotType, "Cobalt", 1M, 0.112M, false, true); // Space Engineers
             ItemInfo.Add(IngotType, "Gold", 1M, 0.052M, false, true); // Space Engineers
             ItemInfo.Add(IngotType, "HeavyH2OIngot", 2M, 1M, false, true); // Deuterium Fusion Reactors
@@ -863,6 +862,7 @@ namespace SEScripts.ResourceExchanger2_5_0_187
             ItemInfo.Add(IngotType, "Nickel", 1M, 0.112M, false, true); // Space Engineers
             ItemInfo.Add(IngotType, "Platinum", 1M, 0.047M, false, true); // Space Engineers
             ItemInfo.Add(IngotType, "Scrap", 1M, 0.254M, false, true); // Space Engineers
+            ItemInfo.Add(IngotType, "ShieldPoint", 0.00001M, 0.0001M, false, true); // Energy shields (new modified version)
             ItemInfo.Add(IngotType, "Silicon", 1M, 0.429M, false, true); // Space Engineers
             ItemInfo.Add(IngotType, "Silver", 1M, 0.095M, false, true); // Space Engineers
             ItemInfo.Add(IngotType, "Stone", 1M, 0.37M, false, true); // Space Engineers
@@ -877,8 +877,9 @@ namespace SEScripts.ResourceExchanger2_5_0_187
 
             ItemInfo.Add(ComponentType, "AdvancedReactorBundle", 50M, 20M, true, true); // Tiered Thorium Reactors and Refinery (new)
             ItemInfo.Add(ComponentType, "AegisLicense", 0.2M, 1M, true, true); // GSF Energy Weapons Pack
+            ItemInfo.Add(ComponentType, "Aggitator", 40M, 10M, true, true); // Star Trek - Weapons Tech [WIP]
             ItemInfo.Add(ComponentType, "AlloyPlate", 30M, 3M, true, true); // Industrial Centrifuge (stable/dev)
-            ItemInfo.Add(ComponentType, "ampHD", 10M, 15.5M, true, true); // (DX11) Maglock Surface Docking Clamps V2.0
+            ItemInfo.Add(ComponentType, "ampHD", 10M, 15.5M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
             ItemInfo.Add(ComponentType, "ArcFuel", 2M, 0.627M, true, true); // Arc Reactor Pack [DX-11 Ready]
             ItemInfo.Add(ComponentType, "ArcReactorcomponent", 312M, 100M, true, true); // Arc Reactor Pack [DX-11 Ready]
             ItemInfo.Add(ComponentType, "AzimuthSupercharger", 10M, 9M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
@@ -913,12 +914,13 @@ namespace SEScripts.ResourceExchanger2_5_0_187
             ItemInfo.Add(ComponentType, "LargeTube", 25M, 38M, true, true); // Space Engineers
             ItemInfo.Add(ComponentType, "LaserConstructionBoxL", 10M, 100M, true, true); // GSF Energy Weapons Pack
             ItemInfo.Add(ComponentType, "LaserConstructionBoxS", 5M, 50M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(ComponentType, "Magna", 100M, 15M, true, true); // (DX11) Maglock Surface Docking Clamps V2.0
+            ItemInfo.Add(ComponentType, "Magna", 100M, 15M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
+            ItemInfo.Add(ComponentType, "Magnetron", 10M, 0.5M, true, true); // EM Thruster
             ItemInfo.Add(ComponentType, "MagnetronComponent", 50M, 20M, true, true); // Deuterium Fusion Reactors
-            ItemInfo.Add(ComponentType, "Magno", 10M, 5.5M, true, true); // (DX11) Maglock Surface Docking Clamps V2.0
+            ItemInfo.Add(ComponentType, "Magno", 10M, 5.5M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
             ItemInfo.Add(ComponentType, "Medical", 150M, 160M, true, true); // Space Engineers
             ItemInfo.Add(ComponentType, "MetalGrid", 6M, 15M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "Mg_FuelCell", 15M, 16M, true, true); // Ripptide's CW & EE Continued (DX11)
+            ItemInfo.Add(ComponentType, "Mg_FuelCell", 15M, 16M, true, true); // Ripptide's CW+EE (DX11). Reuploaded
             ItemInfo.Add(ComponentType, "Motor", 24M, 8M, true, true); // Space Engineers
             ItemInfo.Add(ComponentType, "Naquadah", 100M, 10M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
             ItemInfo.Add(ComponentType, "Neutronium", 500M, 5M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
@@ -932,6 +934,7 @@ namespace SEScripts.ResourceExchanger2_5_0_187
             ItemInfo.Add(ComponentType, "Reactor", 25M, 8M, true, true); // Space Engineers
             ItemInfo.Add(ComponentType, "SafetyBypass", 25M, 45M, true, true); // GSF Energy Weapons Pack
             ItemInfo.Add(ComponentType, "Scrap", 2M, 2M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+            ItemInfo.Add(ComponentType, "Shield", 5M, 25M, true, true); // Energy shields (new modified version)
             ItemInfo.Add(ComponentType, "ShieldFrequencyModule", 25M, 45M, true, true); // GSF Energy Weapons Pack
             ItemInfo.Add(ComponentType, "SmallTube", 4M, 2M, true, true); // Space Engineers
             ItemInfo.Add(ComponentType, "SolarCell", 8M, 20M, true, true); // Space Engineers
@@ -939,7 +942,7 @@ namespace SEScripts.ResourceExchanger2_5_0_187
             ItemInfo.Add(ComponentType, "Superconductor", 15M, 8M, true, true); // Space Engineers
             ItemInfo.Add(ComponentType, "TekMarLicense", 0.2M, 1M, true, true); // GSF Energy Weapons Pack
             ItemInfo.Add(ComponentType, "Thrust", 40M, 10M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "TractorHD", 1500M, 200M, true, true); // (DX11) Maglock Surface Docking Clamps V2.0
+            ItemInfo.Add(ComponentType, "TractorHD", 1500M, 200M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
             ItemInfo.Add(ComponentType, "Trinium", 100M, 10M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
             ItemInfo.Add(ComponentType, "Tritium", 3M, 3M, true, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
             ItemInfo.Add(ComponentType, "TVSI_DiamondGlass", 40M, 8M, true, true); // TVSI-Tech Diamond Bonded Glass (Survival) [DX11]
@@ -955,6 +958,7 @@ namespace SEScripts.ResourceExchanger2_5_0_187
             ItemInfo.Add(AmmoType, "900mmShell_HE", 210M, 75M, true, true); // Battle Cannon and Turrets (DX11)
             ItemInfo.Add(AmmoType, "Aden30x113", 35M, 16M, true, true); // Battle Cannon and Turrets (DX11)
             ItemInfo.Add(AmmoType, "AFmagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
+            ItemInfo.Add(AmmoType, "ARPhaserPulseAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
             ItemInfo.Add(AmmoType, "AZ_Missile_AA", 45M, 60M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
             ItemInfo.Add(AmmoType, "AZ_Missile200mm", 45M, 60M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
             ItemInfo.Add(AmmoType, "BatteryCannonAmmo1", 50M, 50M, true, true); // MWI - Weapon Collection (DX11)
@@ -962,16 +966,33 @@ namespace SEScripts.ResourceExchanger2_5_0_187
             ItemInfo.Add(AmmoType, "BigBertha", 3600M, 2800M, true, true); // Battle Cannon and Turrets (DX11)
             ItemInfo.Add(AmmoType, "BlasterCell", 1M, 1M, true, true); // [SEI] Weapon Pack DX11
             ItemInfo.Add(AmmoType, "Bofors40mm", 36M, 28M, true, true); // Battle Cannon and Turrets (DX11)
+            ItemInfo.Add(AmmoType, "Class10PhotonTorp", 45M, 50M, true, true); // Star Trek Weapons Pack
             ItemInfo.Add(AmmoType, "Class1LaserBeamCharge", 35M, 16M, true, true); // GSF Energy Weapons Pack
             ItemInfo.Add(AmmoType, "ConcreteMix", 2M, 2M, true, true); // Concrete Tool - placing voxels in survival
+            ItemInfo.Add(AmmoType, "crystalline_microcapacitor", 25M, 16M, true, true); // Star Trek - Weapons Tech [WIP]
+            ItemInfo.Add(AmmoType, "crystalline_nanocapacitor", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
+            ItemInfo.Add(AmmoType, "D7DisruptorBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "discovery_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
+            ItemInfo.Add(AmmoType, "DisruptorBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "DisruptorPulseAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
             ItemInfo.Add(AmmoType, "Eikester_Missile120mm", 25M, 30M, true, true); // (DX11) Small Missile Turret
             ItemInfo.Add(AmmoType, "Eikester_Nuke", 1800M, 8836M, true, true); // (DX11) Nuke Launcher [WiP]
             ItemInfo.Add(AmmoType, "EmergencyBlasterMagazine", 0.45M, 0.2M, true, true); // Independent Survival
+            ItemInfo.Add(AmmoType, "EnormousPhaserBeamAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "EnormousPhaserBeamAmmo_LR", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
             ItemInfo.Add(AmmoType, "Eq_GenericEnergyMag", 35M, 16M, true, true); // HSR
+            ItemInfo.Add(AmmoType, "federationphase", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
             ItemInfo.Add(AmmoType, "Flak130mm", 2M, 3M, true, true); // [SEI] Weapon Pack DX11
             ItemInfo.Add(AmmoType, "Flak200mm", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
             ItemInfo.Add(AmmoType, "Flak500mm", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
+            ItemInfo.Add(AmmoType, "GuidedMissileTargeterAmmoMagazine", 100M, 100M, true, true); // Star Trek Weapons Pack
             ItemInfo.Add(AmmoType, "HDTCannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
+            ItemInfo.Add(AmmoType, "heavy_photon_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
+            ItemInfo.Add(AmmoType, "HeavyDisruptorPulseAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "HeavyPhaserBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "HeavyPhaserBeamAmmo_LR", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "HeavyPhaserPulseAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "HeavySWDisruptorBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
             ItemInfo.Add(AmmoType, "HighDamageGatlingAmmo", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
             ItemInfo.Add(AmmoType, "ISM_FusionAmmo", 35M, 10M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
             ItemInfo.Add(AmmoType, "ISM_GrendelAmmo", 35M, 2M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
@@ -1014,9 +1035,10 @@ namespace SEScripts.ResourceExchanger2_5_0_187
             ItemInfo.Add(AmmoType, "K_HSR_SG_ElectroBlade", 3M, 0.1M, true, true); // HSR
             ItemInfo.Add(AmmoType, "K_HSR_SG_Zeus", 15M, 0.1M, true, true); // HSR
             ItemInfo.Add(AmmoType, "K_SpinalLaser_Beam_True", 0M, 1M, true, true); // SpinalWeaponry
-            ItemInfo.Add(AmmoType, "LargeKlingonCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+            ItemInfo.Add(AmmoType, "LargePhotonTorp", 45M, 50M, true, true); // Star Trek Weapons Pack
             ItemInfo.Add(AmmoType, "LargeShipShotGunAmmo", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
             ItemInfo.Add(AmmoType, "LargeShotGunAmmoTracer", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+            ItemInfo.Add(AmmoType, "LargeTrikobaltCharge", 45M, 50M, true, true); // Star Trek Weapons Pack
             ItemInfo.Add(AmmoType, "LaserAmmo", 0.001M, 0.01M, true, true); // (DX11)Laser Turret
             ItemInfo.Add(AmmoType, "LaserArrayFlakMagazine", 45M, 30M, true, true); // White Dwarf - Directed Energy Platform [DX11]
             ItemInfo.Add(AmmoType, "LaserArrayShellMagazine", 45M, 120M, true, true); // White Dwarf - Directed Energy Platform [DX11]
@@ -1035,12 +1057,16 @@ namespace SEScripts.ResourceExchanger2_5_0_187
             ItemInfo.Add(AmmoType, "MagazineTMMedBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
             ItemInfo.Add(AmmoType, "MagazineTMSiegeBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
             ItemInfo.Add(AmmoType, "MagazineTMSmallBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
+            ItemInfo.Add(AmmoType, "MedBlaster", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
             ItemInfo.Add(AmmoType, "MinotaurAmmo", 360M, 128M, true, true); // (DX11)Minotaur Cannon
             ItemInfo.Add(AmmoType, "Missile200mm", 45M, 60M, true, true); // Space Engineers
+            ItemInfo.Add(AmmoType, "Mk14PhaserBeamAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "Mk15PhaserBeamAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
             ItemInfo.Add(AmmoType, "MK1CannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
             ItemInfo.Add(AmmoType, "MK2CannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
             ItemInfo.Add(AmmoType, "MK3CannonMagazineAP", 100M, 100M, true, true); // MWI - Weapon Collection (DX11)
             ItemInfo.Add(AmmoType, "MK3CannonMagazineHE", 300M, 100M, true, true); // MWI - Weapon Collection (DX11)
+            ItemInfo.Add(AmmoType, "Mk6PhaserBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
             ItemInfo.Add(AmmoType, "NATO_25x184mm", 35M, 16M, true, true); // Space Engineers
             ItemInfo.Add(AmmoType, "NATO_5p56x45mm", 0.45M, 0.2M, true, true); // Space Engineers
             ItemInfo.Add(AmmoType, "NiFeDUSlugMagazineLZM", 45M, 50M, true, true); // Revived Large Ship Railguns (With penetration damage!)
@@ -1049,32 +1075,58 @@ namespace SEScripts.ResourceExchanger2_5_0_187
             ItemInfo.Add(AmmoType, "OKI230mmAmmo", 800M, 800M, true, true); // OKI Grand Weapons Bundle (DX11)
             ItemInfo.Add(AmmoType, "OKI23mmAmmo", 100M, 50M, true, true); // OKI Grand Weapons Bundle (DX11)
             ItemInfo.Add(AmmoType, "OKI50mmAmmo", 200M, 60M, true, true); // OKI Grand Weapons Bundle (DX11)
-            ItemInfo.Add(AmmoType, "Phaser2Charge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoType, "Phaser2ChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoType, "PhaserCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoType, "PhaserChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+            ItemInfo.Add(AmmoType, "OSPhaserAmmo", 30.0M, 15.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "OSPhotonTorp", 30M, 60M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "PhaseCannonAmmo", 12.0M, 3.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "PhaserBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "PhaserBeamAmmo_LR", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "PhaserLanceAmmo", 984.0M, 850.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "PhaserLanceAmmo_LR", 984.0M, 850.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "PhaserLanceTurretAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "PhaserPulseAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "photon_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
             ItemInfo.Add(AmmoType, "Plasma_Hydrogen", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
+            ItemInfo.Add(AmmoType, "PlasmaBeamAmmo", 0.1M, 0.5M, true, true); // Star Trek Weapons Pack
             ItemInfo.Add(AmmoType, "PlasmaCutterCell", 1M, 1M, true, true); // [SEI] Weapon Pack DX11
             ItemInfo.Add(AmmoType, "PlasmaMissile", 30M, 50M, true, true); // rearth's Advanced Combat Systems
+            ItemInfo.Add(AmmoType, "PolaronBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "PolaronPulseAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "QuantenTorpedoLarge", 45M, 50M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "quantum_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
             ItemInfo.Add(AmmoType, "RB_NATO_125x920mm", 875M, 160M, true, true); // RB Weapon Collection [DX11]
             ItemInfo.Add(AmmoType, "RB_Rocket100mm", 11.25M, 15M, true, true); // RB Weapon Collection [DX11]
             ItemInfo.Add(AmmoType, "RB_Rocket400mm", 180M, 240M, true, true); // RB Weapon Collection [DX11]
             ItemInfo.Add(AmmoType, "RG_RG_ammo", 45M, 60M, true, true); // RG_RailGun
-            ItemInfo.Add(AmmoType, "RomulanCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoType, "RomulanChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoType, "SmallKlingonCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+            ItemInfo.Add(AmmoType, "romulanphase", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
+            ItemInfo.Add(AmmoType, "RomulanTorp", 45M, 50M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "small_discovery_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
+            ItemInfo.Add(AmmoType, "small_federationphase", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
+            ItemInfo.Add(AmmoType, "SmallDisruptorBeamAmmo", 12.0M, 3.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "SmallPhaserBeamAmmo", 12.0M, 3.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "SmallPhotonTorp", 12M, 8M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "SmallPlasmaBeamAmmo", 0.1M, 0.5M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "SmallPolaronBeamAmmo", 12.0M, 3.0M, true, true); // Star Trek Weapons Pack
             ItemInfo.Add(AmmoType, "SmallShotGunAmmo", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
             ItemInfo.Add(AmmoType, "SmallShotGunAmmoTracer", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
             ItemInfo.Add(AmmoType, "SniperRoundHighSpeedLowDamage", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
             ItemInfo.Add(AmmoType, "SniperRoundHighSpeedLowDamageSmallShip", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
             ItemInfo.Add(AmmoType, "SniperRoundLowSpeedHighDamage", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
             ItemInfo.Add(AmmoType, "SniperRoundLowSpeedHighDamageSmallShip", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+            ItemInfo.Add(AmmoType, "SpartialTorp", 45M, 50M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "SWDisruptorBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
             ItemInfo.Add(AmmoType, "TankCannonAmmoSEM4", 35M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
             ItemInfo.Add(AmmoType, "TelionAF_PMagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
             ItemInfo.Add(AmmoType, "TelionAMMagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
+            ItemInfo.Add(AmmoType, "TMPPhaserAmmo", 30.0M, 15.0M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "tng_quantum_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
+            ItemInfo.Add(AmmoType, "TOS", 35M, 16M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "TOSPhaserBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
             ItemInfo.Add(AmmoType, "TritiumMissile", 72M, 60M, true, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
             ItemInfo.Add(AmmoType, "TritiumShot", 3M, 3M, true, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
             ItemInfo.Add(AmmoType, "TungstenBolt", 4812M, 250M, true, true); // (DX11)Mass Driver
+            ItemInfo.Add(AmmoType, "Type10", 35M, 16M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "Type12", 35M, 16M, true, true); // Star Trek Weapons Pack
+            ItemInfo.Add(AmmoType, "Type8", 35M, 16M, true, true); // Star Trek Weapons Pack
             ItemInfo.Add(AmmoType, "Vulcan20x102", 35M, 16M, true, true); // Battle Cannon and Turrets (DX11)
 
             ItemInfo.Add(GunType, "AngleGrinder2Item", 3M, 20M, true, false); // Space Engineers
@@ -1346,7 +1398,7 @@ namespace SEScripts.ResourceExchanger2_5_0_187
 
         private class ItemInfo
         {
-            public const int ID_LENGTH = 5;
+            public const int ID_LENGTH = 6;
             public static readonly Dictionary<MyDefinitionId, ItemInfo> ItemInfoDict;
 
             static ItemInfo()
