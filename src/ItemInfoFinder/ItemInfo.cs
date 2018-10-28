@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace ItemInfoFinder
 {
-    public class ItemInfo : IEquatable<ItemInfo>
+    public class ItemInfo
     {
-        public ItemInfo(long modId, string typeId, string subtypeId, string mass, string volume)
+        public ItemInfo(long modId, MainType typeId, string subtypeId, string mass, string volume)
         {
             ModId = modId;
             TypeId = typeId;
@@ -17,33 +17,24 @@ namespace ItemInfoFinder
             Volume = volume;
         }
 
-        public long ModId { get; set; }
+        public long ModId { get; }
 
-        public string TypeId { get; set; }
+        public MainType TypeId { get; }
 
-        public string SubtypeId { get; set; }
+        public string SubtypeId { get; }
 
-        public string Mass { get; set; }
+        public string Mass { get; }
 
-        public string Volume { get; set; }
+        public string Volume { get; }
 
-        public bool IsSingleItem { get { return TypeId != "Ore" && TypeId != "Ingot"; } }
-
-        public bool IsStackable { get { return TypeId != "PhysicalGunObject" && TypeId != "OxygenContainerObject" && TypeId != "GasContainerObject"; } }
-
-        public bool Equals(ItemInfo other)
+        public bool HasIntegralAmounts
         {
-            return TypeId == other.TypeId && SubtypeId == other.SubtypeId && Mass == other.Mass && Volume == other.Volume;
+            get { return TypeId.HasIntegralAmounts; }
         }
 
-        public override bool Equals(object obj)
+        public bool IsStackable
         {
-            return Equals((ItemInfo)obj);
-        }
-
-        public override int GetHashCode()
-        {
-            return TypeId.GetHashCode() + SubtypeId.GetHashCode() + Mass.GetHashCode() + Volume.GetHashCode();
+            get { return TypeId.IsStackable; }
         }
     }
 }

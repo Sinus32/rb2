@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,7 +25,8 @@ namespace ItemInfoFinder
             try
             {
                 infoFinder.FindItemsInFiles(@"D:\SteamLibrary\steamapps\common\SpaceEngineers\Content\Data", "*.sbc");
-                infoFinder.FindItemsInZipFiles(@"C:\Users\Sinus\AppData\Roaming\SpaceEngineers\Mods", "*.sbm", @"data\", ".sbc");
+                infoFinder.FindItemsInZipFiles(@"D:\SteamLibrary\steamapps\workshop\content\244850", "*_legacy.bin", SearchOption.AllDirectories, @"data\", ".sbc");
+                //infoFinder.FindItemsInZipFiles(@"C:\Users\Sinus\AppData\Roaming\SpaceEngineers\Mods", "*.sbm", SearchOption.TopDirectoryOnly, @"data\", ".sbc");
                 infoFinder.DownloadModData();
                 OutputText.Text = infoFinder.GetOutputText();
                 OutputText.SelectAll();
