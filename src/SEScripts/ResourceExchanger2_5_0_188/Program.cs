@@ -15,11 +15,11 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
-namespace SEScripts.ResourceExchanger2_5_0_187
+namespace SEScripts.ResourceExchanger2_5_0_188
 {
     public class Program : MyGridProgram
     {
-        /// Resource Exchanger version 2.5.0 2018-??-?? for SE 1.187+
+        /// Resource Exchanger version 2.5.0 2018-??-?? for SE 1.188+
         /// Made by Sinus32
         /// http://steamcommunity.com/sharedfiles/filedetails/546221822
         ///
@@ -739,6 +739,9 @@ namespace SEScripts.ResourceExchanger2_5_0_187
                     sb.AppendLine("%");
             }
 
+            if (stat.MissingInfo.Count > 0)
+                sb.Append("Err: missing volume information for ").AppendLine(String.Join(", ", stat.MissingInfo));
+
             _avgMovements[_cycleNumber & 0x0F] = stat.MovementsDone;
             var samples = Math.Min(_cycleNumber + 1, 0x10);
             double avg = 0;
@@ -748,12 +751,11 @@ namespace SEScripts.ResourceExchanger2_5_0_187
 
             sb.Append("Avg. movements: ").Append(avg.ToString("F2")).Append(" (last ").Append(samples).AppendLine(" runs)");
 
-            if (stat.MissingInfo.Count > 0)
-                sb.Append("Err: missing volume information for ").AppendLine(String.Join(", ", stat.MissingInfo));
-
             float cpu = Runtime.CurrentInstructionCount * 100;
             cpu /= Runtime.MaxInstructionCount;
             sb.Append("Complexity limit usage: ").Append(cpu.ToString("F2")).AppendLine("%");
+
+            sb.Append("Last run time: ").Append(Runtime.LastRunTimeMs.ToString("F1")).AppendLine(" ms");
 
             var tab = new char[42];
             for (int i = 0; i < 42; ++i)
