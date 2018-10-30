@@ -46,6 +46,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
 
         /** Implementation ************************************************************************/
 
+        private const string ConfigSection = "ResourceExchanger";
         private const decimal SmallNumber = 0.000003M;
         private const string OreType = "MyObjectBuilder_Ore";
         private const string IngotType = "MyObjectBuilder_Ingot";
@@ -66,7 +67,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
             _avgMovements = new int[0x10];
 
             BuildItemInfoDict();
-            //Runtime.UpdateFrequency = UpdateFrequency.Update100;
+            Runtime.UpdateFrequency = UpdateFrequency.Update100;
         }
 
         public void Save()
@@ -130,37 +131,39 @@ namespace SEScripts.ResourceExchanger2_5_0_188
 
         public void ReadConfig()
         {
-            const string myGridOnlyComment = "Limit affected blocks to only these that are connected to the same ship/station as the"
-                + "\nthe programmable block. Set to true if blocks on ships connected by connectors"
-                + "\nor rotors should not be affected.";
-            const string managedGroupComment = "Optional name of a group of blocks that will be affected by the script."
-                + "\nBy default all blocks connected to the grid are processed, but you can set this"
-                + "\nto force the script to affect only certain blocks.";
-            const string reactorsComment = "Enables exchanging uranium between reactors";
-            const string refineriesComment = "Enables exchanging ore between refineries and arc furnaces";
-            const string drillsComment = "Enables exchanging ore between drills and"
+            const string myGridOnlyComment = "\nLimit affected blocks to only these that are connected to the same"
+                + "\nship/station as the programmable block. Set to true if blocks on ships"
+                + "\nconnected by connectors or rotors should not be affected.";
+            const string managedGroupComment = "\nOptional name of a group of blocks that will be affected"
+                + "\nby the script. By default all blocks connected to the grid are processed,"
+                + "\nbut you can set this to force the script to affect only certain blocks.";
+            const string reactorsComment = "\nEnables exchanging uranium between reactors";
+            const string refineriesComment = "\nEnables exchanging ore between refineries and arc furnaces";
+            const string drillsComment = "\nEnables exchanging ore between drills and"
                 + "\nprocessing lights that indicates how much free space left in drills";
-            const string turretsComment = "Enables exchanging ammunition between turrets and launchers";
-            const string oxygenGeneratorsComment = "Enables exchanging ice between oxygen generators";
-            const string groupsComment = "Enables exchanging items in blocks of custom groups";
-            const string drillsPayloadLightsGroupComment = "Name of a group of lights that will be used as indicators of space left in drills."
-                + "\nBoth Interior Light and Spotlight are supported."
+            const string turretsComment = "\nEnables exchanging ammunition between turrets and launchers";
+            const string oxygenGeneratorsComment = "\nEnables exchanging ice between oxygen generators";
+            const string groupsComment = "\nEnables exchanging items in blocks of custom groups";
+            const string drillsPayloadLightsGroupComment = "\nName of a group of lights that will be used as indicators of space"
+                + "\nleft in drills. Both Interior Light and Spotlight are supported."
                 + "\nThe lights will change colors to tell you how much free space left:"
                 + "\nWhite - All drills are connected to each other and they are empty."
                 + "\nYellow - Drills are full in a half."
                 + "\nRed - Drills are almost full (95%)."
-                + "\nPurple - Less than WARNING_LEVEL_IN_KILOLITERS_LEFT m3 of free space left."
+                + "\nPurple - Less than 5 m³ of free space left."
                 + "\nCyan - Some drills are not connected to each other.";
-            const string topRefineryPriorityComment = "Top priority item type to process in refineries and/or arc furnaces."
-                + "\nThe script will move an item of this type to the first slot of a refinery or arc"
-                + "\nfurnace if it find that item in the refinery (or arc furnace) processing queue.";
-            const string lowestRefineryPriorityComment = "Lowest priority item type to process in refineries and/or arc furnaces."
-                + "\nThe script will move an item of this type to the last slot of a refinery or arc"
-                + "\nfurnace if it find that item in the refinery (or arc furnace) processing queue.";
-            const string groupTagPatternComment = "Regular expression used to recognize groups";
-            const string displayLcdGroupComment = "Group of wide LCD screens that will act as debugger output for this script."
-                + "\nYou can name this screens as you wish, but pay attention that"
-                + "\nthey will be used in alphabetical order according to their names.";
+            const string topRefineryPriorityComment = "\nTop priority item type to process in refineries"
+                + "\nand/or arc furnaces. The script will move an item of this type to"
+                + "\nthe first slot of a refinery or arc furnace if it find that item"
+                + "\nin the refinery (or arc furnace) processing queue.";
+            const string lowestRefineryPriorityComment = "\nLowest priority item type to process in refineries"
+                + "\nand/or arc furnaces. The script will move an item of this type to"
+                + "\nthe last slot of a refinery or arc furnace if it find that item"
+                + "\nin the refinery (or arc furnace) processing queue.";
+            const string groupTagPatternComment = "\nRegular expression used to recognize groups";
+            const string displayLcdGroupComment = "\nGroup of wide LCD screens that will act as debugger output for"
+                + "\nthis script. You can name this screens as you wish, but pay attention"
+                + "\nthat they will be used in alphabetical order according to their names.";
 
             MyIniParseResult result;
             var ini = new MyIni();
@@ -189,8 +192,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
 
         public void ReadConfigBoolean(MyIni ini, string name, ref bool value, string comment)
         {
-            const string section = "ResourceExchanger";
-            var key = new MyIniKey(section, name);
+            var key = new MyIniKey(ConfigSection, name);
             MyIniValue val = ini.Get(key);
             bool tmp;
             if (val.TryGetBoolean(out tmp))
@@ -202,8 +204,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
 
         public void ReadConfigString(MyIni ini, string name, ref string value, string comment)
         {
-            const string section = "ResourceExchanger";
-            var key = new MyIniKey(section, name);
+            var key = new MyIniKey(ConfigSection, name);
             MyIniValue val = ini.Get(key);
             string tmp;
             if (val.TryGetString(out tmp))
@@ -216,6 +217,8 @@ namespace SEScripts.ResourceExchanger2_5_0_188
         private BlockStore CollectTerminals(BlockStore bs, Statistics stat)
         {
             var blocks = new List<IMyTerminalBlock>();
+            Func<IMyTerminalBlock, bool> myTerminalBlockFilter = b => b.IsFunctional && (!MyGridOnly || b.CubeGrid == Me.CubeGrid);
+            Func<ICollection, bool, string> countOrNA = (c, e) => e ? c.Count.ToString() : "n/a";
 
             if (String.IsNullOrEmpty(ManagedBlocksGroup))
             {
@@ -257,9 +260,6 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 .Append(", custom groups: ").Append(countOrNA(bs.Groups, EnableGroups)).AppendLine();
 
             return bs;
-
-            bool myTerminalBlockFilter(IMyTerminalBlock b) => b.IsFunctional && (!MyGridOnly || b.CubeGrid == Me.CubeGrid);
-            string countOrNA(ICollection c, bool e) => e ? c.Count.ToString() : "n/a";
         }
 
         private int ProcessBlocks(string msg, bool enable, ICollection<InventoryWrapper> blocks, Statistics stat, string invGroup = null,
@@ -361,8 +361,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
             if (group.Count < 2)
             {
                 stat.Output.Append("Cannot balance conveyor network ").Append(networkNumber + 1)
-                    .Append(" group ").Append(groupNumber + 1).Append(" \"").Append(groupName)
-                    .AppendLine("\"")
+                    .Append(" group ").Append(groupNumber + 1).Append(" \"").Append(groupName).AppendLine("\"")
                     .AppendLine("  because there is only one inventory.");
                 return; // nothing to do
             }
@@ -455,7 +454,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 VRage.MyFixedPoint amountToMove;
 
                 if (data.HasIntegralAmounts)
-                    amountToMove = (VRage.MyFixedPoint)((int)(amountToMoveRaw + 0.1M));
+                    amountToMove = (int)(amountToMoveRaw + 0.1M);
                 else
                     amountToMove = (VRage.MyFixedPoint)amountToMoveRaw;
 
@@ -502,11 +501,11 @@ namespace SEScripts.ResourceExchanger2_5_0_188
         private void ProcessDrillsLights(List<InventoryWrapper> drills, List<IMyLightingBlock> lights, Statistics stat)
         {
             VRage.MyFixedPoint warningLevelInCubicMetersLeft = 5;
-            Color step0() => new Color(255, 255, 255);
-            Color step1() => new Color(255, 255, 0);
-            Color step2() => new Color(255, 0, 0);
-            Color warn() => (_cycleNumber & 0x1) == 0 ? new Color(128, 0, 128) : new Color(128, 0, 64);
-            Color err() => (_cycleNumber & 0x1) == 0 ? new Color(0, 128, 128) : new Color(0, 64, 128);
+            Func<Color> step0 = () => new Color(255, 255, 255);
+            Func<Color> step1 = () => new Color(255, 255, 0);
+            Func<Color> step2 = () => new Color(255, 0, 0);
+            Func<Color> warn = () => (_cycleNumber & 0x1) == 0 ? new Color(128, 0, 128) : new Color(128, 0, 64);
+            Func<Color> err = () => (_cycleNumber & 0x1) == 0 ? new Color(0, 128, 128) : new Color(0, 64, 128);
 
             if (lights.Count == 0)
             {
@@ -767,7 +766,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                     c = '·';
                 tab[41 - (i + _cycleNumber) % 42] = c;
             }
-            sb.AppendLine(new String(tab));
+            sb.AppendLine(new string(tab));
             ++_cycleNumber;
 
             Echo(sb.ToString());
@@ -800,59 +799,139 @@ namespace SEScripts.ResourceExchanger2_5_0_188
 
         private void BuildItemInfoDict()
         {
-            ItemInfo.Add(OreType, "Akimotoite", 1M, 0.37M, false, true); // Better Stone v6.9.2
-            ItemInfo.Add(OreType, "Autunite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+            ItemInfo.Add(OreType, "[CM] Cattierite (Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[CM] Cohenite (Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[CM] Dense Iron (Fe+)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[CM] Glaucodot (Fe,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[CM] Heazlewoodite (Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[CM] Iron (Fe)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[CM] Kamacite (Fe,Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[CM] Pyrite (Fe,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[CM] Taenite (Fe,Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[EI] Autunite (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[EI] Carnotite (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[EI] Uraniaurite (U,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[PM] Chlorargyrite (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[PM] Cooperite (Ni,Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[PM] Electrum (Au,Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[PM] Galena (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[PM] Niggliite (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[PM] Petzite (Ag,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[PM] Porphyry (Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[PM] Sperrylite (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[S] Akimotoite (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[S] Dolomite (Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[S] Hapkeite (Fe,Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[S] Icy Stone", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[S] Olivine (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[S] Quartz (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[S] Sinoite (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "[S] Wadsleyite (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Akimotoite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Akimotoite (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Autunite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Autunite (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
             ItemInfo.Add(OreType, "Carbon", 1M, 0.37M, false, true); // Graphene Armor [Core] [Beta]
-            ItemInfo.Add(OreType, "Carnotite", 1M, 0.37M, false, true); // Better Stone v6.9.2
-            ItemInfo.Add(OreType, "Cattierite", 1M, 0.37M, false, true); // Better Stone v6.9.2
-            ItemInfo.Add(OreType, "Chlorargyrite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+            ItemInfo.Add(OreType, "Carnotite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Carnotite (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Cattierite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Cattierite (Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Chlorargyrite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Chlorargyrite (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
             ItemInfo.Add(OreType, "Cobalt", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Cohenite", 1M, 0.37M, false, true); // Better Stone v6.9.2
-            ItemInfo.Add(OreType, "Cooperite", 1M, 0.37M, false, true); // Better Stone v6.9.2
-            ItemInfo.Add(OreType, "Dense Iron", 1M, 0.37M, false, true); // Better Stone v6.9.2
-            ItemInfo.Add(OreType, "Deuterium", 1.5M, 0.5M, false, true); // Deuterium Fusion Reactors
-            ItemInfo.Add(OreType, "Dolomite", 1M, 0.37M, false, true); // Better Stone v6.9.2
-            ItemInfo.Add(OreType, "Electrum", 1M, 0.37M, false, true); // Better Stone v6.9.2
-            ItemInfo.Add(OreType, "Galena", 1M, 0.37M, false, true); // Better Stone v6.9.2
-            ItemInfo.Add(OreType, "Glaucodot", 1M, 0.37M, false, true); // Better Stone v6.9.2
+            ItemInfo.Add(OreType, "Cohenite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Cohenite (Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Cooperite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Cooperite (Ni,Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Dense Iron", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Deuterium", 1.5M, 0.5M, false, true); // FusionReactors
+            ItemInfo.Add(OreType, "Dolomite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Dolomite (Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Electrum", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Electrum (Au,Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Galena", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Galena (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Glaucodot", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Glaucodot (Fe,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
             ItemInfo.Add(OreType, "Gold", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Hapkeite", 1M, 0.37M, false, true); // Better Stone v6.9.2
-            ItemInfo.Add(OreType, "Heazlewoodite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+            ItemInfo.Add(OreType, "Hapkeite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Hapkeite (Fe,Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Heazlewoodite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Heazlewoodite (Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
             ItemInfo.Add(OreType, "Helium", 1M, 5.6M, false, true); // (DX11)Mass Driver
             ItemInfo.Add(OreType, "Ice", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Icy Stone", 1M, 0.37M, false, true); // Better Stone v6.9.2
+            ItemInfo.Add(OreType, "Icy Stone", 1M, 0.37M, false, true); // Better Stone v7.0.1
             ItemInfo.Add(OreType, "Iron", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Kamacite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+            ItemInfo.Add(OreType, "Kamacite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Kamacite (Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
             ItemInfo.Add(OreType, "Magnesium", 1M, 0.37M, false, true); // Space Engineers
             ItemInfo.Add(OreType, "Naquadah", 1M, 0.37M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
             ItemInfo.Add(OreType, "Neutronium", 1M, 0.37M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
             ItemInfo.Add(OreType, "Nickel", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Niggliite", 1M, 0.37M, false, true); // Better Stone v6.9.2
-            ItemInfo.Add(OreType, "Olivine", 1M, 0.37M, false, true); // Better Stone v6.9.2
+            ItemInfo.Add(OreType, "Niggliite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Niggliite (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Olivine", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Olivine (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
             ItemInfo.Add(OreType, "Organic", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Petzite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+            ItemInfo.Add(OreType, "Petzite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Petzite (Au,Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
             ItemInfo.Add(OreType, "Platinum", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Porphyry", 1M, 0.37M, false, true); // Better Stone v6.9.2
-            ItemInfo.Add(OreType, "Pyrite", 1M, 0.37M, false, true); // Better Stone v6.9.2
-            ItemInfo.Add(OreType, "Quartz", 1M, 0.37M, false, true); // Better Stone v6.9.2
+            ItemInfo.Add(OreType, "Porphyry", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Porphyry (Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Pyrite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Pyrite (Fe,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Quartz", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Quartz (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
             ItemInfo.Add(OreType, "Scrap", 1M, 0.254M, false, true); // Space Engineers
             ItemInfo.Add(OreType, "Silicon", 1M, 0.37M, false, true); // Space Engineers
             ItemInfo.Add(OreType, "Silver", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Sinoite", 1M, 0.37M, false, true); // Better Stone v6.9.2
-            ItemInfo.Add(OreType, "Sperrylite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+            ItemInfo.Add(OreType, "Sinoite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Sinoite (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Sperrylite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Sperrylite (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
             ItemInfo.Add(OreType, "Stone", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Taenite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+            ItemInfo.Add(OreType, "Taenite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Taenite (Fe,Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
             ItemInfo.Add(OreType, "Thorium", 1M, 0.9M, false, true); // Tiered Thorium Reactors and Refinery (new)
             ItemInfo.Add(OreType, "Trinium", 1M, 0.37M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
             ItemInfo.Add(OreType, "Tungsten", 1M, 0.47M, false, true); // (DX11)Mass Driver
-            ItemInfo.Add(OreType, "Uraniaurite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+            ItemInfo.Add(OreType, "Uraniaurite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Uraniaurite (U,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
             ItemInfo.Add(OreType, "Uranium", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Wadsleyite", 1M, 0.37M, false, true); // Better Stone v6.9.2
+            ItemInfo.Add(OreType, "Wadsleyite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Wadsleyite (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Акимотит (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Аутунит (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Вадселит (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Галенит (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Глаукодот (Fe,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Доломит (Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Камасит (Fe,Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Карнотит (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Катьерит (Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Кварц (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Когенит (Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Куперит (Ni,Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Ледяной камень", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Нигглиит (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Оливин (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Петцит (Ag,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Пирит (Fe,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Плотное железо (Fe+)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Порфир (Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Синоит (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Сперрилит (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Таенит (Fe,Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Ураниурит (U,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Хапкеит (Fe,Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Хизлевудит (Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Хлораргирит (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+            ItemInfo.Add(OreType, "Электрум (Au,Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
 
-            ItemInfo.Add(IngotType, "Carbon", 1M, 0.025M, false, true); // Graphene Armor [Core] [Beta]
+            ItemInfo.Add(IngotType, "Carbon", 1M, 0.052M, false, true); // TVSI-Tech Diamond Bonded Glass (Survival) [DX11]
             ItemInfo.Add(IngotType, "Cobalt", 1M, 0.112M, false, true); // Space Engineers
             ItemInfo.Add(IngotType, "Gold", 1M, 0.052M, false, true); // Space Engineers
-            ItemInfo.Add(IngotType, "HeavyH2OIngot", 2M, 1M, false, true); // Deuterium Fusion Reactors
+            ItemInfo.Add(IngotType, "HeavyH2OIngot", 2M, 1M, false, true); // FusionReactors
             ItemInfo.Add(IngotType, "HeavyWater", 5M, 0.052M, false, true); // GSF Energy Weapons Pack
             ItemInfo.Add(IngotType, "Iron", 1M, 0.127M, false, true); // Space Engineers
             ItemInfo.Add(IngotType, "K_HSR_Nanites_Gel", 0.001M, 0.001M, false, true); // HSR
@@ -870,6 +949,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
             ItemInfo.Add(IngotType, "Stone", 1M, 0.37M, false, true); // Space Engineers
             ItemInfo.Add(IngotType, "SuitFuel", 0.0003M, 0.052M, false, true); // Independent Survival
             ItemInfo.Add(IngotType, "SuitRTGPellet", 1.0M, 0.052M, false, true); // Independent Survival
+            ItemInfo.Add(IngotType, "Thorium", 2M, 0.5M, false, true); // Thorium Reactor Kit
             ItemInfo.Add(IngotType, "ThoriumIngot", 3M, 20M, false, true); // Tiered Thorium Reactors and Refinery (new)
             ItemInfo.Add(IngotType, "Trinium", 1M, 0.052M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
             ItemInfo.Add(IngotType, "Tungsten", 1M, 0.52M, false, true); // (DX11)Mass Driver
@@ -918,7 +998,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
             ItemInfo.Add(ComponentType, "LaserConstructionBoxS", 5M, 50M, true, true); // GSF Energy Weapons Pack
             ItemInfo.Add(ComponentType, "Magna", 100M, 15M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
             ItemInfo.Add(ComponentType, "Magnetron", 10M, 0.5M, true, true); // EM Thruster
-            ItemInfo.Add(ComponentType, "MagnetronComponent", 50M, 20M, true, true); // Deuterium Fusion Reactors
+            ItemInfo.Add(ComponentType, "MagnetronComponent", 50M, 20M, true, true); // FusionReactors
             ItemInfo.Add(ComponentType, "Magno", 10M, 5.5M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
             ItemInfo.Add(ComponentType, "Medical", 150M, 160M, true, true); // Space Engineers
             ItemInfo.Add(ComponentType, "MetalGrid", 6M, 15M, true, true); // Space Engineers
@@ -954,7 +1034,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
             ItemInfo.Add(AmmoType, "250shell", 128M, 64M, true, true); // [DEPRECATED] CSD Battlecannon
             ItemInfo.Add(AmmoType, "300mmShell_AP", 35M, 25M, true, true); // Battle Cannon and Turrets (DX11)
             ItemInfo.Add(AmmoType, "300mmShell_HE", 35M, 25M, true, true); // Battle Cannon and Turrets (DX11)
-            ItemInfo.Add(AmmoType, "88hekc", 16M, 16M, true, true); // [DEPRECATED] CSD Battlecannon
+            ItemInfo.Add(AmmoType, "88hekc", 16M, 16M, true, true); // CSD Battlecannon
             ItemInfo.Add(AmmoType, "88shell", 16M, 16M, true, true); // [DEPRECATED] CSD Battlecannon
             ItemInfo.Add(AmmoType, "900mmShell_AP", 210M, 75M, true, true); // Battle Cannon and Turrets (DX11)
             ItemInfo.Add(AmmoType, "900mmShell_HE", 210M, 75M, true, true); // Battle Cannon and Turrets (DX11)
@@ -1003,6 +1083,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
             ItemInfo.Add(AmmoType, "ISM_MinigunAmmo", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
             ItemInfo.Add(AmmoType, "ISMNeedles", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
             ItemInfo.Add(AmmoType, "ISMTracer", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+            ItemInfo.Add(AmmoType, "LargeKlingonCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
             ItemInfo.Add(AmmoType, "K_CS_DarkLance", 15M, 0.25M, true, true); // SpinalWeaponry
             ItemInfo.Add(AmmoType, "K_CS_DarkLance_Red", 15M, 0.25M, true, true); // SpinalWeaponry
             ItemInfo.Add(AmmoType, "K_CS_SG_Eye", 1M, 0.25M, true, true); // SpinalWeaponry
@@ -1072,11 +1153,16 @@ namespace SEScripts.ResourceExchanger2_5_0_188
             ItemInfo.Add(AmmoType, "NATO_25x184mm", 35M, 16M, true, true); // Space Engineers
             ItemInfo.Add(AmmoType, "NATO_5p56x45mm", 0.45M, 0.2M, true, true); // Space Engineers
             ItemInfo.Add(AmmoType, "NiFeDUSlugMagazineLZM", 45M, 50M, true, true); // Revived Large Ship Railguns (With penetration damage!)
+            ItemInfo.Add(AmmoType, "Phaser2Charge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+            ItemInfo.Add(AmmoType, "Phaser2ChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+            ItemInfo.Add(AmmoType, "PhaserCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+            ItemInfo.Add(AmmoType, "PhaserChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
             ItemInfo.Add(AmmoType, "NukeSiloMissile", 90M, 150M, true, true); // rearth's Advanced Combat Systems
             ItemInfo.Add(AmmoType, "OKI122mmAmmo", 150M, 120M, true, true); // OKI Grand Weapons Bundle (DX11)
             ItemInfo.Add(AmmoType, "OKI230mmAmmo", 800M, 800M, true, true); // OKI Grand Weapons Bundle (DX11)
             ItemInfo.Add(AmmoType, "OKI23mmAmmo", 100M, 50M, true, true); // OKI Grand Weapons Bundle (DX11)
             ItemInfo.Add(AmmoType, "OKI50mmAmmo", 200M, 60M, true, true); // OKI Grand Weapons Bundle (DX11)
+            ItemInfo.Add(AmmoType, "OKIObserverMAG", 1M, 1M, true, true); // OKI Grand Weapons Bundle (DX11)
             ItemInfo.Add(AmmoType, "OSPhaserAmmo", 30.0M, 15.0M, true, true); // Star Trek Weapons Pack
             ItemInfo.Add(AmmoType, "OSPhotonTorp", 30M, 60M, true, true); // Star Trek Weapons Pack
             ItemInfo.Add(AmmoType, "PhaseCannonAmmo", 12.0M, 3.0M, true, true); // Star Trek Weapons Pack
@@ -1098,6 +1184,9 @@ namespace SEScripts.ResourceExchanger2_5_0_188
             ItemInfo.Add(AmmoType, "RB_NATO_125x920mm", 875M, 160M, true, true); // RB Weapon Collection [DX11]
             ItemInfo.Add(AmmoType, "RB_Rocket100mm", 11.25M, 15M, true, true); // RB Weapon Collection [DX11]
             ItemInfo.Add(AmmoType, "RB_Rocket400mm", 180M, 240M, true, true); // RB Weapon Collection [DX11]
+            ItemInfo.Add(AmmoType, "RomulanCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+            ItemInfo.Add(AmmoType, "RomulanChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+            ItemInfo.Add(AmmoType, "SmallKlingonCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
             ItemInfo.Add(AmmoType, "RG_RG_ammo", 45M, 60M, true, true); // RG_RailGun
             ItemInfo.Add(AmmoType, "romulanphase", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
             ItemInfo.Add(AmmoType, "RomulanTorp", 45M, 50M, true, true); // Star Trek Weapons Pack
@@ -1400,7 +1489,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
 
         private class ItemInfo
         {
-            public const int ID_LENGTH = 6;
+            public const int ID_LENGTH = 7;
             public static readonly Dictionary<MyDefinitionId, ItemInfo> ItemInfoDict;
 
             static ItemInfo()
@@ -1417,7 +1506,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 HasIntegralAmounts = hasIntegralAmounts;
                 IsStackable = isStackable;
             }
-            
+
             public readonly ulong[] Id;
             public readonly decimal Mass;
             public readonly decimal Volume;
@@ -1598,7 +1687,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
     {
         private static readonly Type[] ImplicitIngameNamespacesFromTypes = new Type[]
         {
-            typeof(Object),
+            typeof(object),
             typeof(IEnumerable),
             typeof(IEnumerable<>),
             typeof(Enumerable),
