@@ -19,7 +19,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
 {
     public class Program : MyGridProgram
     {
-        /// Resource Exchanger version 2.5.0 2018-??-?? for SE 1.188+
+        /// Resource Exchanger version 2.5.0 2018-11-04 for SE 1.188+
         /// Made by Sinus32
         /// http://steamcommunity.com/sharedfiles/filedetails/546221822
         ///
@@ -59,6 +59,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
         private readonly Dictionary<ulong[], string> _groupIdToNameMap;
         private readonly int[] _avgMovements;
         private int _cycleNumber = 0;
+        private object _prevConfig;
 
         public Program()
         {
@@ -131,39 +132,42 @@ namespace SEScripts.ResourceExchanger2_5_0_188
 
         public void ReadConfig()
         {
-            const string myGridOnlyComment = "\nLimit affected blocks to only these that are connected to the same"
-                + "\nship/station as the programmable block. Set to true if blocks on ships"
-                + "\nconnected by connectors or rotors should not be affected.";
-            const string managedGroupComment = "\nOptional name of a group of blocks that will be affected"
-                + "\nby the script. By default all blocks connected to the grid are processed,"
-                + "\nbut you can set this to force the script to affect only certain blocks.";
-            const string reactorsComment = "\nEnables exchanging uranium between reactors";
-            const string refineriesComment = "\nEnables exchanging ore between refineries and arc furnaces";
-            const string drillsComment = "\nEnables exchanging ore between drills and"
-                + "\nprocessing lights that indicates how much free space left in drills";
-            const string turretsComment = "\nEnables exchanging ammunition between turrets and launchers";
-            const string oxygenGeneratorsComment = "\nEnables exchanging ice between oxygen generators";
-            const string groupsComment = "\nEnables exchanging items in blocks of custom groups";
-            const string drillsPayloadLightsGroupComment = "\nName of a group of lights that will be used as indicators of space"
-                + "\nleft in drills. Both Interior Light and Spotlight are supported."
-                + "\nThe lights will change colors to tell you how much free space left:"
-                + "\nWhite - All drills are connected to each other and they are empty."
-                + "\nYellow - Drills are full in a half."
-                + "\nRed - Drills are almost full (95%)."
-                + "\nPurple - Less than 5 m³ of free space left."
-                + "\nCyan - Some drills are not connected to each other.";
-            const string topRefineryPriorityComment = "\nTop priority item type to process in refineries"
-                + "\nand/or arc furnaces. The script will move an item of this type to"
-                + "\nthe first slot of a refinery or arc furnace if it find that item"
-                + "\nin the refinery (or arc furnace) processing queue.";
-            const string lowestRefineryPriorityComment = "\nLowest priority item type to process in refineries"
-                + "\nand/or arc furnaces. The script will move an item of this type to"
-                + "\nthe last slot of a refinery or arc furnace if it find that item"
-                + "\nin the refinery (or arc furnace) processing queue.";
-            const string groupTagPatternComment = "\nRegular expression used to recognize groups";
-            const string displayLcdGroupComment = "\nGroup of wide LCD screens that will act as debugger output for"
-                + "\nthis script. You can name this screens as you wish, but pay attention"
-                + "\nthat they will be used in alphabetical order according to their names.";
+            const string myGridOnlyComment = "\n Limit affected blocks to only these that are connected to the same"
+                + "\n ship/station as the programmable block. Set to true if blocks on ships"
+                + "\n connected by connectors or rotors should not be affected.";
+            const string managedGroupComment = "\n Optional name of a group of blocks that will be affected"
+                + "\n by the script. By default all blocks connected to the grid are processed,"
+                + "\n but you can set this to force the script to affect only certain blocks.";
+            const string reactorsComment = "\n Enables exchanging uranium between reactors";
+            const string refineriesComment = "\n Enables exchanging ore between refineries and arc furnaces";
+            const string drillsComment = "\n Enables exchanging ore between drills and"
+                + "\n processing lights that indicates how much free space left in drills";
+            const string turretsComment = "\n Enables exchanging ammunition between turrets and launchers";
+            const string oxygenGeneratorsComment = "\n Enables exchanging ice between oxygen generators";
+            const string groupsComment = "\n Enables exchanging items in blocks of custom groups";
+            const string drillsPayloadLightsGroupComment = "\n Name of a group of lights that will be used as indicators of space"
+                + "\n left in drills. Both Interior Light and Spotlight are supported."
+                + "\n The lights will change colors to tell you how much free space left:"
+                + "\n White - All drills are connected to each other and they are empty."
+                + "\n Yellow - Drills are full in a half."
+                + "\n Red - Drills are almost full (95%)."
+                + "\n Purple - Less than 5 m³ of free space left."
+                + "\n Cyan - Some drills are not connected to each other.";
+            const string topRefineryPriorityComment = "\n Top priority item type to process in refineries"
+                + "\n and/or arc furnaces. The script will move an item of this type to"
+                + "\n the first slot of a refinery or arc furnace if it find that item"
+                + "\n in the refinery (or arc furnace) processing queue.";
+            const string lowestRefineryPriorityComment = "\n Lowest priority item type to process in refineries"
+                + "\n and/or arc furnaces. The script will move an item of this type to"
+                + "\n the last slot of a refinery or arc furnace if it find that item"
+                + "\n in the refinery (or arc furnace) processing queue.";
+            const string groupTagPatternComment = "\n Regular expression used to recognize groups";
+            const string displayLcdGroupComment = "\n Group of wide LCD screens that will act as debugger output for"
+                + "\n this script. You can name this screens as you wish, but pay attention"
+                + "\n that they will be used in alphabetical order according to their names.";
+
+            if (ReferenceEquals(Me.CustomData, _prevConfig))
+                return;
 
             MyIniParseResult result;
             var ini = new MyIni();
@@ -187,7 +191,8 @@ namespace SEScripts.ResourceExchanger2_5_0_188
             ReadConfigString(ini, nameof(GroupTagPattern), ref GroupTagPattern, groupTagPatternComment);
             ReadConfigString(ini, nameof(DisplayLcdGroup), ref DisplayLcdGroup, displayLcdGroupComment);
 
-            Me.CustomData = ini.ToString();
+            Echo("Configuration readed");
+            _prevConfig = Me.CustomData = ini.ToString();
         }
 
         public void ReadConfigBoolean(MyIni ini, string name, ref bool value, string comment)
