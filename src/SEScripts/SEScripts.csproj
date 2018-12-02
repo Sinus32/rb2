@@ -100,6 +100,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BottlesFiller\Program.cs" />
     <Compile Include="DoorAutoClose\Program.cs" />
     <Compile Include="ItemMover\Program.cs" />
     <Compile Include="MassRenamer\Program.cs" />
