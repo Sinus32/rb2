@@ -30,7 +30,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
 
         /** Default configuration *****************************************************************/
 
-        public bool MyGridOnly = false;
+        public bool MyGridOnly = true;
         public string ManagedBlocksGroup = "";
         public bool EnableReactors = true;
         public bool EnableRefineries = true;
@@ -361,8 +361,6 @@ namespace SEScripts.ResourceExchanger2_5_0_188
         private void BalanceInventories(Statistics stat, List<InventoryWrapper> group, int networkNumber,
             int groupNumber, string groupName, Func<IMyInventoryItem, bool> filter)
         {
-            const int maxMovementsPerGroup = 2;
-
             if (group.Count < 2)
             {
                 stat.Output.Append("Cannot balance conveyor network ").Append(networkNumber + 1)
@@ -382,11 +380,17 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                     wrp.LoadVolume().CalculatePercent();
             }
 
-            group.Sort(InventoryWrapperComparer.Instance);
+            InventoryWrapper min = group[0], max = group[0];
+            for (int i = 1; i < group.Count; ++i)
+            {
+                var dt = group[i];
+                if (min.Percent > dt.Percent)
+                    min = dt;
+                if (max.Percent < dt.Percent)
+                    max = dt;
+            }
 
-            var last = group[group.Count - 1];
-
-            if (last.CurrentVolume < SmallNumber)
+            if (max.CurrentVolume < SmallNumber)
             {
                 stat.Output.Append("Cannot balance conveyor network ").Append(networkNumber + 1)
                     .Append(" group ").Append(groupNumber + 1).Append(" \"").Append(groupName)
@@ -399,35 +403,34 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 .Append(" group ").Append(groupNumber + 1)
                 .Append(" \"").Append(groupName).AppendLine("\"...");
 
-            for (int i = 0; i < maxMovementsPerGroup && i < group.Count / 2; ++i)
+            if (min == max)
             {
-                var inv1 = group[i];
-                var inv2 = group[group.Count - i - 1];
-
-                decimal toMove;
-                if (inv1.MaxVolume == inv2.MaxVolume)
-                {
-                    toMove = (inv2.CurrentVolume - inv1.CurrentVolume) / 2.0M;
-                }
-                else
-                {
-                    toMove = (inv2.CurrentVolume * inv1.MaxVolume
-                        - inv1.CurrentVolume * inv2.MaxVolume)
-                        / (inv1.MaxVolume + inv2.MaxVolume);
-                }
-
-                stat.Output.Append("Inv. 1 vol: ").Append(inv1.CurrentVolume.ToString("F6")).Append("; ");
-                stat.Output.Append("Inv. 2 vol: ").Append(inv2.CurrentVolume.ToString("F6")).Append("; ");
-                stat.Output.Append("To move: ").Append(toMove.ToString("F6")).AppendLine();
-
-                if (toMove < 0.0M)
-                    throw new InvalidOperationException("Something went wrong with calculations: volumeDiff is " + toMove);
-
-                if (toMove < SmallNumber)
-                    continue;
-
-                MoveVolume(stat, inv2, inv1, (VRage.MyFixedPoint)toMove, filter);
+                stat.Output.AppendLine("  nothing to do");
+                return;
             }
+
+            decimal toMove;
+            if (min.MaxVolume == max.MaxVolume)
+            {
+                toMove = (max.CurrentVolume - min.CurrentVolume) / 2.0M;
+            }
+            else
+            {
+                toMove = (max.CurrentVolume * min.MaxVolume - min.CurrentVolume * max.MaxVolume)
+                    / (min.MaxVolume + max.MaxVolume);
+            }
+
+            stat.Output.Append("Inv. 1 vol: ").Append(min.CurrentVolume.ToString("F6")).Append("; ");
+            stat.Output.Append("Inv. 2 vol: ").Append(max.CurrentVolume.ToString("F6")).Append("; ");
+            stat.Output.Append("To move: ").Append(toMove.ToString("F6")).AppendLine();
+
+            if (toMove < 0.0M)
+                throw new InvalidOperationException("Something went wrong with calculations: volumeDiff is " + toMove);
+
+            if (toMove < SmallNumber)
+                return;
+
+            MoveVolume(stat, max, min, (VRage.MyFixedPoint)toMove, filter);
         }
 
         private VRage.MyFixedPoint MoveVolume(Statistics stat, InventoryWrapper from, InventoryWrapper to,
@@ -1546,16 +1549,6 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 stat.Output.AppendLine(" is not known.");
                 stat.MissingInfo.Add(key.ToString());
                 return null;
-            }
-        }
-
-        private class InventoryWrapperComparer : IComparer<InventoryWrapper>
-        {
-            public static readonly IComparer<InventoryWrapper> Instance = new InventoryWrapperComparer();
-
-            public int Compare(InventoryWrapper x, InventoryWrapper y)
-            {
-                return Decimal.Compare(x.Percent, y.Percent);
             }
         }
 

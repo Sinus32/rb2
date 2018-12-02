@@ -37,9 +37,9 @@ public Program()
 
 public void Main(string argument, UpdateType updateSource)
 {
-    var bs = new BlockStore(this);
+    var bs = new BlockStore();
     var stat = new Statistics();
-    CollectTerminals(bs, stat);
+    CollectTerminals(bs);
 
     var ingotContainers = bs.CargoContainers.Where(q => q.Block.CustomName.StartsWith("Cargo Ingots")).ToList();
     var componentsContainers = bs.CargoContainers.Where(q => q.Block.CustomName.StartsWith("Cargo Components")).ToList();
@@ -64,7 +64,7 @@ public void Main(string argument, UpdateType updateSource)
 public void Save()
 { }
 
-private BlockStore CollectTerminals(BlockStore bs, Statistics stat)
+private BlockStore CollectTerminals(BlockStore bs)
 {
     var blocks = new List<IMyTerminalBlock>();
     Func<IMyTerminalBlock, bool> myTerminalBlockFilter = b => b.IsFunctional && b.CubeGrid == Me.CubeGrid;
@@ -159,9 +159,6 @@ private void PrintOnlineStatus(BlockStore bs, Statistics stat)
 {
     var sb = new StringBuilder(4096);
 
-    if (stat.MissingInfo.Count > 0)
-        sb.Append("Err: missing volume information for ").AppendLine(String.Join(", ", stat.MissingInfo));
-
     _avgMovements[_cycleNumber & 0x0F] = stat.MovementsDone;
     var samples = Math.Min(_cycleNumber + 1, 0x10);
     double avg = 0;
@@ -195,16 +192,14 @@ private void PrintOnlineStatus(BlockStore bs, Statistics stat)
 
 private class BlockStore
 {
-    public readonly Program _program;
     public readonly List<InventoryWrapper> AssemblersInput;
     public readonly List<InventoryWrapper> AssemblersOutput;
     public readonly List<InventoryWrapper> CargoContainers;
     public readonly List<InventoryWrapper> RefineriesInput;
     public readonly List<InventoryWrapper> RefineriesOutput;
 
-    public BlockStore(Program program)
+    public BlockStore()
     {
-        _program = program;
         AssemblersInput = new List<InventoryWrapper>();
         AssemblersOutput = new List<InventoryWrapper>();
         RefineriesInput = new List<InventoryWrapper>();
@@ -229,14 +224,14 @@ private class BlockStore
 
         if (!myAssembler.IsProducing)
         {
-            var inv0 = InventoryWrapper.Create(_program, myAssembler, myAssembler.InputInventory);
+            var inv0 = InventoryWrapper.Create(myAssembler, myAssembler.InputInventory);
             if (inv0 != null)
                 AssemblersInput.Add(inv0);
         }
 
         if (myAssembler.Mode == MyAssemblerMode.Assembly)
         {
-            var inv1 = InventoryWrapper.Create(_program, myAssembler, myAssembler.OutputInventory);
+            var inv1 = InventoryWrapper.Create(myAssembler, myAssembler.OutputInventory);
             if (inv1 != null)
                 AssemblersOutput.Add(inv1);
         }
@@ -249,7 +244,7 @@ private class BlockStore
         if (myCargoContainer == null)
             return false;
 
-        var inv = InventoryWrapper.Create(_program, myCargoContainer, myCargoContainer.GetInventory());
+        var inv = InventoryWrapper.Create(myCargoContainer, myCargoContainer.GetInventory());
         if (inv != null)
             CargoContainers.Add(inv);
 
@@ -264,11 +259,11 @@ private class BlockStore
         if (!myRefinery.UseConveyorSystem)
             return true;
 
-        var inv0 = InventoryWrapper.Create(_program, myRefinery, myRefinery.InputInventory);
+        var inv0 = InventoryWrapper.Create(myRefinery, myRefinery.InputInventory);
         if (inv0 != null)
             RefineriesInput.Add(inv0);
 
-        var inv1 = InventoryWrapper.Create(_program, myRefinery, myRefinery.OutputInventory);
+        var inv1 = InventoryWrapper.Create(myRefinery, myRefinery.OutputInventory);
         if (inv1 != null)
             RefineriesOutput.Add(inv1);
 
@@ -281,7 +276,7 @@ private class InventoryWrapper
     public IMyTerminalBlock Block;
     public IMyInventory Inventory;
 
-    public static InventoryWrapper Create(Program prog, IMyTerminalBlock block, IMyInventory inv)
+    public static InventoryWrapper Create(IMyTerminalBlock block, IMyInventory inv)
     {
         if (inv != null && inv.MaxVolume > 0)
         {
@@ -302,13 +297,7 @@ private class InventoryWrapper
 
 private class Statistics
 {
-    public readonly HashSet<string> MissingInfo;
     public int MovementsDone;
-
-    public Statistics()
-    {
-        MissingInfo = new HashSet<string>();
-    }
 }
     }
 
