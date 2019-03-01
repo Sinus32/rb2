@@ -19,60 +19,58 @@ namespace SEScripts.ResourceExchanger2_5_0_188
 {
     public class Program : MyGridProgram
     {
-        /// Resource Exchanger version 2.5.0 2018-11-04 for SE 1.188+
+        /// Resource Exchanger version 2.5.0 2019-03-01 for SE 1.189
         /// Made by Sinus32
         /// http://steamcommunity.com/sharedfiles/filedetails/546221822
         ///
-        /// Attention! This script does not require any timer blocks and will run immediately.
+        /// Warning! This script does not require any timer blocks and will run immediately.
         /// If you want to stop it just switch the programmable block off.
         ///
         /// Configuration can be changed in custom data of the programmable block
 
         /** Default configuration *****************************************************************/
 
-        public bool MyGridOnly = true;
-        public string ManagedBlocksGroup = "";
+        public string DisplayLcdGroup = "Resource exchanger output";
+        public string DrillsPayloadLightsGroup = "Payload indicators";
+        public bool AnyConstruct = false;
+        public bool EnableDrills = true;
+        public bool EnableGroups = true;
+        public bool EnableOxygenGenerators = true;
         public bool EnableReactors = true;
         public bool EnableRefineries = true;
-        public bool EnableDrills = true;
         public bool EnableTurrets = true;
-        public bool EnableOxygenGenerators = true;
-        public bool EnableGroups = true;
-        public string DrillsPayloadLightsGroup = "Payload indicators";
-        public string TopRefineryPriority = "MyObjectBuilder_Ore/Iron";
-        public string LowestRefineryPriority = "MyObjectBuilder_Ore/Stone";
+        public string ManagedBlocksGroup = "";
         public string GroupTagPattern = @"\bGR\d{1,3}\b";
-        public string DisplayLcdGroup = "Resource exchanger output";
+        public MyItemType? LowestRefineryPriority = new MyItemType(OreType, "Stone");
+        public MyItemType? TopRefineryPriority = new MyItemType(OreType, "Iron");
 
         /** Implementation ************************************************************************/
 
-        private const string ConfigSection = "ResourceExchanger";
-        private const decimal SmallNumber = 0.000003M;
-        private const string OreType = "MyObjectBuilder_Ore";
-        private const string IngotType = "MyObjectBuilder_Ingot";
-        private const string ComponentType = "MyObjectBuilder_Component";
+        internal readonly ItemDict Items;
         private const string AmmoType = "MyObjectBuilder_AmmoMagazine";
-        private const string GunType = "MyObjectBuilder_PhysicalGunObject";
-        private const string OxygenType = "MyObjectBuilder_OxygenContainerObject";
+        private const string ComponentType = "MyObjectBuilder_Component";
+        private const string ConfigSection = "ResourceExchanger";
         private const string GasType = "MyObjectBuilder_GasContainerObject";
-        private readonly Dictionary<MyDefinitionId, ulong[]> _blockToGroupIdMap;
-        private readonly Dictionary<ulong[], string> _groupIdToNameMap;
+        private const string GunType = "MyObjectBuilder_PhysicalGunObject";
+        private const string IngotType = "MyObjectBuilder_Ingot";
+        private const string OreType = "MyObjectBuilder_Ore";
+        private const string OxygenType = "MyObjectBuilder_OxygenContainerObject";
+        private const decimal SmallNumber = 0.000003M;
         private readonly int[] _avgMovements;
+        private readonly Dictionary<MyItemType, ulong[]> _blockToGroupIdMap;
+        private readonly Dictionary<ulong[], string> _groupIdToNameMap;
         private int _cycleNumber = 0;
         private object _prevConfig;
 
         public Program()
         {
-            _blockToGroupIdMap = new Dictionary<MyDefinitionId, ulong[]>(MyDefinitionId.Comparer);
-            _groupIdToNameMap = new Dictionary<ulong[], string>(LongArrayComparer.Instance);
+            _blockToGroupIdMap = new Dictionary<MyItemType, ulong[]>();
+            _groupIdToNameMap = new Dictionary<ulong[], string>(new LongArrayComparer());
             _avgMovements = new int[0x10];
+            Items = ItemDict.BuildItemInfoDict();
 
-            BuildItemInfoDict();
             Runtime.UpdateFrequency = UpdateFrequency.Update100;
         }
-
-        public void Save()
-        { }
 
         public void Main(string argument, UpdateType updateSource)
         {
@@ -88,7 +86,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
             stat.NotConnectedDrillsFound = dcn > 1;
             ProcessBlocks("Balancing turrets", EnableTurrets, bs.Turrets, stat, exclude: bs.AllGroupedInventories);
             ProcessBlocks("Balancing oxygen gen.", EnableOxygenGenerators, bs.OxygenGenerators, stat, invGroup: "oxygen generators",
-                exclude: bs.AllGroupedInventories, filter: item => item.Content.TypeId.ToString() == OreType);
+                exclude: bs.AllGroupedInventories, filter: item => item.Type.TypeId == OreType);
 
             if (EnableGroups)
             {
@@ -101,30 +99,10 @@ namespace SEScripts.ResourceExchanger2_5_0_188
             }
 
             if (EnableRefineries)
-            {
-                MyDefinitionId tmp;
-                MyDefinitionId? topPriority = null, lowestPriority = null;
-                if (String.IsNullOrEmpty(TopRefineryPriority))
-                {
-                    if (MyDefinitionId.TryParse(TopRefineryPriority, out tmp))
-                        topPriority = tmp;
-                    else
-                        Echo("Err: type is invalid: " + TopRefineryPriority);
-                }
-                if (String.IsNullOrEmpty(LowestRefineryPriority))
-                {
-                    if (MyDefinitionId.TryParse(LowestRefineryPriority, out tmp))
-                        lowestPriority = tmp;
-                    else
-                        Echo("Err: type is invalid: " + LowestRefineryPriority);
-                }
-                EnforceItemPriority(bs.Refineries, stat, topPriority, lowestPriority);
-            }
+                EnforceItemPriority(bs.Refineries, stat, TopRefineryPriority, LowestRefineryPriority);
 
             if (dcn >= 1)
-            {
                 ProcessDrillsLights(bs.Drills, bs.DrillsPayloadLights, stat);
-            }
 
             PrintOnlineStatus(bs, stat);
             WriteOutput(bs, stat);
@@ -132,9 +110,8 @@ namespace SEScripts.ResourceExchanger2_5_0_188
 
         public void ReadConfig()
         {
-            const string myGridOnlyComment = "\n Limit affected blocks to only these that are connected to the same"
-                + "\n ship/station as the programmable block. Set to true if blocks on ships"
-                + "\n connected by connectors or rotors should not be affected.";
+            const string anyConstructComment = "\n Set to \"true\" to enable exchanging items with connected ships."
+                + "\n Keep \"false\" if blocks connected by connectors should not be affected.";
             const string managedGroupComment = "\n Optional name of a group of blocks that will be affected"
                 + "\n by the script. By default all blocks connected to the grid are processed,"
                 + "\n but you can set this to force the script to affect only certain blocks.";
@@ -177,7 +154,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 return;
             }
 
-            ReadConfigBoolean(ini, nameof(MyGridOnly), ref MyGridOnly, myGridOnlyComment);
+            ReadConfigBoolean(ini, nameof(AnyConstruct), ref AnyConstruct, anyConstructComment);
             ReadConfigString(ini, nameof(ManagedBlocksGroup), ref ManagedBlocksGroup, managedGroupComment);
             ReadConfigBoolean(ini, nameof(EnableReactors), ref EnableReactors, reactorsComment);
             ReadConfigBoolean(ini, nameof(EnableRefineries), ref EnableRefineries, refineriesComment);
@@ -186,8 +163,8 @@ namespace SEScripts.ResourceExchanger2_5_0_188
             ReadConfigBoolean(ini, nameof(EnableOxygenGenerators), ref EnableOxygenGenerators, oxygenGeneratorsComment);
             ReadConfigBoolean(ini, nameof(EnableGroups), ref EnableGroups, groupsComment);
             ReadConfigString(ini, nameof(DrillsPayloadLightsGroup), ref DrillsPayloadLightsGroup, drillsPayloadLightsGroupComment);
-            ReadConfigString(ini, nameof(TopRefineryPriority), ref TopRefineryPriority, topRefineryPriorityComment);
-            ReadConfigString(ini, nameof(LowestRefineryPriority), ref LowestRefineryPriority, lowestRefineryPriorityComment);
+            ReadConfigItemType(ini, nameof(TopRefineryPriority), ref TopRefineryPriority, topRefineryPriorityComment);
+            ReadConfigItemType(ini, nameof(LowestRefineryPriority), ref LowestRefineryPriority, lowestRefineryPriorityComment);
             ReadConfigString(ini, nameof(GroupTagPattern), ref GroupTagPattern, groupTagPatternComment);
             ReadConfigString(ini, nameof(DisplayLcdGroup), ref DisplayLcdGroup, displayLcdGroupComment);
 
@@ -219,147 +196,23 @@ namespace SEScripts.ResourceExchanger2_5_0_188
             ini.SetComment(key, comment);
         }
 
-        private BlockStore CollectTerminals(BlockStore bs, Statistics stat)
+        public void ReadConfigItemType(MyIni ini, string name, ref MyItemType? value, string comment)
         {
-            var blocks = new List<IMyTerminalBlock>();
-            Func<IMyTerminalBlock, bool> myTerminalBlockFilter = b => b.IsFunctional && (!MyGridOnly || b.CubeGrid == Me.CubeGrid);
-            Func<ICollection, bool, string> countOrNA = (c, e) => e ? c.Count.ToString() : "n/a";
-
-            if (String.IsNullOrEmpty(ManagedBlocksGroup))
-            {
-                GridTerminalSystem.GetBlocksOfType(blocks, myTerminalBlockFilter);
-            }
+            var key = new MyIniKey(ConfigSection, name);
+            MyIniValue val = ini.Get(key);
+            string tmp;
+            if (val.TryGetString(out tmp))
+                value = String.IsNullOrEmpty(tmp) ? null : MyItemType.Parse(tmp.Trim());
             else
-            {
-                var group = GridTerminalSystem.GetBlockGroupWithName(ManagedBlocksGroup);
-                if (group == null)
-                    stat.Output.Append("Error: a group ").Append(ManagedBlocksGroup).AppendLine(" has not been found");
-                else
-                    group.GetBlocksOfType(blocks, myTerminalBlockFilter);
-            }
-
-            foreach (var dt in blocks)
-                bs.Collect(dt);
-
-            if (!String.IsNullOrEmpty(DisplayLcdGroup))
-            {
-                var group = GridTerminalSystem.GetBlockGroupWithName(DisplayLcdGroup);
-                if (group != null)
-                    group.GetBlocksOfType<IMyTextPanel>(bs.DebugScreen, myTerminalBlockFilter);
-            }
-
-            if (!String.IsNullOrEmpty(DrillsPayloadLightsGroup))
-            {
-                var group = GridTerminalSystem.GetBlockGroupWithName(DrillsPayloadLightsGroup);
-                if (group != null)
-                    group.GetBlocksOfType<IMyLightingBlock>(bs.DrillsPayloadLights, myTerminalBlockFilter);
-            }
-
-            stat.Output.Append("Resource exchanger 2.5.0. Blocks managed:")
-                .Append(" reactors: ").Append(countOrNA(bs.Reactors, EnableReactors))
-                .Append(", refineries: ").Append(countOrNA(bs.Refineries, EnableRefineries)).AppendLine(",")
-                .Append("oxygen gen.: ").Append(countOrNA(bs.OxygenGenerators, EnableOxygenGenerators))
-                .Append(", drills: ").Append(countOrNA(bs.Drills, EnableDrills))
-                .Append(", turrets: ").Append(countOrNA(bs.Turrets, EnableTurrets))
-                .Append(", cargo cont.: ").Append(countOrNA(bs.CargoContainers, EnableGroups))
-                .Append(", custom groups: ").Append(countOrNA(bs.Groups, EnableGroups)).AppendLine();
-
-            return bs;
+                ini.Set(key, value.HasValue ? value.Value.ToString() : String.Empty);
+            ini.SetComment(key, comment);
         }
 
-        private int ProcessBlocks(string msg, bool enable, ICollection<InventoryWrapper> blocks, Statistics stat, string invGroup = null,
-            HashSet<InventoryWrapper> exclude = null, Func<IMyInventoryItem, bool> filter = null)
-        {
-            stat.Output.Append(msg);
-            if (enable)
-            {
-                if (blocks.Count >= 2)
-                {
-                    var conveyorNetworks = FindConveyorNetworks(blocks, exclude);
-                    stat.NumberOfNetworks += conveyorNetworks.Count;
-                    stat.Output.Append(": ").Append(conveyorNetworks.Count).AppendLine(" conveyor networks found");
-
-                    if (invGroup != null)
-                    {
-                        foreach (var network in conveyorNetworks)
-                            BalanceInventories(stat, network.Inventories, network.No, 0, invGroup, filter);
-                    }
-                    else
-                    {
-                        foreach (var network in conveyorNetworks)
-                            foreach (var group in DivideByBlockType(network))
-                                BalanceInventories(stat, group.Inventories, network.No, group.No, group.Name, filter);
-                    }
-
-                    return conveyorNetworks.Count;
-                }
-                else
-                {
-                    stat.Output.AppendLine(": nothing to do");
-                    return 0;
-                }
-            }
-            else
-            {
-                stat.Output.AppendLine(": disabled");
-                return -1;
-            }
-        }
-
-        private List<ConveyorNetwork> FindConveyorNetworks(ICollection<InventoryWrapper> inventories, HashSet<InventoryWrapper> exclude)
-        {
-            var result = new List<ConveyorNetwork>();
-
-            foreach (var wrp in inventories)
-            {
-                if (exclude != null && exclude.Contains(wrp))
-                    continue;
-
-                bool add = true;
-                foreach (var network in result)
-                {
-                    if (network.Inventories[0].Inventory.IsConnectedTo(wrp.Inventory)
-                        && wrp.Inventory.IsConnectedTo(network.Inventories[0].Inventory))
-                    {
-                        network.Inventories.Add(wrp);
-                        add = false;
-                        break;
-                    }
-                }
-
-                if (add)
-                {
-                    var network = new ConveyorNetwork(result.Count + 1);
-                    network.Inventories.Add(wrp);
-                    result.Add(network);
-                }
-            }
-
-            return result;
-        }
-
-        private List<InventoryGroup> DivideByBlockType(ConveyorNetwork network)
-        {
-            var groupMap = new Dictionary<string, InventoryGroup>();
-
-            foreach (var inv in network.Inventories)
-            {
-                InventoryGroup group;
-                if (!groupMap.TryGetValue(inv.GroupName, out group))
-                {
-                    group = new InventoryGroup(groupMap.Count + 1, inv.GroupName);
-                    groupMap.Add(inv.GroupName, group);
-                }
-                group.Inventories.Add(inv);
-            }
-
-            var result = new List<InventoryGroup>(groupMap.Count);
-            result.AddRange(groupMap.Values);
-            return result;
-        }
+        public void Save()
+        { }
 
         private void BalanceInventories(Statistics stat, List<InventoryWrapper> group, int networkNumber,
-            int groupNumber, string groupName, Func<IMyInventoryItem, bool> filter)
+            int groupNumber, string groupName, Func<MyInventoryItem, bool> filter)
         {
             if (group.Count < 2)
             {
@@ -372,7 +225,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
             if (filter != null)
             {
                 foreach (var wrp in group)
-                    wrp.LoadVolume().FilterItems(stat, filter).CalculatePercent();
+                    wrp.LoadVolume().FilterItems(this, stat, filter).CalculatePercent();
             }
             else
             {
@@ -433,8 +286,190 @@ namespace SEScripts.ResourceExchanger2_5_0_188
             MoveVolume(stat, max, min, (VRage.MyFixedPoint)toMove, filter);
         }
 
+        private BlockStore CollectTerminals(BlockStore bs, Statistics stat)
+        {
+            var blocks = new List<IMyTerminalBlock>();
+            Func<IMyTerminalBlock, bool> myTerminalBlockFilter = b => b.IsFunctional && (AnyConstruct || b.IsSameConstructAs(Me));
+            Func<ICollection, bool, string> countOrNA = (c, e) => e ? c.Count.ToString() : "n/a";
+
+            if (String.IsNullOrEmpty(ManagedBlocksGroup))
+            {
+                GridTerminalSystem.GetBlocksOfType(blocks, myTerminalBlockFilter);
+            }
+            else
+            {
+                var group = GridTerminalSystem.GetBlockGroupWithName(ManagedBlocksGroup);
+                if (group == null)
+                    stat.Output.Append("Error: a group ").Append(ManagedBlocksGroup).AppendLine(" has not been found");
+                else
+                    group.GetBlocksOfType(blocks, myTerminalBlockFilter);
+            }
+
+            foreach (var dt in blocks)
+                bs.Collect(dt);
+
+            if (!String.IsNullOrEmpty(DisplayLcdGroup))
+            {
+                var group = GridTerminalSystem.GetBlockGroupWithName(DisplayLcdGroup);
+                if (group != null)
+                    group.GetBlocksOfType<IMyTextPanel>(bs.DebugScreen, myTerminalBlockFilter);
+            }
+
+            if (!String.IsNullOrEmpty(DrillsPayloadLightsGroup))
+            {
+                var group = GridTerminalSystem.GetBlockGroupWithName(DrillsPayloadLightsGroup);
+                if (group != null)
+                    group.GetBlocksOfType<IMyLightingBlock>(bs.DrillsPayloadLights, myTerminalBlockFilter);
+            }
+
+            stat.Output.Append("Resource exchanger 2.5.0. Blocks managed:")
+                .Append(" reactors: ").Append(countOrNA(bs.Reactors, EnableReactors))
+                .Append(", refineries: ").Append(countOrNA(bs.Refineries, EnableRefineries)).AppendLine(",")
+                .Append("oxygen gen.: ").Append(countOrNA(bs.OxygenGenerators, EnableOxygenGenerators))
+                .Append(", drills: ").Append(countOrNA(bs.Drills, EnableDrills))
+                .Append(", turrets: ").Append(countOrNA(bs.Turrets, EnableTurrets))
+                .Append(", cargo cont.: ").Append(countOrNA(bs.CargoContainers, EnableGroups))
+                .Append(", custom groups: ").Append(countOrNA(bs.Groups, EnableGroups)).AppendLine();
+
+            return bs;
+        }
+
+        private List<InventoryGroup> DivideByBlockType(ConveyorNetwork network)
+        {
+            var groupMap = new Dictionary<string, InventoryGroup>();
+
+            foreach (var inv in network.Inventories)
+            {
+                InventoryGroup group;
+                if (!groupMap.TryGetValue(inv.GroupName, out group))
+                {
+                    group = new InventoryGroup(groupMap.Count + 1, inv.GroupName);
+                    groupMap.Add(inv.GroupName, group);
+                }
+                group.Inventories.Add(inv);
+            }
+
+            var result = new List<InventoryGroup>(groupMap.Count);
+            result.AddRange(groupMap.Values);
+            return result;
+        }
+
+        private void EnforceItemPriority(List<InventoryWrapper> group, Statistics stat, MyItemType? topPriority, MyItemType? lowestPriority)
+        {
+            if (topPriority == null && lowestPriority == null)
+                return;
+
+            foreach (var inv in group)
+            {
+                var items = inv.GetItems(stat.TmpItems1, null);
+                if (items.Count < 2)
+                    continue;
+
+                if (topPriority.HasValue && !MyItemType.FromContent(items[0].Content).Equals(topPriority.Value))
+                {
+                    for (int i = 1; i < items.Count; ++i)
+                    {
+                        var item = items[i];
+                        if (MyItemType.FromContent(item.Content).Equals(topPriority.Value))
+                        {
+                            stat.Output.Append("Moving ").Append(topPriority.Value.SubtypeName).Append(" from ")
+                                .Append(i + 1).Append(" slot to first slot of ").AppendLine(inv.Block.CustomName);
+                            inv.TransferItemTo(inv, i, 0, false, item.Amount);
+                            stat.MovementsDone += 1;
+                            break;
+                        }
+                    }
+                }
+
+                if (lowestPriority.HasValue && !MyItemType.FromContent(items[items.Count - 1].Content).Equals(lowestPriority.Value))
+                {
+                    for (int i = items.Count - 2; i >= 0; --i)
+                    {
+                        var item = items[i];
+                        if (MyItemType.FromContent(item.Content).Equals(lowestPriority.Value))
+                        {
+                            stat.Output.Append("Moving ").Append(lowestPriority.Value.SubtypeName).Append(" from ")
+                                .Append(i + 1).Append(" slot to last slot of ").AppendLine(inv.Block.CustomName);
+                            inv.TransferItemTo(inv, i, items.Count, false, item.Amount);
+                            stat.MovementsDone += 1;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        private List<ConveyorNetwork> FindConveyorNetworks(ICollection<InventoryWrapper> inventories, HashSet<InventoryWrapper> exclude)
+        {
+            var result = new List<ConveyorNetwork>();
+
+            foreach (var wrp in inventories)
+            {
+                if (exclude != null && exclude.Contains(wrp))
+                    continue;
+
+                bool add = true;
+                foreach (var network in result)
+                {
+                    if (network.Inventories[0].Inventory.IsConnectedTo(wrp.Inventory)
+                        && wrp.Inventory.IsConnectedTo(network.Inventories[0].Inventory))
+                    {
+                        network.Inventories.Add(wrp);
+                        add = false;
+                        break;
+                    }
+                }
+
+                if (add)
+                {
+                    var network = new ConveyorNetwork(result.Count + 1);
+                    network.Inventories.Add(wrp);
+                    result.Add(network);
+                }
+            }
+
+            return result;
+        }
+
+        private string FindInvGroupName(MyItemType def, IMyInventory inv)
+        {
+            const string MY_OBJECT_BUILDER = "MyObjectBuilder_";
+
+            ulong[] groupId;
+            if (_blockToGroupIdMap.TryGetValue(def, out groupId))
+                return _groupIdToNameMap[groupId];
+
+            groupId = new ulong[ItemInfo.ID_LENGTH];
+            foreach (var kv in ItemInfo.ItemInfoDict)
+            {
+                if (inv.CanItemsBeAdded(-1, kv.Key))
+                {
+                    for (int i = 0; i < ItemInfo.ID_LENGTH; ++i)
+                        groupId[i] |= kv.Value.Id[i];
+                }
+            }
+
+            string result;
+            if (_groupIdToNameMap.TryGetValue(groupId, out result))
+            {
+                _blockToGroupIdMap.Add(def, groupId);
+                return result;
+            }
+            else
+            {
+                var fullType = def.ToString();
+                result = fullType.StartsWith(MY_OBJECT_BUILDER)
+                ? '$' + fullType.Substring(MY_OBJECT_BUILDER.Length)
+                : fullType;
+
+                _groupIdToNameMap.Add(groupId, result);
+                _blockToGroupIdMap.Add(def, groupId);
+                return result;
+            }
+        }
+
         private VRage.MyFixedPoint MoveVolume(Statistics stat, InventoryWrapper from, InventoryWrapper to,
-            VRage.MyFixedPoint volumeAmountToMove, Func<IMyInventoryItem, bool> filter)
+            VRage.MyFixedPoint volumeAmountToMove, Func<MyInventoryItem, bool> filter)
         {
             if (volumeAmountToMove == 0)
                 return volumeAmountToMove;
@@ -444,16 +479,13 @@ namespace SEScripts.ResourceExchanger2_5_0_188
 
             stat.Output.Append("Move ").Append(volumeAmountToMove).Append(" l. from ")
                 .Append(from.Block.CustomName).Append(" to ").AppendLine(to.Block.CustomName);
-            List<IMyInventoryItem> itemsFrom = from.Inventory.GetItems();
+            var itemFrom = from.GetItems(stat.TmpItems1, filter);
 
-            for (int i = itemsFrom.Count - 1; i >= 0; --i)
+            for (int i = itemFrom.Count - 1; i >= 0; --i)
             {
-                IMyInventoryItem item = itemsFrom[i];
+                MyInventoryItem item = itemFrom[i];
 
-                if (filter != null && !filter(item))
-                    continue;
-
-                var key = MyDefinitionId.FromContent(item.Content);
+                var key = MyItemType.FromContent(item.Content);
                 var data = ItemInfo.Get(stat, key);
                 if (data == null)
                     continue;
@@ -469,12 +501,12 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 if (amountToMove == 0)
                     continue;
 
-                List<IMyInventoryItem> itemsTo = to.Inventory.GetItems();
+                List<MyInventoryItem> itemsTo = to.Inventory.GetItems();
                 int targetItemIndex = 0;
                 while (targetItemIndex < itemsTo.Count)
                 {
-                    IMyInventoryItem item2 = itemsTo[targetItemIndex];
-                    if (MyDefinitionId.FromContent(item2.Content).Equals(key))
+                    MyInventoryItem item2 = itemsTo[targetItemIndex];
+                    if (MyItemType.FromContent(item2.Content).Equals(key))
                         break;
                     ++targetItemIndex;
                 }
@@ -504,6 +536,150 @@ namespace SEScripts.ResourceExchanger2_5_0_188
 
             stat.Output.Append("Cannot move ").Append(volumeAmountToMove).AppendLine(" l.");
             return volumeAmountToMove;
+        }
+
+        private void PrintOnlineStatus(BlockStore bs, Statistics stat)
+        {
+            var sb = new StringBuilder(4096);
+
+            var blocksAffected = bs.Reactors.Count
+                + bs.Refineries.Count
+                + bs.Drills.Count
+                + bs.Turrets.Count
+                + bs.OxygenGenerators.Count
+                + bs.CargoContainers.Count;
+
+            sb.Append("Grids connected: ").Append(bs.AllGrids.Count).AppendLine(AnyConstruct ? " (AC)" : " (SC)");
+            sb.Append("Conveyor networks: ").Append(stat.NumberOfNetworks).AppendLine();
+            sb.Append("Blocks affected: ").Append(blocksAffected).AppendLine();
+
+            sb.Append("reactors: ");
+            if (bs.Reactors.Count != 0)
+                sb.Append(bs.Reactors.Count);
+            else
+                sb.Append(EnableReactors ? "0" : "OFF");
+
+            sb.Append(", refineries: ");
+            if (bs.Refineries.Count != 0)
+                sb.Append(bs.Refineries.Count);
+            else
+                sb.Append(EnableRefineries ? "0" : "OFF");
+
+            sb.AppendLine().Append("drills: ");
+            if (bs.Drills.Count != 0)
+                sb.Append(bs.Drills.Count);
+            else
+                sb.Append(EnableDrills ? "0" : "OFF");
+
+            sb.Append(", turrets: ");
+            if (bs.Turrets.Count != 0)
+                sb.Append(bs.Turrets.Count);
+            else
+                sb.Append(EnableTurrets ? "0" : "OFF");
+
+            sb.Append(", o. gen.: ");
+            if (bs.OxygenGenerators.Count != 0)
+                sb.Append(bs.OxygenGenerators.Count);
+            else
+                sb.Append(EnableOxygenGenerators ? "0" : "OFF");
+
+            sb.AppendLine().Append("cargo cont.: ");
+            if (bs.CargoContainers.Count != 0)
+                sb.Append(bs.CargoContainers.Count);
+            else
+                sb.Append(EnableGroups ? "0" : "OFF");
+
+            sb.Append(", groups: ");
+            if (bs.Groups.Count != 0)
+                sb.Append(bs.Groups.Count);
+            else
+                sb.Append(EnableGroups ? "0" : "OFF");
+
+            sb.AppendLine();
+
+            if (bs.Drills.Count != 0)
+            {
+                if (stat.NotConnectedDrillsFound)
+                    sb.AppendLine("Warn: Some drills are not connected");
+
+                sb.Append("Drills payload: ").Append(stat.DrillsPayloadStr ?? "N/A");
+                if (stat.DrillsVolumeWarning)
+                    sb.AppendLine((_cycleNumber & 0x01) == 0 ? "%  !" : "% ! !");
+                else
+                    sb.AppendLine("%");
+            }
+
+            if (stat.MissingInfo.Count > 0)
+                sb.Append("Err: missing volume information for ").AppendLine(String.Join(", ", stat.MissingInfo));
+
+            _avgMovements[_cycleNumber & 0x0F] = stat.MovementsDone;
+            var samples = Math.Min(_cycleNumber + 1, 0x10);
+            double avg = 0;
+            for (int i = 0; i < samples; ++i)
+                avg += _avgMovements[i];
+            avg /= samples;
+
+            sb.Append("Avg. movements: ").Append(avg.ToString("F2")).Append(" (last ").Append(samples).AppendLine(" runs)");
+
+            float cpu = Runtime.CurrentInstructionCount * 100;
+            cpu /= Runtime.MaxInstructionCount;
+            sb.Append("Complexity limit usage: ").Append(cpu.ToString("F2")).AppendLine("%");
+
+            sb.Append("Last run time: ").Append(Runtime.LastRunTimeMs.ToString("F1")).AppendLine(" ms");
+
+            var tab = new char[42];
+            for (int i = 0; i < 42; ++i)
+            {
+                char c = ' ';
+                if (i % 21 == 1)
+                    c = '|';
+                else if (i % 7 < 4)
+                    c = '·';
+                tab[41 - (i + _cycleNumber) % 42] = c;
+            }
+            sb.AppendLine(new string(tab));
+            ++_cycleNumber;
+
+            Echo(sb.ToString());
+        }
+
+        private int ProcessBlocks(string msg, bool enable, ICollection<InventoryWrapper> blocks, Statistics stat, string invGroup = null,
+            HashSet<InventoryWrapper> exclude = null, Func<MyInventoryItem, bool> filter = null)
+        {
+            stat.Output.Append(msg);
+            if (enable)
+            {
+                if (blocks.Count >= 2)
+                {
+                    var conveyorNetworks = FindConveyorNetworks(blocks, exclude);
+                    stat.NumberOfNetworks += conveyorNetworks.Count;
+                    stat.Output.Append(": ").Append(conveyorNetworks.Count).AppendLine(" conveyor networks found");
+
+                    if (invGroup != null)
+                    {
+                        foreach (var network in conveyorNetworks)
+                            BalanceInventories(stat, network.Inventories, network.No, 0, invGroup, filter);
+                    }
+                    else
+                    {
+                        foreach (var network in conveyorNetworks)
+                            foreach (var group in DivideByBlockType(network))
+                                BalanceInventories(stat, group.Inventories, network.No, group.No, group.Name, filter);
+                    }
+
+                    return conveyorNetworks.Count;
+                }
+                else
+                {
+                    stat.Output.AppendLine(": nothing to do");
+                    return 0;
+                }
+            }
+            else
+            {
+                stat.Output.AppendLine(": disabled");
+                return -1;
+            }
         }
 
         private void ProcessDrillsLights(List<InventoryWrapper> drills, List<IMyLightingBlock> lights, Statistics stat)
@@ -621,165 +797,6 @@ namespace SEScripts.ResourceExchanger2_5_0_188
             stat.Output.AppendLine(" drills payload indicators has been set.");
         }
 
-        private void EnforceItemPriority(List<InventoryWrapper> group, Statistics stat, MyDefinitionId? topPriority, MyDefinitionId? lowestPriority)
-        {
-            if (topPriority == null && lowestPriority == null)
-                return;
-
-            foreach (var inv in group)
-            {
-                var items = inv.Inventory.GetItems();
-                if (items.Count < 2)
-                    continue;
-
-                if (topPriority.HasValue && !MyDefinitionId.FromContent(items[0].Content).Equals(topPriority.Value))
-                {
-                    for (int i = 1; i < items.Count; ++i)
-                    {
-                        var item = items[i];
-                        if (MyDefinitionId.FromContent(item.Content).Equals(topPriority.Value))
-                        {
-                            stat.Output.Append("Moving ").Append(topPriority.Value.SubtypeName).Append(" from ")
-                                .Append(i + 1).Append(" slot to first slot of ").AppendLine(inv.Block.CustomName);
-                            inv.TransferItemTo(inv, i, 0, false, item.Amount);
-                            stat.MovementsDone += 1;
-                            break;
-                        }
-                    }
-                }
-
-                if (lowestPriority.HasValue && !MyDefinitionId.FromContent(items[items.Count - 1].Content).Equals(lowestPriority.Value))
-                {
-                    for (int i = items.Count - 2; i >= 0; --i)
-                    {
-                        var item = items[i];
-                        if (MyDefinitionId.FromContent(item.Content).Equals(lowestPriority.Value))
-                        {
-                            stat.Output.Append("Moving ").Append(lowestPriority.Value.SubtypeName).Append(" from ")
-                                .Append(i + 1).Append(" slot to last slot of ").AppendLine(inv.Block.CustomName);
-                            inv.TransferItemTo(inv, i, items.Count, false, item.Amount);
-                            stat.MovementsDone += 1;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        private void PrintOnlineStatus(BlockStore bs, Statistics stat)
-        {
-            var sb = new StringBuilder(4096);
-
-            sb.Append("Grids connected: ").Append(bs.AllGrids.Count);
-            if (MyGridOnly)
-                sb.Append(" (MGO)");
-
-            sb.AppendLine()
-                .Append("Conveyor networks: ")
-                .Append(stat.NumberOfNetworks);
-
-            var blocksAffected = bs.Reactors.Count
-                + bs.Refineries.Count
-                + bs.Drills.Count
-                + bs.Turrets.Count
-                + bs.OxygenGenerators.Count
-                + bs.CargoContainers.Count;
-
-            sb.AppendLine()
-                .Append("Blocks affected: ")
-                .Append(blocksAffected)
-                .AppendLine();
-
-            sb.Append("reactors: ");
-            if (bs.Reactors.Count != 0)
-                sb.Append(bs.Reactors.Count);
-            else
-                sb.Append(EnableReactors ? "0" : "OFF");
-
-            sb.Append(", refineries: ");
-            if (bs.Refineries.Count != 0)
-                sb.Append(bs.Refineries.Count);
-            else
-                sb.Append(EnableRefineries ? "0" : "OFF");
-
-            sb.AppendLine().Append("drills: ");
-            if (bs.Drills.Count != 0)
-                sb.Append(bs.Drills.Count);
-            else
-                sb.Append(EnableDrills ? "0" : "OFF");
-
-            sb.Append(", turrets: ");
-            if (bs.Turrets.Count != 0)
-                sb.Append(bs.Turrets.Count);
-            else
-                sb.Append(EnableTurrets ? "0" : "OFF");
-
-            sb.Append(", o. gen.: ");
-            if (bs.OxygenGenerators.Count != 0)
-                sb.Append(bs.OxygenGenerators.Count);
-            else
-                sb.Append(EnableOxygenGenerators ? "0" : "OFF");
-
-            sb.AppendLine().Append("cargo cont.: ");
-            if (bs.CargoContainers.Count != 0)
-                sb.Append(bs.CargoContainers.Count);
-            else
-                sb.Append(EnableGroups ? "0" : "OFF");
-
-            sb.Append(", groups: ");
-            if (bs.Groups.Count != 0)
-                sb.Append(bs.Groups.Count);
-            else
-                sb.Append(EnableGroups ? "0" : "OFF");
-
-            sb.AppendLine();
-
-            if (bs.Drills.Count != 0)
-            {
-                if (stat.NotConnectedDrillsFound)
-                    sb.AppendLine("Warn: Some drills are not connected");
-
-                sb.Append("Drills payload: ").Append(stat.DrillsPayloadStr ?? "N/A");
-                if (stat.DrillsVolumeWarning)
-                    sb.AppendLine((_cycleNumber & 0x01) == 0 ? "%  !" : "% ! !");
-                else
-                    sb.AppendLine("%");
-            }
-
-            if (stat.MissingInfo.Count > 0)
-                sb.Append("Err: missing volume information for ").AppendLine(String.Join(", ", stat.MissingInfo));
-
-            _avgMovements[_cycleNumber & 0x0F] = stat.MovementsDone;
-            var samples = Math.Min(_cycleNumber + 1, 0x10);
-            double avg = 0;
-            for (int i = 0; i < samples; ++i)
-                avg += _avgMovements[i];
-            avg /= samples;
-
-            sb.Append("Avg. movements: ").Append(avg.ToString("F2")).Append(" (last ").Append(samples).AppendLine(" runs)");
-
-            float cpu = Runtime.CurrentInstructionCount * 100;
-            cpu /= Runtime.MaxInstructionCount;
-            sb.Append("Complexity limit usage: ").Append(cpu.ToString("F2")).AppendLine("%");
-
-            sb.Append("Last run time: ").Append(Runtime.LastRunTimeMs.ToString("F1")).AppendLine(" ms");
-
-            var tab = new char[42];
-            for (int i = 0; i < 42; ++i)
-            {
-                char c = ' ';
-                if (i % 21 == 1)
-                    c = '|';
-                else if (i % 7 < 4)
-                    c = '·';
-                tab[41 - (i + _cycleNumber) % 42] = c;
-            }
-            sb.AppendLine(new string(tab));
-            ++_cycleNumber;
-
-            Echo(sb.ToString());
-        }
-
         private void WriteOutput(BlockStore bs, Statistics stat)
         {
             const int linesPerDebugScreen = 17;
@@ -805,513 +822,20 @@ namespace SEScripts.ResourceExchanger2_5_0_188
             }
         }
 
-        private void BuildItemInfoDict()
-        {
-            ItemInfo.Add(OreType, "[CM] Cattierite (Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[CM] Cohenite (Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[CM] Dense Iron (Fe+)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[CM] Glaucodot (Fe,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[CM] Heazlewoodite (Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[CM] Iron (Fe)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[CM] Kamacite (Fe,Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[CM] Pyrite (Fe,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[CM] Taenite (Fe,Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[EI] Autunite (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[EI] Carnotite (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[EI] Uraniaurite (U,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[PM] Chlorargyrite (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[PM] Cooperite (Ni,Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[PM] Electrum (Au,Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[PM] Galena (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[PM] Niggliite (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[PM] Petzite (Ag,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[PM] Porphyry (Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[PM] Sperrylite (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[S] Akimotoite (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[S] Dolomite (Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[S] Hapkeite (Fe,Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[S] Icy Stone", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[S] Olivine (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[S] Quartz (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[S] Sinoite (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "[S] Wadsleyite (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Akimotoite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Akimotoite (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Autunite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Autunite (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Carbon", 1M, 0.37M, false, true); // Graphene Armor [Core] [Beta]
-            ItemInfo.Add(OreType, "Carnotite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Carnotite (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Cattierite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Cattierite (Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Chlorargyrite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Chlorargyrite (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Cobalt", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Cohenite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Cohenite (Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Cooperite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Cooperite (Ni,Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Dense Iron", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Deuterium", 1.5M, 0.5M, false, true); // FusionReactors
-            ItemInfo.Add(OreType, "Dolomite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Dolomite (Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Electrum", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Electrum (Au,Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Galena", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Galena (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Glaucodot", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Glaucodot (Fe,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Gold", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Hapkeite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Hapkeite (Fe,Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Heazlewoodite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Heazlewoodite (Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Helium", 1M, 5.6M, false, true); // (DX11)Mass Driver
-            ItemInfo.Add(OreType, "Ice", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Icy Stone", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Iron", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Kamacite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Kamacite (Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Magnesium", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Naquadah", 1M, 0.37M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
-            ItemInfo.Add(OreType, "Neutronium", 1M, 0.37M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
-            ItemInfo.Add(OreType, "Nickel", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Niggliite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Niggliite (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Olivine", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Olivine (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Organic", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Petzite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Petzite (Au,Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Platinum", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Porphyry", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Porphyry (Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Pyrite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Pyrite (Fe,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Quartz", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Quartz (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Scrap", 1M, 0.254M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Silicon", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Silver", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Sinoite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Sinoite (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Sperrylite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Sperrylite (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Stone", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Taenite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Taenite (Fe,Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Thorium", 1M, 0.9M, false, true); // Tiered Thorium Reactors and Refinery (new)
-            ItemInfo.Add(OreType, "Trinium", 1M, 0.37M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
-            ItemInfo.Add(OreType, "Tungsten", 1M, 0.47M, false, true); // (DX11)Mass Driver
-            ItemInfo.Add(OreType, "Uraniaurite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Uraniaurite (U,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Uranium", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(OreType, "Wadsleyite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Wadsleyite (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Акимотит (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Аутунит (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Вадселит (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Галенит (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Глаукодот (Fe,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Доломит (Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Камасит (Fe,Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Карнотит (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Катьерит (Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Кварц (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Когенит (Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Куперит (Ni,Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Ледяной камень", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Нигглиит (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Оливин (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Петцит (Ag,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Пирит (Fe,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Плотное железо (Fe+)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Порфир (Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Синоит (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Сперрилит (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Таенит (Fe,Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Ураниурит (U,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Хапкеит (Fe,Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Хизлевудит (Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Хлораргирит (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-            ItemInfo.Add(OreType, "Электрум (Au,Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-
-            ItemInfo.Add(IngotType, "Carbon", 1M, 0.052M, false, true); // TVSI-Tech Diamond Bonded Glass (Survival) [DX11]
-            ItemInfo.Add(IngotType, "Cobalt", 1M, 0.112M, false, true); // Space Engineers
-            ItemInfo.Add(IngotType, "Gold", 1M, 0.052M, false, true); // Space Engineers
-            ItemInfo.Add(IngotType, "HeavyH2OIngot", 2M, 1M, false, true); // FusionReactors
-            ItemInfo.Add(IngotType, "HeavyWater", 5M, 0.052M, false, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(IngotType, "Iron", 1M, 0.127M, false, true); // Space Engineers
-            ItemInfo.Add(IngotType, "K_HSR_Nanites_Gel", 0.001M, 0.001M, false, true); // HSR
-            ItemInfo.Add(IngotType, "LiquidHelium", 1M, 4.6M, false, true); // (DX11)Mass Driver
-            ItemInfo.Add(IngotType, "Magmatite", 100M, 37M, false, true); // Stone and Gravel to Metal Ingots (DX 11)
-            ItemInfo.Add(IngotType, "Magnesium", 1M, 0.575M, false, true); // Space Engineers
-            ItemInfo.Add(IngotType, "Naquadah", 1M, 0.052M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
-            ItemInfo.Add(IngotType, "Neutronium", 1M, 0.052M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
-            ItemInfo.Add(IngotType, "Nickel", 1M, 0.112M, false, true); // Space Engineers
-            ItemInfo.Add(IngotType, "Platinum", 1M, 0.047M, false, true); // Space Engineers
-            ItemInfo.Add(IngotType, "Scrap", 1M, 0.254M, false, true); // Space Engineers
-            ItemInfo.Add(IngotType, "ShieldPoint", 0.00001M, 0.0001M, false, true); // Energy shields (new modified version)
-            ItemInfo.Add(IngotType, "Silicon", 1M, 0.429M, false, true); // Space Engineers
-            ItemInfo.Add(IngotType, "Silver", 1M, 0.095M, false, true); // Space Engineers
-            ItemInfo.Add(IngotType, "Stone", 1M, 0.37M, false, true); // Space Engineers
-            ItemInfo.Add(IngotType, "SuitFuel", 0.0003M, 0.052M, false, true); // Independent Survival
-            ItemInfo.Add(IngotType, "SuitRTGPellet", 1.0M, 0.052M, false, true); // Independent Survival
-            ItemInfo.Add(IngotType, "Thorium", 2M, 0.5M, false, true); // Thorium Reactor Kit
-            ItemInfo.Add(IngotType, "ThoriumIngot", 3M, 20M, false, true); // Tiered Thorium Reactors and Refinery (new)
-            ItemInfo.Add(IngotType, "Trinium", 1M, 0.052M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
-            ItemInfo.Add(IngotType, "Tungsten", 1M, 0.52M, false, true); // (DX11)Mass Driver
-            ItemInfo.Add(IngotType, "Uranium", 1M, 0.052M, false, true); // Space Engineers
-            ItemInfo.Add(IngotType, "v2HydrogenGas", 2.1656M, 0.43M, false, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
-            ItemInfo.Add(IngotType, "v2OxygenGas", 4.664M, 0.9M, false, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
-
-            ItemInfo.Add(ComponentType, "AdvancedReactorBundle", 50M, 20M, true, true); // Tiered Thorium Reactors and Refinery (new)
-            ItemInfo.Add(ComponentType, "AegisLicense", 0.2M, 1M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(ComponentType, "Aggitator", 40M, 10M, true, true); // Star Trek - Weapons Tech [WIP]
-            ItemInfo.Add(ComponentType, "AlloyPlate", 30M, 3M, true, true); // Industrial Centrifuge (stable/dev)
-            ItemInfo.Add(ComponentType, "ampHD", 10M, 15.5M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
-            ItemInfo.Add(ComponentType, "ArcFuel", 2M, 0.627M, true, true); // Arc Reactor Pack [DX-11 Ready]
-            ItemInfo.Add(ComponentType, "ArcReactorcomponent", 312M, 100M, true, true); // Arc Reactor Pack [DX-11 Ready]
-            ItemInfo.Add(ComponentType, "AzimuthSupercharger", 10M, 9M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
-            ItemInfo.Add(ComponentType, "BulletproofGlass", 15M, 8M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "Canvas", 15M, 8M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "CapacitorBank", 25M, 45M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(ComponentType, "Computer", 0.2M, 1M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "ConductorMagnets", 900M, 200M, true, true); // (DX11)Mass Driver
-            ItemInfo.Add(ComponentType, "Construction", 8M, 2M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "CoolingHeatsink", 25M, 45M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(ComponentType, "DenseSteelPlate", 200M, 30M, true, true); // Arc Reactor Pack [DX-11 Ready]
-            ItemInfo.Add(ComponentType, "Detector", 5M, 6M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "Display", 8M, 6M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "Drone", 200M, 60M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
-            ItemInfo.Add(ComponentType, "DT-MiniSolarCell", 0.08M, 0.2M, true, true); // }DT{ Modpack
-            ItemInfo.Add(ComponentType, "Explosives", 2M, 2M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "FocusPrysm", 25M, 45M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(ComponentType, "Girder", 6M, 2M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "GrapheneAerogelFilling", 0.160M, 2.9166M, true, true); // Graphene Armor [Core] [Beta]
-            ItemInfo.Add(ComponentType, "GrapheneNanotubes", 0.01M, 0.1944M, true, true); // Graphene Armor [Core] [Beta]
-            ItemInfo.Add(ComponentType, "GraphenePlate", 6.66M, 0.54M, true, true); // Graphene Armor [Core] [Beta]
-            ItemInfo.Add(ComponentType, "GraphenePowerCell", 25M, 45M, true, true); // Graphene Armor [Core] [Beta]
-            ItemInfo.Add(ComponentType, "GrapheneSolarCell", 4M, 12M, true, true); // Graphene Armor [Core] [Beta]
-            ItemInfo.Add(ComponentType, "GravityGenerator", 800M, 200M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "InteriorPlate", 3M, 5M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "K_HSR_ElectroParts", 3M, 0.01M, true, true); // HSR
-            ItemInfo.Add(ComponentType, "K_HSR_Globe", 3M, 0.01M, true, true); // HSR
-            ItemInfo.Add(ComponentType, "K_HSR_Globe_Uncharged", 3M, 0.01M, true, true); // HSR
-            ItemInfo.Add(ComponentType, "K_HSR_Mainframe", 15M, 0.01M, true, true); // HSR
-            ItemInfo.Add(ComponentType, "K_HSR_Nanites", 0.01M, 0.001M, true, true); // HSR
-            ItemInfo.Add(ComponentType, "K_HSR_RailComponents", 3M, 0.01M, true, true); // HSR
-            ItemInfo.Add(ComponentType, "LargeTube", 25M, 38M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "LaserConstructionBoxL", 10M, 100M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(ComponentType, "LaserConstructionBoxS", 5M, 50M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(ComponentType, "Magna", 100M, 15M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
-            ItemInfo.Add(ComponentType, "Magnetron", 10M, 0.5M, true, true); // EM Thruster
-            ItemInfo.Add(ComponentType, "MagnetronComponent", 50M, 20M, true, true); // FusionReactors
-            ItemInfo.Add(ComponentType, "Magno", 10M, 5.5M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
-            ItemInfo.Add(ComponentType, "Medical", 150M, 160M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "MetalGrid", 6M, 15M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "Mg_FuelCell", 15M, 16M, true, true); // Ripptide's CW+EE (DX11). Reuploaded
-            ItemInfo.Add(ComponentType, "Motor", 24M, 8M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "Naquadah", 100M, 10M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
-            ItemInfo.Add(ComponentType, "Neutronium", 500M, 5M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
-            ItemInfo.Add(ComponentType, "PowerCell", 25M, 45M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "PowerCoupler", 25M, 45M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(ComponentType, "productioncontrolcomponent", 40M, 15M, true, true); // (DX11) Double Sided Upgrade Modules
-            ItemInfo.Add(ComponentType, "PulseCannonConstructionBoxL", 10M, 100M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(ComponentType, "PulseCannonConstructionBoxS", 5M, 50M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(ComponentType, "PWMCircuit", 25M, 45M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(ComponentType, "RadioCommunication", 8M, 70M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "Reactor", 25M, 8M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "SafetyBypass", 25M, 45M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(ComponentType, "Scrap", 2M, 2M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
-            ItemInfo.Add(ComponentType, "Shield", 5M, 25M, true, true); // Energy shields (new modified version)
-            ItemInfo.Add(ComponentType, "ShieldFrequencyModule", 25M, 45M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(ComponentType, "SmallTube", 4M, 2M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "SolarCell", 8M, 20M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "SteelPlate", 20M, 3M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "Superconductor", 15M, 8M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "TekMarLicense", 0.2M, 1M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(ComponentType, "Thrust", 40M, 10M, true, true); // Space Engineers
-            ItemInfo.Add(ComponentType, "TractorHD", 1500M, 200M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
-            ItemInfo.Add(ComponentType, "Trinium", 100M, 10M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
-            ItemInfo.Add(ComponentType, "Tritium", 3M, 3M, true, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
-            ItemInfo.Add(ComponentType, "TVSI_DiamondGlass", 40M, 8M, true, true); // TVSI-Tech Diamond Bonded Glass (Survival) [DX11]
-            ItemInfo.Add(ComponentType, "WaterTankComponent", 200M, 160M, true, true); // Industrial Centrifuge (stable/dev)
-            ItemInfo.Add(ComponentType, "ZPM", 50M, 60M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
-
-            ItemInfo.Add(AmmoType, "250shell", 128M, 64M, true, true); // [DEPRECATED] CSD Battlecannon
-            ItemInfo.Add(AmmoType, "300mmShell_AP", 35M, 25M, true, true); // Battle Cannon and Turrets (DX11)
-            ItemInfo.Add(AmmoType, "300mmShell_HE", 35M, 25M, true, true); // Battle Cannon and Turrets (DX11)
-            ItemInfo.Add(AmmoType, "88hekc", 16M, 16M, true, true); // CSD Battlecannon
-            ItemInfo.Add(AmmoType, "88shell", 16M, 16M, true, true); // [DEPRECATED] CSD Battlecannon
-            ItemInfo.Add(AmmoType, "900mmShell_AP", 210M, 75M, true, true); // Battle Cannon and Turrets (DX11)
-            ItemInfo.Add(AmmoType, "900mmShell_HE", 210M, 75M, true, true); // Battle Cannon and Turrets (DX11)
-            ItemInfo.Add(AmmoType, "Aden30x113", 35M, 16M, true, true); // Battle Cannon and Turrets (DX11)
-            ItemInfo.Add(AmmoType, "AFmagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
-            ItemInfo.Add(AmmoType, "ARPhaserPulseAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "AZ_Missile_AA", 45M, 60M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
-            ItemInfo.Add(AmmoType, "AZ_Missile200mm", 45M, 60M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
-            ItemInfo.Add(AmmoType, "BatteryCannonAmmo1", 50M, 50M, true, true); // MWI - Weapon Collection (DX11)
-            ItemInfo.Add(AmmoType, "BatteryCannonAmmo2", 200M, 200M, true, true); // MWI - Weapon Collection (DX11)
-            ItemInfo.Add(AmmoType, "BigBertha", 3600M, 2800M, true, true); // Battle Cannon and Turrets (DX11)
-            ItemInfo.Add(AmmoType, "BlasterCell", 1M, 1M, true, true); // [SEI] Weapon Pack DX11
-            ItemInfo.Add(AmmoType, "Bofors40mm", 36M, 28M, true, true); // Battle Cannon and Turrets (DX11)
-            ItemInfo.Add(AmmoType, "Class10PhotonTorp", 45M, 50M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "Class1LaserBeamCharge", 35M, 16M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(AmmoType, "ConcreteMix", 2M, 2M, true, true); // Concrete Tool - placing voxels in survival
-            ItemInfo.Add(AmmoType, "crystalline_microcapacitor", 25M, 16M, true, true); // Star Trek - Weapons Tech [WIP]
-            ItemInfo.Add(AmmoType, "crystalline_nanocapacitor", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
-            ItemInfo.Add(AmmoType, "D7DisruptorBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "discovery_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
-            ItemInfo.Add(AmmoType, "DisruptorBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "DisruptorPulseAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "Eikester_Missile120mm", 25M, 30M, true, true); // (DX11) Small Missile Turret
-            ItemInfo.Add(AmmoType, "Eikester_Nuke", 1800M, 8836M, true, true); // (DX11) Nuke Launcher [WiP]
-            ItemInfo.Add(AmmoType, "EmergencyBlasterMagazine", 0.45M, 0.2M, true, true); // Independent Survival
-            ItemInfo.Add(AmmoType, "EnormousPhaserBeamAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "EnormousPhaserBeamAmmo_LR", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "Eq_GenericEnergyMag", 35M, 16M, true, true); // HSR
-            ItemInfo.Add(AmmoType, "federationphase", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
-            ItemInfo.Add(AmmoType, "Flak130mm", 2M, 3M, true, true); // [SEI] Weapon Pack DX11
-            ItemInfo.Add(AmmoType, "Flak200mm", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
-            ItemInfo.Add(AmmoType, "Flak500mm", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
-            ItemInfo.Add(AmmoType, "GuidedMissileTargeterAmmoMagazine", 100M, 100M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "HDTCannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
-            ItemInfo.Add(AmmoType, "heavy_photon_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
-            ItemInfo.Add(AmmoType, "HeavyDisruptorPulseAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "HeavyPhaserBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "HeavyPhaserBeamAmmo_LR", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "HeavyPhaserPulseAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "HeavySWDisruptorBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "HighDamageGatlingAmmo", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
-            ItemInfo.Add(AmmoType, "ISM_FusionAmmo", 35M, 10M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-            ItemInfo.Add(AmmoType, "ISM_GrendelAmmo", 35M, 2M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-            ItemInfo.Add(AmmoType, "ISM_Hellfire", 45M, 60M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-            ItemInfo.Add(AmmoType, "ISM_LongbowAmmo", 35M, 2M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-            ItemInfo.Add(AmmoType, "ISM_MinigunAmmo", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-            ItemInfo.Add(AmmoType, "ISMNeedles", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-            ItemInfo.Add(AmmoType, "ISMTracer", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-            ItemInfo.Add(AmmoType, "LargeKlingonCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoType, "K_CS_DarkLance", 15M, 0.25M, true, true); // SpinalWeaponry
-            ItemInfo.Add(AmmoType, "K_CS_DarkLance_Red", 15M, 0.25M, true, true); // SpinalWeaponry
-            ItemInfo.Add(AmmoType, "K_CS_SG_Eye", 1M, 0.25M, true, true); // SpinalWeaponry
-            ItemInfo.Add(AmmoType, "K_CS_SG_Reaper", 0M, 0.25M, true, true); // SpinalWeaponry
-            ItemInfo.Add(AmmoType, "K_CS_SG_Reaper_Green", 0M, 0.25M, true, true); // SpinalWeaponry
-            ItemInfo.Add(AmmoType, "K_CS_SG_Spear", 1M, 0.25M, true, true); // SpinalWeaponry
-            ItemInfo.Add(AmmoType, "K_CS_SG_SpearBlue", 1M, 0.25M, true, true); // SpinalWeaponry
-            ItemInfo.Add(AmmoType, "K_CS_WarpCascadeBeam", 5M, 1M, true, true); // SpinalWeaponry
-            ItemInfo.Add(AmmoType, "K_CS_WarpCascadeBeamII", 5M, 1M, true, true); // SpinalWeaponry
-            ItemInfo.Add(AmmoType, "K_HS_23x23_Merciless", 200M, 0.1M, true, true); // HSR
-            ItemInfo.Add(AmmoType, "K_HS_2x34_RailgunPrimary", 200M, 0.1M, true, true); // HSR
-            ItemInfo.Add(AmmoType, "K_HS_3x3_Pulsar", 20M, 0.1M, true, true); // HSR
-            ItemInfo.Add(AmmoType, "K_HS_3x5_Bombard", 10M, 0.1M, true, true); // HSR
-            ItemInfo.Add(AmmoType, "K_HS_7x7_Bleaksky_Ballistic", 25M, 0.1M, true, true); // HSR
-            ItemInfo.Add(AmmoType, "K_HS_7x7_Castigation_Ballistic", 150M, 0.1M, true, true); // HSR
-            ItemInfo.Add(AmmoType, "K_HS_7x7_Condemnation", 100M, 0.1M, true, true); // HSR
-            ItemInfo.Add(AmmoType, "K_HS_7x7_Maldiction_Ballistic", 100M, 0.1M, true, true); // HSR
-            ItemInfo.Add(AmmoType, "K_HS_7x7_Phantom", 40M, 0.1M, true, true); // HSR
-            ItemInfo.Add(AmmoType, "K_HS_7x7_SkyShatter", 30M, 0.1M, true, true); // HSR
-            ItemInfo.Add(AmmoType, "K_HS_7x7_Terminous", 30M, 0.1M, true, true); // HSR
-            ItemInfo.Add(AmmoType, "K_HS_9x9_Calamity", 150M, 0.1M, true, true); // HSR
-            ItemInfo.Add(AmmoType, "K_HS_9x9_K3_King", 30M, 0.1M, true, true); // HSR
-            ItemInfo.Add(AmmoType, "K_HS_SpinalLaser_adaptive", 5M, 1M, true, true); // SpinalWeaponry
-            ItemInfo.Add(AmmoType, "K_HS_SpinalLaser_adaptive_Green", 5M, 1M, true, true); // SpinalWeaponry
-            ItemInfo.Add(AmmoType, "K_HS_SpinalLaserII_adaptive", 5M, 1M, true, true); // SpinalWeaponry
-            ItemInfo.Add(AmmoType, "K_HS_SpinalLaserII_adaptive_Green", 5M, 1M, true, true); // SpinalWeaponry
-            ItemInfo.Add(AmmoType, "K_HS_SpinalLaserIII", 15M, 0.25M, true, true); // SpinalWeaponry
-            ItemInfo.Add(AmmoType, "K_HSR_GateKeeper", 100M, 0.1M, true, true); // HSR
-            ItemInfo.Add(AmmoType, "K_HSR_MassDriver_I", 300M, 0.1M, true, true); // HSR
-            ItemInfo.Add(AmmoType, "K_HSR_SG_1xT", 1M, 0.1M, true, true); // HSR
-            ItemInfo.Add(AmmoType, "K_HSR_SG_3x", 3M, 0.1M, true, true); // HSR
-            ItemInfo.Add(AmmoType, "K_HSR_SG_ElectroBlade", 3M, 0.1M, true, true); // HSR
-            ItemInfo.Add(AmmoType, "K_HSR_SG_Zeus", 15M, 0.1M, true, true); // HSR
-            ItemInfo.Add(AmmoType, "K_SpinalLaser_Beam_True", 0M, 1M, true, true); // SpinalWeaponry
-            ItemInfo.Add(AmmoType, "LargePhotonTorp", 45M, 50M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "LargeShipShotGunAmmo", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
-            ItemInfo.Add(AmmoType, "LargeShotGunAmmoTracer", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
-            ItemInfo.Add(AmmoType, "LargeTrikobaltCharge", 45M, 50M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "LaserAmmo", 0.001M, 0.01M, true, true); // (DX11)Laser Turret
-            ItemInfo.Add(AmmoType, "LaserArrayFlakMagazine", 45M, 30M, true, true); // White Dwarf - Directed Energy Platform [DX11]
-            ItemInfo.Add(AmmoType, "LaserArrayShellMagazine", 45M, 120M, true, true); // White Dwarf - Directed Energy Platform [DX11]
-            ItemInfo.Add(AmmoType, "Liquid Naquadah", 0.25M, 0.1M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
-            ItemInfo.Add(AmmoType, "LittleDavid", 360M, 280M, true, true); // Battle Cannon and Turrets (DX11)
-            ItemInfo.Add(AmmoType, "MagazineCitadelBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(AmmoType, "MagazineFighterDualLightBlaster", 1M, 20M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(AmmoType, "MagazineLargeBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(AmmoType, "MagazineMediumBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(AmmoType, "MagazineNovaTorpedoPowerCellRed", 1M, 20M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(AmmoType, "MagazineSmallBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(AmmoType, "MagazineSmallThorMissilePowerCellOrange", 1M, 20M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(AmmoType, "MagazineSmallTorpedoPowerCellRed", 1M, 20M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(AmmoType, "MagazineThorMissilePowerCellOrange", 1M, 20M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(AmmoType, "MagazineTMLargeBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(AmmoType, "MagazineTMMedBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(AmmoType, "MagazineTMSiegeBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(AmmoType, "MagazineTMSmallBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
-            ItemInfo.Add(AmmoType, "MedBlaster", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
-            ItemInfo.Add(AmmoType, "MinotaurAmmo", 360M, 128M, true, true); // (DX11)Minotaur Cannon
-            ItemInfo.Add(AmmoType, "Missile200mm", 45M, 60M, true, true); // Space Engineers
-            ItemInfo.Add(AmmoType, "Mk14PhaserBeamAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "Mk15PhaserBeamAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "MK1CannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
-            ItemInfo.Add(AmmoType, "MK2CannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
-            ItemInfo.Add(AmmoType, "MK3CannonMagazineAP", 100M, 100M, true, true); // MWI - Weapon Collection (DX11)
-            ItemInfo.Add(AmmoType, "MK3CannonMagazineHE", 300M, 100M, true, true); // MWI - Weapon Collection (DX11)
-            ItemInfo.Add(AmmoType, "Mk6PhaserBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "NATO_25x184mm", 35M, 16M, true, true); // Space Engineers
-            ItemInfo.Add(AmmoType, "NATO_5p56x45mm", 0.45M, 0.2M, true, true); // Space Engineers
-            ItemInfo.Add(AmmoType, "NiFeDUSlugMagazineLZM", 45M, 50M, true, true); // Revived Large Ship Railguns (With penetration damage!)
-            ItemInfo.Add(AmmoType, "Phaser2Charge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoType, "Phaser2ChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoType, "PhaserCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoType, "PhaserChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoType, "NukeSiloMissile", 90M, 150M, true, true); // rearth's Advanced Combat Systems
-            ItemInfo.Add(AmmoType, "OKI122mmAmmo", 150M, 120M, true, true); // OKI Grand Weapons Bundle (DX11)
-            ItemInfo.Add(AmmoType, "OKI230mmAmmo", 800M, 800M, true, true); // OKI Grand Weapons Bundle (DX11)
-            ItemInfo.Add(AmmoType, "OKI23mmAmmo", 100M, 50M, true, true); // OKI Grand Weapons Bundle (DX11)
-            ItemInfo.Add(AmmoType, "OKI50mmAmmo", 200M, 60M, true, true); // OKI Grand Weapons Bundle (DX11)
-            ItemInfo.Add(AmmoType, "OKIObserverMAG", 1M, 1M, true, true); // OKI Grand Weapons Bundle (DX11)
-            ItemInfo.Add(AmmoType, "OSPhaserAmmo", 30.0M, 15.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "OSPhotonTorp", 30M, 60M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "PhaseCannonAmmo", 12.0M, 3.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "PhaserBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "PhaserBeamAmmo_LR", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "PhaserLanceAmmo", 984.0M, 850.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "PhaserLanceAmmo_LR", 984.0M, 850.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "PhaserLanceTurretAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "PhaserPulseAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "photon_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
-            ItemInfo.Add(AmmoType, "Plasma_Hydrogen", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
-            ItemInfo.Add(AmmoType, "PlasmaBeamAmmo", 0.1M, 0.5M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "PlasmaCutterCell", 1M, 1M, true, true); // [SEI] Weapon Pack DX11
-            ItemInfo.Add(AmmoType, "PlasmaMissile", 30M, 50M, true, true); // rearth's Advanced Combat Systems
-            ItemInfo.Add(AmmoType, "PolaronBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "PolaronPulseAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "QuantenTorpedoLarge", 45M, 50M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "quantum_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
-            ItemInfo.Add(AmmoType, "RB_NATO_125x920mm", 875M, 160M, true, true); // RB Weapon Collection [DX11]
-            ItemInfo.Add(AmmoType, "RB_Rocket100mm", 11.25M, 15M, true, true); // RB Weapon Collection [DX11]
-            ItemInfo.Add(AmmoType, "RB_Rocket400mm", 180M, 240M, true, true); // RB Weapon Collection [DX11]
-            ItemInfo.Add(AmmoType, "RomulanCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoType, "RomulanChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoType, "SmallKlingonCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-            ItemInfo.Add(AmmoType, "RG_RG_ammo", 45M, 60M, true, true); // RG_RailGun
-            ItemInfo.Add(AmmoType, "romulanphase", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
-            ItemInfo.Add(AmmoType, "RomulanTorp", 45M, 50M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "small_discovery_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
-            ItemInfo.Add(AmmoType, "small_federationphase", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
-            ItemInfo.Add(AmmoType, "SmallDisruptorBeamAmmo", 12.0M, 3.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "SmallPhaserBeamAmmo", 12.0M, 3.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "SmallPhotonTorp", 12M, 8M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "SmallPlasmaBeamAmmo", 0.1M, 0.5M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "SmallPolaronBeamAmmo", 12.0M, 3.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "SmallShotGunAmmo", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
-            ItemInfo.Add(AmmoType, "SmallShotGunAmmoTracer", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
-            ItemInfo.Add(AmmoType, "SniperRoundHighSpeedLowDamage", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
-            ItemInfo.Add(AmmoType, "SniperRoundHighSpeedLowDamageSmallShip", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
-            ItemInfo.Add(AmmoType, "SniperRoundLowSpeedHighDamage", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
-            ItemInfo.Add(AmmoType, "SniperRoundLowSpeedHighDamageSmallShip", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
-            ItemInfo.Add(AmmoType, "SpartialTorp", 45M, 50M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "SWDisruptorBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "TankCannonAmmoSEM4", 35M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
-            ItemInfo.Add(AmmoType, "TelionAF_PMagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
-            ItemInfo.Add(AmmoType, "TelionAMMagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
-            ItemInfo.Add(AmmoType, "TMPPhaserAmmo", 30.0M, 15.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "tng_quantum_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
-            ItemInfo.Add(AmmoType, "TOS", 35M, 16M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "TOSPhaserBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "TritiumMissile", 72M, 60M, true, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
-            ItemInfo.Add(AmmoType, "TritiumShot", 3M, 3M, true, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
-            ItemInfo.Add(AmmoType, "TungstenBolt", 4812M, 250M, true, true); // (DX11)Mass Driver
-            ItemInfo.Add(AmmoType, "Type10", 35M, 16M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "Type12", 35M, 16M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "Type8", 35M, 16M, true, true); // Star Trek Weapons Pack
-            ItemInfo.Add(AmmoType, "Vulcan20x102", 35M, 16M, true, true); // Battle Cannon and Turrets (DX11)
-
-            ItemInfo.Add(GunType, "AngleGrinder2Item", 3M, 20M, true, false); // Space Engineers
-            ItemInfo.Add(GunType, "AngleGrinder3Item", 3M, 20M, true, false); // Space Engineers
-            ItemInfo.Add(GunType, "AngleGrinder4Item", 3M, 20M, true, false); // Space Engineers
-            ItemInfo.Add(GunType, "AngleGrinderItem", 3M, 20M, true, false); // Space Engineers
-            ItemInfo.Add(GunType, "AutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
-            ItemInfo.Add(GunType, "CubePlacerItem", 1M, 1M, true, false); // Space Engineers
-            ItemInfo.Add(GunType, "EmergencyBlasterItem", 3M, 14M, true, false); // Independent Survival
-            ItemInfo.Add(GunType, "GoodAIRewardPunishmentTool", 0.1M, 1M, true, false); // Space Engineers
-            ItemInfo.Add(GunType, "HandDrill2Item", 22M, 25M, true, false); // Space Engineers
-            ItemInfo.Add(GunType, "HandDrill3Item", 22M, 25M, true, false); // Space Engineers
-            ItemInfo.Add(GunType, "HandDrill4Item", 22M, 25M, true, false); // Space Engineers
-            ItemInfo.Add(GunType, "HandDrillItem", 22M, 25M, true, false); // Space Engineers
-            ItemInfo.Add(GunType, "P90", 3M, 12M, true, false); // [New Version] Stargate Modpack (Server admin block filtering)
-            ItemInfo.Add(GunType, "PhysicalConcreteTool", 5M, 15M, true, false); // Concrete Tool - placing voxels in survival
-            ItemInfo.Add(GunType, "PreciseAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
-            ItemInfo.Add(GunType, "RapidFireAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
-            ItemInfo.Add(GunType, "RG_RG_Item", 5M, 24M, true, false); // RG_RailGun
-            ItemInfo.Add(GunType, "Staff", 3M, 16M, true, false); // [New Version] Stargate Modpack (Server admin block filtering)
-            ItemInfo.Add(GunType, "TritiumAutomaticRifleItem", 6M, 21M, true, false); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
-            ItemInfo.Add(GunType, "UltimateAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
-            ItemInfo.Add(GunType, "Welder2Item", 5M, 8M, true, false); // Space Engineers
-            ItemInfo.Add(GunType, "Welder3Item", 5M, 8M, true, false); // Space Engineers
-            ItemInfo.Add(GunType, "Welder4Item", 5M, 8M, true, false); // Space Engineers
-            ItemInfo.Add(GunType, "WelderItem", 5M, 8M, true, false); // Space Engineers
-            ItemInfo.Add(GunType, "Zat", 3M, 12M, true, false); // [New Version] Stargate Modpack (Server admin block filtering)
-
-            ItemInfo.Add(OxygenType, "GrapheneOxygenBottle", 20M, 100M, true, false); // Graphene Armor [Core] [Beta]
-            ItemInfo.Add(OxygenType, "OxygenBottle", 30M, 120M, true, false); // Space Engineers
-
-            ItemInfo.Add(GasType, "GrapheneHydrogenBottle", 20M, 100M, true, false); // Graphene Armor [Core] [Beta]
-            ItemInfo.Add(GasType, "HydrogenBottle", 30M, 120M, true, false); // Space Engineers
-        }
-
-        private string FindInvGroupName(MyDefinitionId def, IMyInventory inv)
-        {
-            const string MY_OBJECT_BUILDER = "MyObjectBuilder_";
-
-            ulong[] groupId;
-            if (_blockToGroupIdMap.TryGetValue(def, out groupId))
-                return _groupIdToNameMap[groupId];
-
-            groupId = new ulong[ItemInfo.ID_LENGTH];
-            foreach (var kv in ItemInfo.ItemInfoDict)
-            {
-                if (inv.CanItemsBeAdded(-1, kv.Key))
-                {
-                    for (int i = 0; i < ItemInfo.ID_LENGTH; ++i)
-                        groupId[i] |= kv.Value.Id[i];
-                }
-            }
-
-            string result;
-            if (_groupIdToNameMap.TryGetValue(groupId, out result))
-            {
-                _blockToGroupIdMap.Add(def, groupId);
-                return result;
-            }
-            else
-            {
-                var fullType = def.ToString();
-                result = fullType.StartsWith(MY_OBJECT_BUILDER)
-                ? '$' + fullType.Substring(MY_OBJECT_BUILDER.Length)
-                : fullType;
-
-                _groupIdToNameMap.Add(groupId, result);
-                _blockToGroupIdMap.Add(def, groupId);
-                return result;
-            }
-        }
-
-        private class BlockStore
+        internal class BlockStore
         {
             public readonly Program _program;
-            public readonly List<IMyTextPanel> DebugScreen;
-            public readonly List<InventoryWrapper> Reactors;
-            public readonly List<InventoryWrapper> OxygenGenerators;
-            public readonly List<InventoryWrapper> Refineries;
-            public readonly List<InventoryWrapper> Drills;
-            public readonly List<InventoryWrapper> Turrets;
-            public readonly List<InventoryWrapper> CargoContainers;
-            public readonly Dictionary<string, HashSet<InventoryWrapper>> Groups;
-            public readonly HashSet<InventoryWrapper> AllGroupedInventories;
             public readonly HashSet<IMyCubeGrid> AllGrids;
+            public readonly HashSet<InventoryWrapper> AllGroupedInventories;
+            public readonly List<InventoryWrapper> CargoContainers;
+            public readonly List<IMyTextPanel> DebugScreen;
+            public readonly List<InventoryWrapper> Drills;
             public readonly List<IMyLightingBlock> DrillsPayloadLights;
+            public readonly Dictionary<string, HashSet<InventoryWrapper>> Groups;
+            public readonly List<InventoryWrapper> OxygenGenerators;
+            public readonly List<InventoryWrapper> Reactors;
+            public readonly List<InventoryWrapper> Refineries;
+            public readonly List<InventoryWrapper> Turrets;
             private System.Text.RegularExpressions.Regex _groupTagPattern;
 
             public BlockStore(Program program)
@@ -1340,6 +864,30 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                     || CollectOxygenGenerator(block as IMyGasGenerator);
             }
 
+            private void AddToGroup(InventoryWrapper inv)
+            {
+                const string MatchNothingExpr = @"a^";
+
+                if (_groupTagPattern == null)
+                {
+                    var expr = String.IsNullOrEmpty(_program.GroupTagPattern) ? MatchNothingExpr : _program.GroupTagPattern;
+                    _groupTagPattern = new System.Text.RegularExpressions.Regex(expr,
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                }
+
+                foreach (System.Text.RegularExpressions.Match dt in _groupTagPattern.Matches(inv.Block.CustomName))
+                {
+                    HashSet<InventoryWrapper> tmp;
+                    if (!Groups.TryGetValue(dt.Value, out tmp))
+                    {
+                        tmp = new HashSet<InventoryWrapper>();
+                        Groups.Add(dt.Value, tmp);
+                    }
+                    tmp.Add(inv);
+                    AllGroupedInventories.Add(inv);
+                }
+            }
+
             private bool CollectContainer(IMyCargoContainer myCargoContainer)
             {
                 if (myCargoContainer == null)
@@ -1358,44 +906,6 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 return true;
             }
 
-            private bool CollectRefinery(IMyRefinery myRefinery)
-            {
-                if (myRefinery == null)
-                    return false;
-
-                if (!_program.EnableRefineries || !myRefinery.UseConveyorSystem)
-                    return true;
-
-                var inv = InventoryWrapper.Create(_program, myRefinery);
-                if (inv != null)
-                {
-                    Refineries.Add(inv);
-                    AllGrids.Add(myRefinery.CubeGrid);
-                    if (_program.EnableGroups)
-                        AddToGroup(inv);
-                }
-                return true;
-            }
-
-            private bool CollectReactor(IMyReactor myReactor)
-            {
-                if (myReactor == null)
-                    return false;
-
-                if (!_program.EnableReactors || !myReactor.UseConveyorSystem)
-                    return true;
-
-                var inv = InventoryWrapper.Create(_program, myReactor);
-                if (inv != null)
-                {
-                    Reactors.Add(inv);
-                    AllGrids.Add(myReactor.CubeGrid);
-                    if (_program.EnableGroups)
-                        AddToGroup(inv);
-                }
-                return true;
-            }
-
             private bool CollectDrill(IMyShipDrill myDrill)
             {
                 if (myDrill == null)
@@ -1409,25 +919,6 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 {
                     Drills.Add(inv);
                     AllGrids.Add(myDrill.CubeGrid);
-                    if (_program.EnableGroups)
-                        AddToGroup(inv);
-                }
-                return true;
-            }
-
-            private bool CollectTurret(IMyUserControllableGun myTurret)
-            {
-                if (myTurret == null)
-                    return false;
-
-                if (!_program.EnableTurrets || myTurret is IMyLargeInteriorTurret)
-                    return true;
-
-                var inv = InventoryWrapper.Create(_program, myTurret);
-                if (inv != null)
-                {
-                    Turrets.Add(inv);
-                    AllGrids.Add(myTurret.CubeGrid);
                     if (_program.EnableGroups)
                         AddToGroup(inv);
                 }
@@ -1453,80 +944,175 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 return true;
             }
 
-            private void AddToGroup(InventoryWrapper inv)
+            private bool CollectReactor(IMyReactor myReactor)
             {
-                const string MatchNothingExpr = @"a^";
+                if (myReactor == null)
+                    return false;
 
-                if (_groupTagPattern == null)
+                if (!_program.EnableReactors || !myReactor.UseConveyorSystem)
+                    return true;
+
+                var inv = InventoryWrapper.Create(_program, myReactor);
+                if (inv != null)
                 {
-                    var expr = String.IsNullOrEmpty(_program.GroupTagPattern) ? MatchNothingExpr : _program.GroupTagPattern;
-                    _groupTagPattern = new System.Text.RegularExpressions.Regex(expr,
-                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    Reactors.Add(inv);
+                    AllGrids.Add(myReactor.CubeGrid);
+                    if (_program.EnableGroups)
+                        AddToGroup(inv);
                 }
+                return true;
+            }
 
-                foreach (System.Text.RegularExpressions.Match dt in _groupTagPattern.Matches(inv.Block.CustomName))
+            private bool CollectRefinery(IMyRefinery myRefinery)
+            {
+                if (myRefinery == null)
+                    return false;
+
+                if (!_program.EnableRefineries || !myRefinery.UseConveyorSystem)
+                    return true;
+
+                var inv = InventoryWrapper.Create(_program, myRefinery);
+                if (inv != null)
                 {
-                    HashSet<InventoryWrapper> tmp;
-                    if (!Groups.TryGetValue(dt.Value, out tmp))
+                    Refineries.Add(inv);
+                    AllGrids.Add(myRefinery.CubeGrid);
+                    if (_program.EnableGroups)
+                        AddToGroup(inv);
+                }
+                return true;
+            }
+
+            private bool CollectTurret(IMyUserControllableGun myTurret)
+            {
+                if (myTurret == null)
+                    return false;
+
+                if (!_program.EnableTurrets || myTurret is IMyLargeInteriorTurret)
+                    return true;
+
+                var inv = InventoryWrapper.Create(_program, myTurret);
+                if (inv != null)
+                {
+                    Turrets.Add(inv);
+                    AllGrids.Add(myTurret.CubeGrid);
+                    if (_program.EnableGroups)
+                        AddToGroup(inv);
+                }
+                return true;
+            }
+        }
+
+        internal class ConveyorNetwork
+        {
+            public List<InventoryWrapper> Inventories;
+            public int No;
+
+            public ConveyorNetwork(int no)
+            {
+                No = no;
+                Inventories = new List<InventoryWrapper>();
+            }
+        }
+
+        internal class InventoryGroup
+        {
+            public List<InventoryWrapper> Inventories;
+            public string Name;
+            public int No;
+
+            public InventoryGroup(int no, string name)
+            {
+                No = no;
+                Name = name;
+                Inventories = new List<InventoryWrapper>();
+            }
+        }
+
+        internal class InventoryWrapper
+        {
+            public IMyTerminalBlock Block;
+            public decimal CurrentVolume;
+            public string GroupName;
+            public IMyInventory Inventory;
+            public decimal MaxVolume;
+            public decimal Percent;
+
+            public static InventoryWrapper Create(Program prog, IMyTerminalBlock block)
+            {
+                var inv = block.GetInventory(0);
+                if (inv != null && inv.MaxVolume > 0)
+                {
+                    var result = new InventoryWrapper();
+                    result.Block = block;
+                    result.Inventory = inv;
+                    result.GroupName = prog.FindInvGroupName(block.BlockDefinition, inv);
+
+                    return result;
+                }
+                return null;
+            }
+
+            public void CalculatePercent()
+            {
+                Percent = CurrentVolume / MaxVolume;
+            }
+
+            public List<MyInventoryItem> GetItems(List<MyInventoryItem> list, Func<MyInventoryItem, bool> filter)
+            {
+                list.Clear();
+                Inventory.GetItems(list, filter);
+                return list;
+            }
+
+            public InventoryWrapper FilterItems(Program prog, Statistics stat, Func<MyInventoryItem, bool> filter)
+            {
+                decimal volumeBlocked = 0.0M;
+                Inventory.GetItems(null, item =>
+                {
+                    if (!filter(item))
                     {
-                        tmp = new HashSet<InventoryWrapper>();
-                        Groups.Add(dt.Value, tmp);
+                        var data = prog.Items.Get(stat, item.Type);
+                        if (data != null)
+                            volumeBlocked += (decimal)item.Amount * data.Volume / 1000M;
                     }
-                    tmp.Add(inv);
-                    AllGroupedInventories.Add(inv);
+                    return false;
+                });
+
+                if (volumeBlocked > 0.0M)
+                {
+                    CurrentVolume -= volumeBlocked;
+                    MaxVolume -= volumeBlocked;
+                    stat.Output.Append("volumeBlocked ").AppendLine(volumeBlocked.ToString("N6"));
                 }
+                return this;
+            }
+
+            public InventoryWrapper LoadVolume()
+            {
+                CurrentVolume = (decimal)Inventory.CurrentVolume;
+                MaxVolume = (decimal)Inventory.MaxVolume;
+                return this;
+            }
+
+            public bool TransferItemTo(InventoryWrapper dst, int sourceItemIndex, int? targetItemIndex = null,
+                bool? stackIfPossible = null, VRage.MyFixedPoint? amount = null)
+            {
+                return Inventory.TransferItemTo(dst.Inventory, sourceItemIndex, targetItemIndex, stackIfPossible, amount);
             }
         }
 
-        private class Statistics
+        internal class ItemDict
         {
-            public readonly StringBuilder Output;
-            public readonly HashSet<string> MissingInfo;
-            public int NumberOfNetworks;
-            public int MovementsDone;
-            public string DrillsPayloadStr;
-            public bool NotConnectedDrillsFound;
-            public bool DrillsVolumeWarning;
+            public readonly Dictionary<MyItemType, ItemInfo> ItemInfoDict;
 
-            public Statistics()
+            public ItemDict()
             {
-                Output = new StringBuilder();
-                MissingInfo = new HashSet<string>();
-            }
-        }
-
-        private class ItemInfo
-        {
-            public const int ID_LENGTH = 7;
-            public static readonly Dictionary<MyDefinitionId, ItemInfo> ItemInfoDict;
-
-            static ItemInfo()
-            {
-                ItemInfoDict = new Dictionary<MyDefinitionId, ItemInfo>(MyDefinitionId.Comparer);
+                ItemInfoDict = new Dictionary<MyItemType, ItemInfo>();
             }
 
-            private ItemInfo(int itemInfoNo, decimal mass, decimal volume, bool hasIntegralAmounts, bool isStackable)
+            public void Add(string mainType, string subtype, decimal mass, decimal volume, bool hasIntegralAmounts, bool isStackable)
             {
-                Id = new ulong[ID_LENGTH];
-                Id[itemInfoNo >> 6] = 1ul << (itemInfoNo & 0x3F);
-                Mass = mass;
-                Volume = volume;
-                HasIntegralAmounts = hasIntegralAmounts;
-                IsStackable = isStackable;
-            }
-
-            public readonly ulong[] Id;
-            public readonly decimal Mass;
-            public readonly decimal Volume;
-            public readonly bool HasIntegralAmounts;
-            public readonly bool IsStackable;
-
-            public static void Add(string mainType, string subtype,
-                decimal mass, decimal volume, bool hasIntegralAmounts, bool isStackable)
-            {
-                MyDefinitionId key;
-                if (!MyDefinitionId.TryParse(mainType, subtype, out key))
-                    return;
+                var key = new MyItemType(mainType, subtype);
                 var value = new ItemInfo(ItemInfoDict.Count, mass, volume, hasIntegralAmounts, isStackable);
                 try
                 {
@@ -1538,7 +1124,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 }
             }
 
-            public static ItemInfo Get(Statistics stat, MyDefinitionId key)
+            public ItemInfo Get(Statistics stat, MyItemType key)
             {
                 ItemInfo data;
                 if (ItemInfoDict.TryGetValue(key, out data))
@@ -1550,22 +1136,490 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 stat.MissingInfo.Add(key.ToString());
                 return null;
             }
-        }
 
-        private class MyTextPanelNameComparer : IComparer<IMyTextPanel>
-        {
-            public static readonly IComparer<IMyTextPanel> Instance = new MyTextPanelNameComparer();
-
-            public int Compare(IMyTextPanel x, IMyTextPanel y)
+            public static ItemDict BuildItemInfoDict()
             {
-                return String.Compare(x.CustomName, y.CustomName, true);
+                var ret = new ItemDict();
+
+                ret.Add(OreType, "[CM] Cattierite (Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[CM] Cohenite (Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[CM] Dense Iron (Fe+)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[CM] Glaucodot (Fe,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[CM] Heazlewoodite (Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[CM] Iron (Fe)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[CM] Kamacite (Fe,Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[CM] Pyrite (Fe,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[CM] Taenite (Fe,Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[EI] Autunite (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[EI] Carnotite (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[EI] Uraniaurite (U,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[PM] Chlorargyrite (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[PM] Cooperite (Ni,Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[PM] Electrum (Au,Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[PM] Galena (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[PM] Niggliite (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[PM] Petzite (Ag,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[PM] Porphyry (Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[PM] Sperrylite (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[S] Akimotoite (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[S] Dolomite (Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[S] Hapkeite (Fe,Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[S] Icy Stone", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[S] Olivine (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[S] Quartz (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[S] Sinoite (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[S] Wadsleyite (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Akimotoite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Akimotoite (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Autunite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Autunite (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Carbon", 1M, 0.37M, false, true); // Graphene Armor [Core] [Beta]
+                ret.Add(OreType, "Carnotite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Carnotite (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Cattierite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Cattierite (Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Chlorargyrite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Chlorargyrite (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Cobalt", 1M, 0.37M, false, true); // Space Engineers
+                ret.Add(OreType, "Cohenite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Cohenite (Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Cooperite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Cooperite (Ni,Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Dense Iron", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Deuterium", 1.5M, 0.5M, false, true); // Deuterium Fusion Reactors
+                ret.Add(OreType, "Dolomite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Dolomite (Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Electrum", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Electrum (Au,Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Galena", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Galena (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Glaucodot", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Glaucodot (Fe,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Gold", 1M, 0.37M, false, true); // Space Engineers
+                ret.Add(OreType, "Hapkeite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Hapkeite (Fe,Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Heazlewoodite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Heazlewoodite (Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Helium", 1M, 5.6M, false, true); // (DX11)Mass Driver
+                ret.Add(OreType, "Ice", 1M, 0.37M, false, true); // Space Engineers
+                ret.Add(OreType, "Icy Stone", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Iron", 1M, 0.37M, false, true); // Space Engineers
+                ret.Add(OreType, "Kamacite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Kamacite (Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Magnesium", 1M, 0.37M, false, true); // Space Engineers
+                ret.Add(OreType, "Naquadah", 1M, 0.37M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
+                ret.Add(OreType, "Neutronium", 1M, 0.37M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
+                ret.Add(OreType, "Nickel", 1M, 0.37M, false, true); // Space Engineers
+                ret.Add(OreType, "Niggliite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Niggliite (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Olivine", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Olivine (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Organic", 1M, 0.37M, false, true); // Space Engineers
+                ret.Add(OreType, "Petzite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Petzite (Au,Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Platinum", 1M, 0.37M, false, true); // Space Engineers
+                ret.Add(OreType, "Porphyry", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Porphyry (Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Pyrite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Pyrite (Fe,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Quartz", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Quartz (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Scrap", 1M, 0.254M, false, true); // Space Engineers
+                ret.Add(OreType, "Silicon", 1M, 0.37M, false, true); // Space Engineers
+                ret.Add(OreType, "Silver", 1M, 0.37M, false, true); // Space Engineers
+                ret.Add(OreType, "Sinoite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Sinoite (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Sperrylite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Sperrylite (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Stone", 1M, 0.37M, false, true); // Space Engineers
+                ret.Add(OreType, "Taenite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Taenite (Fe,Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Thorium", 1M, 0.9M, false, true); // Tiered Thorium Reactors and Refinery (new)
+                ret.Add(OreType, "Trinium", 1M, 0.37M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
+                ret.Add(OreType, "Tungsten", 1M, 0.47M, false, true); // (DX11)Mass Driver
+                ret.Add(OreType, "Uraniaurite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Uraniaurite (U,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Uranium", 1M, 0.37M, false, true); // Space Engineers
+                ret.Add(OreType, "Wadsleyite", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Wadsleyite (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Акимотит (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Аутунит (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Вадселит (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Галенит (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Глаукодот (Fe,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Доломит (Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Камасит (Fe,Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Карнотит (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Катьерит (Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Кварц (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Когенит (Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Куперит (Ni,Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Ледяной камень", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Нигглиит (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Оливин (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Петцит (Ag,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Пирит (Fe,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Плотное железо (Fe+)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Порфир (Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Синоит (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Сперрилит (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Таенит (Fe,Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Ураниурит (U,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Хапкеит (Fe,Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Хизлевудит (Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Хлораргирит (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Электрум (Au,Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+
+                ret.Add(IngotType, "Carbon", 1M, 0.052M, false, true); // TVSI-Tech Diamond Bonded Glass (Survival) [DX11]
+                ret.Add(IngotType, "Cobalt", 1M, 0.112M, false, true); // Space Engineers
+                ret.Add(IngotType, "Gold", 1M, 0.052M, false, true); // Space Engineers
+                ret.Add(IngotType, "HeavyH2OIngot", 2M, 1M, false, true); // Deuterium Fusion Reactors
+                ret.Add(IngotType, "HeavyWater", 5M, 0.052M, false, true); // GSF Energy Weapons Pack
+                ret.Add(IngotType, "Iron", 1M, 0.127M, false, true); // Space Engineers
+                ret.Add(IngotType, "K_HSR_Nanites_Gel", 0.001M, 0.001M, false, true); // HSR
+                ret.Add(IngotType, "LiquidHelium", 1M, 4.6M, false, true); // (DX11)Mass Driver
+                ret.Add(IngotType, "Magmatite", 100M, 37M, false, true); // Stone and Gravel to Metal Ingots (DX 11)
+                ret.Add(IngotType, "Magnesium", 1M, 0.575M, false, true); // Space Engineers
+                ret.Add(IngotType, "Naquadah", 1M, 0.052M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
+                ret.Add(IngotType, "Neutronium", 1M, 0.052M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
+                ret.Add(IngotType, "Nickel", 1M, 0.112M, false, true); // Space Engineers
+                ret.Add(IngotType, "Platinum", 1M, 0.047M, false, true); // Space Engineers
+                ret.Add(IngotType, "Scrap", 1M, 0.254M, false, true); // Space Engineers
+                ret.Add(IngotType, "ShieldPoint", 0.00001M, 0.0001M, false, true); // Energy shields (new modified version)
+                ret.Add(IngotType, "Silicon", 1M, 0.429M, false, true); // Space Engineers
+                ret.Add(IngotType, "Silver", 1M, 0.095M, false, true); // Space Engineers
+                ret.Add(IngotType, "Stone", 1M, 0.37M, false, true); // Space Engineers
+                ret.Add(IngotType, "SuitFuel", 0.0003M, 0.052M, false, true); // Independent Survival
+                ret.Add(IngotType, "SuitRTGPellet", 1.0M, 0.052M, false, true); // Independent Survival
+                ret.Add(IngotType, "Thorium", 2M, 0.5M, false, true); // Thorium Reactor Kit
+                ret.Add(IngotType, "ThoriumIngot", 3M, 20M, false, true); // Tiered Thorium Reactors and Refinery (new)
+                ret.Add(IngotType, "Trinium", 1M, 0.052M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
+                ret.Add(IngotType, "Tungsten", 1M, 0.52M, false, true); // (DX11)Mass Driver
+                ret.Add(IngotType, "Uranium", 1M, 0.052M, false, true); // Space Engineers
+                ret.Add(IngotType, "v2HydrogenGas", 2.1656M, 0.43M, false, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+                ret.Add(IngotType, "v2OxygenGas", 4.664M, 0.9M, false, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+
+                ret.Add(ComponentType, "AdvancedReactorBundle", 50M, 20M, true, true); // Tiered Thorium Reactors and Refinery (new)
+                ret.Add(ComponentType, "AegisLicense", 0.2M, 1M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "Aggitator", 40M, 10M, true, true); // Star Trek - Weapons Tech [WIP]
+                ret.Add(ComponentType, "AlloyPlate", 30M, 3M, true, true); // Industrial Centrifuge (stable/dev)
+                ret.Add(ComponentType, "ampHD", 10M, 15.5M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
+                ret.Add(ComponentType, "ArcFuel", 2M, 0.627M, true, true); // Arc Reactor Pack [DX-11 Ready]
+                ret.Add(ComponentType, "ArcReactorcomponent", 312M, 100M, true, true); // Arc Reactor Pack [DX-11 Ready]
+                ret.Add(ComponentType, "AzimuthSupercharger", 10M, 9M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+                ret.Add(ComponentType, "BulletproofGlass", 15M, 8M, true, true); // Space Engineers
+                ret.Add(ComponentType, "Canvas", 15M, 8M, true, true); // Space Engineers
+                ret.Add(ComponentType, "CapacitorBank", 25M, 45M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "Computer", 0.2M, 1M, true, true); // Space Engineers
+                ret.Add(ComponentType, "ConductorMagnets", 900M, 200M, true, true); // (DX11)Mass Driver
+                ret.Add(ComponentType, "Construction", 8M, 2M, true, true); // Space Engineers
+                ret.Add(ComponentType, "CoolingHeatsink", 25M, 45M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "DenseSteelPlate", 200M, 30M, true, true); // Arc Reactor Pack [DX-11 Ready]
+                ret.Add(ComponentType, "Detector", 5M, 6M, true, true); // Space Engineers
+                ret.Add(ComponentType, "Display", 8M, 6M, true, true); // Space Engineers
+                ret.Add(ComponentType, "Drone", 200M, 60M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
+                ret.Add(ComponentType, "DT-MiniSolarCell", 0.08M, 0.2M, true, true); // }DT{ Modpack
+                ret.Add(ComponentType, "Explosives", 2M, 2M, true, true); // Space Engineers
+                ret.Add(ComponentType, "FocusPrysm", 25M, 45M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "Girder", 6M, 2M, true, true); // Space Engineers
+                ret.Add(ComponentType, "GrapheneAerogelFilling", 0.160M, 2.9166M, true, true); // Graphene Armor [Core] [Beta]
+                ret.Add(ComponentType, "GrapheneNanotubes", 0.01M, 0.1944M, true, true); // Graphene Armor [Core] [Beta]
+                ret.Add(ComponentType, "GraphenePlate", 6.66M, 0.54M, true, true); // Graphene Armor [Core] [Beta]
+                ret.Add(ComponentType, "GraphenePowerCell", 25M, 45M, true, true); // Graphene Armor [Core] [Beta]
+                ret.Add(ComponentType, "GrapheneSolarCell", 4M, 12M, true, true); // Graphene Armor [Core] [Beta]
+                ret.Add(ComponentType, "GravityGenerator", 800M, 200M, true, true); // Space Engineers
+                ret.Add(ComponentType, "InteriorPlate", 3M, 5M, true, true); // Space Engineers
+                ret.Add(ComponentType, "K_HSR_ElectroParts", 3M, 0.01M, true, true); // HSR
+                ret.Add(ComponentType, "K_HSR_Globe", 3M, 0.01M, true, true); // HSR
+                ret.Add(ComponentType, "K_HSR_Globe_Uncharged", 3M, 0.01M, true, true); // HSR
+                ret.Add(ComponentType, "K_HSR_Mainframe", 15M, 0.01M, true, true); // HSR
+                ret.Add(ComponentType, "K_HSR_Nanites", 0.01M, 0.001M, true, true); // HSR
+                ret.Add(ComponentType, "K_HSR_RailComponents", 3M, 0.01M, true, true); // HSR
+                ret.Add(ComponentType, "LargeTube", 25M, 38M, true, true); // Space Engineers
+                ret.Add(ComponentType, "LaserConstructionBoxL", 10M, 100M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "LaserConstructionBoxS", 5M, 50M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "Magna", 100M, 15M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
+                ret.Add(ComponentType, "Magnetron", 10M, 0.5M, true, true); // EM Thruster
+                ret.Add(ComponentType, "MagnetronComponent", 50M, 20M, true, true); // Deuterium Fusion Reactors
+                ret.Add(ComponentType, "Magno", 10M, 5.5M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
+                ret.Add(ComponentType, "Medical", 150M, 160M, true, true); // Space Engineers
+                ret.Add(ComponentType, "MetalGrid", 6M, 15M, true, true); // Space Engineers
+                ret.Add(ComponentType, "Mg_FuelCell", 15M, 16M, true, true); // Ripptide's CW+EE (DX11). Reuploaded
+                ret.Add(ComponentType, "Motor", 24M, 8M, true, true); // Space Engineers
+                ret.Add(ComponentType, "Naquadah", 100M, 10M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
+                ret.Add(ComponentType, "Neutronium", 500M, 5M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
+                ret.Add(ComponentType, "PowerCell", 25M, 45M, true, true); // Space Engineers
+                ret.Add(ComponentType, "PowerCoupler", 25M, 45M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "productioncontrolcomponent", 40M, 15M, true, true); // (DX11) Double Sided Upgrade Modules
+                ret.Add(ComponentType, "PulseCannonConstructionBoxL", 10M, 100M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "PulseCannonConstructionBoxS", 5M, 50M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "PWMCircuit", 25M, 45M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "RadioCommunication", 8M, 70M, true, true); // Space Engineers
+                ret.Add(ComponentType, "Reactor", 25M, 8M, true, true); // Space Engineers
+                ret.Add(ComponentType, "SafetyBypass", 25M, 45M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "Scrap", 2M, 2M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+                ret.Add(ComponentType, "Shield", 5M, 25M, true, true); // Energy shields (new modified version)
+                ret.Add(ComponentType, "ShieldFrequencyModule", 25M, 45M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "SmallTube", 4M, 2M, true, true); // Space Engineers
+                ret.Add(ComponentType, "SolarCell", 8M, 20M, true, true); // Space Engineers
+                ret.Add(ComponentType, "SteelPlate", 20M, 3M, true, true); // Space Engineers
+                ret.Add(ComponentType, "Superconductor", 15M, 8M, true, true); // Space Engineers
+                ret.Add(ComponentType, "TekMarLicense", 0.2M, 1M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "Thrust", 40M, 10M, true, true); // Space Engineers
+                ret.Add(ComponentType, "TractorHD", 1500M, 200M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
+                ret.Add(ComponentType, "Trinium", 100M, 10M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
+                ret.Add(ComponentType, "Tritium", 3M, 3M, true, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+                ret.Add(ComponentType, "TVSI_DiamondGlass", 40M, 8M, true, true); // TVSI-Tech Diamond Bonded Glass (Survival) [DX11]
+                ret.Add(ComponentType, "WaterTankComponent", 200M, 160M, true, true); // Industrial Centrifuge (stable/dev)
+                ret.Add(ComponentType, "ZPM", 50M, 60M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
+
+                ret.Add(AmmoType, "250shell", 128M, 64M, true, true); // [DEPRECATED] CSD Battlecannon
+                ret.Add(AmmoType, "300mmShell_AP", 35M, 25M, true, true); // Battle Cannon and Turrets (DX11)
+                ret.Add(AmmoType, "300mmShell_HE", 35M, 25M, true, true); // Battle Cannon and Turrets (DX11)
+                ret.Add(AmmoType, "88hekc", 16M, 16M, true, true); // CSD Battlecannon
+                ret.Add(AmmoType, "88shell", 16M, 16M, true, true); // [DEPRECATED] CSD Battlecannon
+                ret.Add(AmmoType, "900mmShell_AP", 210M, 75M, true, true); // Battle Cannon and Turrets (DX11)
+                ret.Add(AmmoType, "900mmShell_HE", 210M, 75M, true, true); // Battle Cannon and Turrets (DX11)
+                ret.Add(AmmoType, "Aden30x113", 35M, 16M, true, true); // Battle Cannon and Turrets (DX11)
+                ret.Add(AmmoType, "AFmagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
+                ret.Add(AmmoType, "ARPhaserPulseAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "AZ_Missile_AA", 45M, 60M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+                ret.Add(AmmoType, "AZ_Missile200mm", 45M, 60M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+                ret.Add(AmmoType, "BatteryCannonAmmo1", 50M, 50M, true, true); // MWI - Weapon Collection (DX11)
+                ret.Add(AmmoType, "BatteryCannonAmmo2", 200M, 200M, true, true); // MWI - Weapon Collection (DX11)
+                ret.Add(AmmoType, "BigBertha", 3600M, 2800M, true, true); // Battle Cannon and Turrets (DX11)
+                ret.Add(AmmoType, "BlasterCell", 1M, 1M, true, true); // [SEI] Weapon Pack DX11
+                ret.Add(AmmoType, "Bofors40mm", 36M, 28M, true, true); // Battle Cannon and Turrets (DX11)
+                ret.Add(AmmoType, "Class10PhotonTorp", 45M, 50M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "Class1LaserBeamCharge", 35M, 16M, true, true); // GSF Energy Weapons Pack
+                ret.Add(AmmoType, "ConcreteMix", 2M, 2M, true, true); // Concrete Tool - placing voxels in survival
+                ret.Add(AmmoType, "crystalline_microcapacitor", 25M, 16M, true, true); // Star Trek - Weapons Tech [WIP]
+                ret.Add(AmmoType, "crystalline_nanocapacitor", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
+                ret.Add(AmmoType, "D7DisruptorBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "discovery_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
+                ret.Add(AmmoType, "DisruptorBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "DisruptorPulseAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "Eikester_Missile120mm", 25M, 30M, true, true); // (DX11) Small Missile Turret
+                ret.Add(AmmoType, "Eikester_Nuke", 1800M, 8836M, true, true); // (DX11) Nuke Launcher [WiP]
+                ret.Add(AmmoType, "EmergencyBlasterMagazine", 0.45M, 0.2M, true, true); // Independent Survival
+                ret.Add(AmmoType, "EnormousPhaserBeamAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "EnormousPhaserBeamAmmo_LR", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "Eq_GenericEnergyMag", 35M, 16M, true, true); // HSR
+                ret.Add(AmmoType, "federationphase", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
+                ret.Add(AmmoType, "Flak130mm", 2M, 3M, true, true); // [SEI] Weapon Pack DX11
+                ret.Add(AmmoType, "Flak200mm", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
+                ret.Add(AmmoType, "Flak500mm", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
+                ret.Add(AmmoType, "GuidedMissileTargeterAmmoMagazine", 100M, 100M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "HDTCannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
+                ret.Add(AmmoType, "heavy_photon_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
+                ret.Add(AmmoType, "HeavyDisruptorPulseAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "HeavyPhaserBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "HeavyPhaserBeamAmmo_LR", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "HeavyPhaserPulseAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "HeavySWDisruptorBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "HighDamageGatlingAmmo", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+                ret.Add(AmmoType, "ISM_FusionAmmo", 35M, 10M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+                ret.Add(AmmoType, "ISM_GrendelAmmo", 35M, 2M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+                ret.Add(AmmoType, "ISM_Hellfire", 45M, 60M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+                ret.Add(AmmoType, "ISM_LongbowAmmo", 35M, 2M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+                ret.Add(AmmoType, "ISM_MinigunAmmo", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+                ret.Add(AmmoType, "ISMNeedles", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+                ret.Add(AmmoType, "ISMTracer", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
+                ret.Add(AmmoType, "LargeKlingonCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+                ret.Add(AmmoType, "K_CS_DarkLance", 15M, 0.25M, true, true); // SpinalWeaponry
+                ret.Add(AmmoType, "K_CS_DarkLance_Red", 15M, 0.25M, true, true); // SpinalWeaponry
+                ret.Add(AmmoType, "K_CS_SG_Eye", 1M, 0.25M, true, true); // SpinalWeaponry
+                ret.Add(AmmoType, "K_CS_SG_Reaper", 0M, 0.25M, true, true); // SpinalWeaponry
+                ret.Add(AmmoType, "K_CS_SG_Reaper_Green", 0M, 0.25M, true, true); // SpinalWeaponry
+                ret.Add(AmmoType, "K_CS_SG_Spear", 1M, 0.25M, true, true); // SpinalWeaponry
+                ret.Add(AmmoType, "K_CS_SG_SpearBlue", 1M, 0.25M, true, true); // SpinalWeaponry
+                ret.Add(AmmoType, "K_CS_WarpCascadeBeam", 5M, 1M, true, true); // SpinalWeaponry
+                ret.Add(AmmoType, "K_CS_WarpCascadeBeamII", 5M, 1M, true, true); // SpinalWeaponry
+                ret.Add(AmmoType, "K_HS_23x23_Merciless", 200M, 0.1M, true, true); // HSR
+                ret.Add(AmmoType, "K_HS_2x34_RailgunPrimary", 200M, 0.1M, true, true); // HSR
+                ret.Add(AmmoType, "K_HS_3x3_Pulsar", 20M, 0.1M, true, true); // HSR
+                ret.Add(AmmoType, "K_HS_3x5_Bombard", 10M, 0.1M, true, true); // HSR
+                ret.Add(AmmoType, "K_HS_7x7_Bleaksky_Ballistic", 25M, 0.1M, true, true); // HSR
+                ret.Add(AmmoType, "K_HS_7x7_Castigation_Ballistic", 150M, 0.1M, true, true); // HSR
+                ret.Add(AmmoType, "K_HS_7x7_Condemnation", 100M, 0.1M, true, true); // HSR
+                ret.Add(AmmoType, "K_HS_7x7_Maldiction_Ballistic", 100M, 0.1M, true, true); // HSR
+                ret.Add(AmmoType, "K_HS_7x7_Phantom", 40M, 0.1M, true, true); // HSR
+                ret.Add(AmmoType, "K_HS_7x7_SkyShatter", 30M, 0.1M, true, true); // HSR
+                ret.Add(AmmoType, "K_HS_7x7_Terminous", 30M, 0.1M, true, true); // HSR
+                ret.Add(AmmoType, "K_HS_9x9_Calamity", 150M, 0.1M, true, true); // HSR
+                ret.Add(AmmoType, "K_HS_9x9_K3_King", 30M, 0.1M, true, true); // HSR
+                ret.Add(AmmoType, "K_HS_SpinalLaser_adaptive", 5M, 1M, true, true); // SpinalWeaponry
+                ret.Add(AmmoType, "K_HS_SpinalLaser_adaptive_Green", 5M, 1M, true, true); // SpinalWeaponry
+                ret.Add(AmmoType, "K_HS_SpinalLaserII_adaptive", 5M, 1M, true, true); // SpinalWeaponry
+                ret.Add(AmmoType, "K_HS_SpinalLaserII_adaptive_Green", 5M, 1M, true, true); // SpinalWeaponry
+                ret.Add(AmmoType, "K_HS_SpinalLaserIII", 15M, 0.25M, true, true); // SpinalWeaponry
+                ret.Add(AmmoType, "K_HSR_GateKeeper", 100M, 0.1M, true, true); // HSR
+                ret.Add(AmmoType, "K_HSR_MassDriver_I", 300M, 0.1M, true, true); // HSR
+                ret.Add(AmmoType, "K_HSR_SG_1xT", 1M, 0.1M, true, true); // HSR
+                ret.Add(AmmoType, "K_HSR_SG_3x", 3M, 0.1M, true, true); // HSR
+                ret.Add(AmmoType, "K_HSR_SG_ElectroBlade", 3M, 0.1M, true, true); // HSR
+                ret.Add(AmmoType, "K_HSR_SG_Zeus", 15M, 0.1M, true, true); // HSR
+                ret.Add(AmmoType, "K_SpinalLaser_Beam_True", 0M, 1M, true, true); // SpinalWeaponry
+                ret.Add(AmmoType, "LargePhotonTorp", 45M, 50M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "LargeShipShotGunAmmo", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+                ret.Add(AmmoType, "LargeShotGunAmmoTracer", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+                ret.Add(AmmoType, "LargeTrikobaltCharge", 45M, 50M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "LaserAmmo", 0.001M, 0.01M, true, true); // (DX11)Laser Turret
+                ret.Add(AmmoType, "LaserArrayFlakMagazine", 45M, 30M, true, true); // White Dwarf - Directed Energy Platform [DX11]
+                ret.Add(AmmoType, "LaserArrayShellMagazine", 45M, 120M, true, true); // White Dwarf - Directed Energy Platform [DX11]
+                ret.Add(AmmoType, "Liquid Naquadah", 0.25M, 0.1M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
+                ret.Add(AmmoType, "LittleDavid", 360M, 280M, true, true); // Battle Cannon and Turrets (DX11)
+                ret.Add(AmmoType, "MagazineCitadelBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
+                ret.Add(AmmoType, "MagazineFighterDualLightBlaster", 1M, 20M, true, true); // GSF Energy Weapons Pack
+                ret.Add(AmmoType, "MagazineLargeBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
+                ret.Add(AmmoType, "MagazineMediumBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
+                ret.Add(AmmoType, "MagazineNovaTorpedoPowerCellRed", 1M, 20M, true, true); // GSF Energy Weapons Pack
+                ret.Add(AmmoType, "MagazineSmallBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
+                ret.Add(AmmoType, "MagazineSmallThorMissilePowerCellOrange", 1M, 20M, true, true); // GSF Energy Weapons Pack
+                ret.Add(AmmoType, "MagazineSmallTorpedoPowerCellRed", 1M, 20M, true, true); // GSF Energy Weapons Pack
+                ret.Add(AmmoType, "MagazineThorMissilePowerCellOrange", 1M, 20M, true, true); // GSF Energy Weapons Pack
+                ret.Add(AmmoType, "MagazineTMLargeBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
+                ret.Add(AmmoType, "MagazineTMMedBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
+                ret.Add(AmmoType, "MagazineTMSiegeBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
+                ret.Add(AmmoType, "MagazineTMSmallBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
+                ret.Add(AmmoType, "MedBlaster", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
+                ret.Add(AmmoType, "MinotaurAmmo", 360M, 128M, true, true); // (DX11)Minotaur Cannon
+                ret.Add(AmmoType, "Missile200mm", 45M, 60M, true, true); // Space Engineers
+                ret.Add(AmmoType, "Mk14PhaserBeamAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "Mk15PhaserBeamAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "MK1CannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
+                ret.Add(AmmoType, "MK2CannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
+                ret.Add(AmmoType, "MK3CannonMagazineAP", 100M, 100M, true, true); // MWI - Weapon Collection (DX11)
+                ret.Add(AmmoType, "MK3CannonMagazineHE", 300M, 100M, true, true); // MWI - Weapon Collection (DX11)
+                ret.Add(AmmoType, "Mk6PhaserBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "NATO_25x184mm", 35M, 16M, true, true); // Space Engineers
+                ret.Add(AmmoType, "NATO_5p56x45mm", 0.45M, 0.2M, true, true); // Space Engineers
+                ret.Add(AmmoType, "NiFeDUSlugMagazineLZM", 45M, 50M, true, true); // Revived Large Ship Railguns (With penetration damage!)
+                ret.Add(AmmoType, "Phaser2Charge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+                ret.Add(AmmoType, "Phaser2ChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+                ret.Add(AmmoType, "PhaserCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+                ret.Add(AmmoType, "PhaserChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+                ret.Add(AmmoType, "NukeSiloMissile", 90M, 150M, true, true); // rearth's Advanced Combat Systems
+                ret.Add(AmmoType, "OKI122mmAmmo", 150M, 120M, true, true); // OKI Grand Weapons Bundle (DX11)
+                ret.Add(AmmoType, "OKI230mmAmmo", 800M, 800M, true, true); // OKI Grand Weapons Bundle (DX11)
+                ret.Add(AmmoType, "OKI23mmAmmo", 100M, 50M, true, true); // OKI Grand Weapons Bundle (DX11)
+                ret.Add(AmmoType, "OKI50mmAmmo", 200M, 60M, true, true); // OKI Grand Weapons Bundle (DX11)
+                ret.Add(AmmoType, "OKIObserverMAG", 1M, 1M, true, true); // OKI Grand Weapons Bundle (DX11)
+                ret.Add(AmmoType, "OSPhaserAmmo", 30.0M, 15.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "OSPhotonTorp", 30M, 60M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "PhaseCannonAmmo", 12.0M, 3.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "PhaserBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "PhaserBeamAmmo_LR", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "PhaserLanceAmmo", 984.0M, 850.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "PhaserLanceAmmo_LR", 984.0M, 850.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "PhaserLanceTurretAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "PhaserPulseAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "photon_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
+                ret.Add(AmmoType, "Plasma_Hydrogen", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
+                ret.Add(AmmoType, "PlasmaBeamAmmo", 0.1M, 0.5M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "PlasmaCutterCell", 1M, 1M, true, true); // [SEI] Weapon Pack DX11
+                ret.Add(AmmoType, "PlasmaMissile", 30M, 50M, true, true); // rearth's Advanced Combat Systems
+                ret.Add(AmmoType, "PolaronBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "PolaronPulseAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "QuantenTorpedoLarge", 45M, 50M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "quantum_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
+                ret.Add(AmmoType, "RB_NATO_125x920mm", 875M, 160M, true, true); // RB Weapon Collection [DX11]
+                ret.Add(AmmoType, "RB_Rocket100mm", 11.25M, 15M, true, true); // RB Weapon Collection [DX11]
+                ret.Add(AmmoType, "RB_Rocket400mm", 180M, 240M, true, true); // RB Weapon Collection [DX11]
+                ret.Add(AmmoType, "RomulanCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+                ret.Add(AmmoType, "RomulanChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+                ret.Add(AmmoType, "SmallKlingonCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+                ret.Add(AmmoType, "RG_RG_ammo", 45M, 60M, true, true); // RG_RailGun
+                ret.Add(AmmoType, "romulanphase", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
+                ret.Add(AmmoType, "RomulanTorp", 45M, 50M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "small_discovery_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
+                ret.Add(AmmoType, "small_federationphase", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
+                ret.Add(AmmoType, "SmallDisruptorBeamAmmo", 12.0M, 3.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "SmallPhaserBeamAmmo", 12.0M, 3.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "SmallPhotonTorp", 12M, 8M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "SmallPlasmaBeamAmmo", 0.1M, 0.5M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "SmallPolaronBeamAmmo", 12.0M, 3.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "SmallShotGunAmmo", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+                ret.Add(AmmoType, "SmallShotGunAmmoTracer", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+                ret.Add(AmmoType, "SniperRoundHighSpeedLowDamage", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+                ret.Add(AmmoType, "SniperRoundHighSpeedLowDamageSmallShip", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+                ret.Add(AmmoType, "SniperRoundLowSpeedHighDamage", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+                ret.Add(AmmoType, "SniperRoundLowSpeedHighDamageSmallShip", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
+                ret.Add(AmmoType, "SpartialTorp", 45M, 50M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "SWDisruptorBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "TankCannonAmmoSEM4", 35M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
+                ret.Add(AmmoType, "TelionAF_PMagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
+                ret.Add(AmmoType, "TelionAMMagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
+                ret.Add(AmmoType, "TMPPhaserAmmo", 30.0M, 15.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "tng_quantum_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
+                ret.Add(AmmoType, "TOS", 35M, 16M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "TOSPhaserBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "TritiumMissile", 72M, 60M, true, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+                ret.Add(AmmoType, "TritiumShot", 3M, 3M, true, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+                ret.Add(AmmoType, "TungstenBolt", 4812M, 250M, true, true); // (DX11)Mass Driver
+                ret.Add(AmmoType, "Type10", 35M, 16M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "Type12", 35M, 16M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "Type8", 35M, 16M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "Vulcan20x102", 35M, 16M, true, true); // Battle Cannon and Turrets (DX11)
+
+                ret.Add(GunType, "AngleGrinder2Item", 3M, 20M, true, false); // Space Engineers
+                ret.Add(GunType, "AngleGrinder3Item", 3M, 20M, true, false); // Space Engineers
+                ret.Add(GunType, "AngleGrinder4Item", 3M, 20M, true, false); // Space Engineers
+                ret.Add(GunType, "AngleGrinderItem", 3M, 20M, true, false); // Space Engineers
+                ret.Add(GunType, "AutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
+                ret.Add(GunType, "CubePlacerItem", 1M, 1M, true, false); // Space Engineers
+                ret.Add(GunType, "EmergencyBlasterItem", 3M, 14M, true, false); // Independent Survival
+                ret.Add(GunType, "GoodAIRewardPunishmentTool", 0.1M, 1M, true, false); // Space Engineers
+                ret.Add(GunType, "HandDrill2Item", 22M, 25M, true, false); // Space Engineers
+                ret.Add(GunType, "HandDrill3Item", 22M, 25M, true, false); // Space Engineers
+                ret.Add(GunType, "HandDrill4Item", 22M, 25M, true, false); // Space Engineers
+                ret.Add(GunType, "HandDrillItem", 22M, 25M, true, false); // Space Engineers
+                ret.Add(GunType, "P90", 3M, 12M, true, false); // [New Version] Stargate Modpack (Server admin block filtering)
+                ret.Add(GunType, "PhysicalConcreteTool", 5M, 15M, true, false); // Concrete Tool - placing voxels in survival
+                ret.Add(GunType, "PreciseAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
+                ret.Add(GunType, "RapidFireAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
+                ret.Add(GunType, "RG_RG_Item", 5M, 24M, true, false); // RG_RailGun
+                ret.Add(GunType, "Staff", 3M, 16M, true, false); // [New Version] Stargate Modpack (Server admin block filtering)
+                ret.Add(GunType, "TritiumAutomaticRifleItem", 6M, 21M, true, false); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+                ret.Add(GunType, "UltimateAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
+                ret.Add(GunType, "Welder2Item", 5M, 8M, true, false); // Space Engineers
+                ret.Add(GunType, "Welder3Item", 5M, 8M, true, false); // Space Engineers
+                ret.Add(GunType, "Welder4Item", 5M, 8M, true, false); // Space Engineers
+                ret.Add(GunType, "WelderItem", 5M, 8M, true, false); // Space Engineers
+                ret.Add(GunType, "Zat", 3M, 12M, true, false); // [New Version] Stargate Modpack (Server admin block filtering)
+
+                ret.Add(OxygenType, "GrapheneOxygenBottle", 20M, 100M, true, false); // Graphene Armor [Core] [Beta]
+                ret.Add(OxygenType, "OxygenBottle", 30M, 120M, true, false); // Space Engineers
+
+                ret.Add(GasType, "GrapheneHydrogenBottle", 20M, 100M, true, false); // Graphene Armor [Core] [Beta]
+                ret.Add(GasType, "HydrogenBottle", 30M, 120M, true, false); // Space Engineers
+
+                return ret;
             }
         }
 
-        private class LongArrayComparer : IEqualityComparer<ulong[]>
+        internal class ItemInfo
         {
-            public static readonly IEqualityComparer<ulong[]> Instance = new LongArrayComparer();
+            public const int ID_LENGTH = 7;
+            public readonly bool HasIntegralAmounts;
+            public readonly ulong[] Id;
+            public readonly bool IsStackable;
+            public readonly decimal Mass;
+            public readonly decimal Volume;
 
+            public ItemInfo(int itemInfoNo, decimal mass, decimal volume, bool hasIntegralAmounts, bool isStackable)
+            {
+                Id = new ulong[ID_LENGTH];
+                Id[itemInfoNo >> 6] = 1ul << (itemInfoNo & 0x3F);
+                Mass = mass;
+                Volume = volume;
+                HasIntegralAmounts = hasIntegralAmounts;
+                IsStackable = isStackable;
+            }
+        }
+
+        internal class LongArrayComparer : IEqualityComparer<ulong[]>
+        {
             public bool Equals(ulong[] x, ulong[] y)
             {
                 //return System.Linq.Enumerable.SequenceEqual<ulong>(x, y);
@@ -1586,97 +1640,33 @@ namespace SEScripts.ResourceExchanger2_5_0_188
             }
         }
 
-        private class InventoryWrapper
+        internal class MyTextPanelNameComparer : IComparer<IMyTextPanel>
         {
-            public IMyTerminalBlock Block;
-            public IMyInventory Inventory;
-            public string GroupName;
-            public decimal CurrentVolume;
-            public decimal MaxVolume;
-            public decimal Percent;
+            public readonly IComparer<IMyTextPanel> Instance = new MyTextPanelNameComparer();
 
-            public static InventoryWrapper Create(Program prog, IMyTerminalBlock block)
+            public int Compare(IMyTextPanel x, IMyTextPanel y)
             {
-                var inv = block.GetInventory(0);
-                if (inv != null && inv.MaxVolume > 0)
-                {
-                    var result = new InventoryWrapper();
-                    result.Block = block;
-                    result.Inventory = inv;
-                    result.GroupName = prog.FindInvGroupName(block.BlockDefinition, inv);
-
-                    return result;
-                }
-                return null;
-            }
-
-            public InventoryWrapper LoadVolume()
-            {
-                CurrentVolume = (decimal)Inventory.CurrentVolume;
-                MaxVolume = (decimal)Inventory.MaxVolume;
-                return this;
-            }
-
-            public InventoryWrapper FilterItems(Statistics stat, Func<IMyInventoryItem, bool> filter)
-            {
-                decimal volumeBlocked = 0.0M;
-                foreach (var item in Inventory.GetItems())
-                {
-                    if (filter(item))
-                        continue;
-
-                    var key = MyDefinitionId.FromContent(item.Content);
-                    var data = ItemInfo.Get(stat, key);
-                    if (data == null)
-                        continue;
-
-                    volumeBlocked += (decimal)item.Amount * data.Volume / 1000M;
-                }
-
-                if (volumeBlocked > 0.0M)
-                {
-                    CurrentVolume -= volumeBlocked;
-                    MaxVolume -= volumeBlocked;
-                    stat.Output.Append("volumeBlocked ").AppendLine(volumeBlocked.ToString("N6"));
-                }
-                return this;
-            }
-
-            public void CalculatePercent()
-            {
-                Percent = CurrentVolume / MaxVolume;
-            }
-
-            public bool TransferItemTo(InventoryWrapper dst, int sourceItemIndex, int? targetItemIndex = null,
-                bool? stackIfPossible = null, VRage.MyFixedPoint? amount = null)
-            {
-                return Inventory.TransferItemTo(dst.Inventory, sourceItemIndex, targetItemIndex, stackIfPossible, amount);
+                return String.Compare(x.CustomName, y.CustomName, true);
             }
         }
 
-        private class ConveyorNetwork
+        internal class Statistics
         {
-            public int No;
-            public List<InventoryWrapper> Inventories;
+            public readonly HashSet<string> MissingInfo;
+            public readonly StringBuilder Output;
+            public readonly List<MyInventoryItem> TmpItems1, TmpItems2;
+            public string DrillsPayloadStr;
+            public bool DrillsVolumeWarning;
+            public int MovementsDone;
+            public bool NotConnectedDrillsFound;
+            public int NumberOfNetworks;
 
-            public ConveyorNetwork(int no)
+            public Statistics()
             {
-                No = no;
-                Inventories = new List<InventoryWrapper>();
-            }
-        }
-
-        private class InventoryGroup
-        {
-            public int No;
-            public string Name;
-            public List<InventoryWrapper> Inventories;
-
-            public InventoryGroup(int no, string name)
-            {
-                No = no;
-                Name = name;
-                Inventories = new List<InventoryWrapper>();
+                Output = new StringBuilder();
+                MissingInfo = new HashSet<string>();
+                TmpItems1 = new List<MyInventoryItem>();
+                TmpItems2 = new List<MyInventoryItem>();
             }
         }
     }
