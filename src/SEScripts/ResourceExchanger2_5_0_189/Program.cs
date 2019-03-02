@@ -30,18 +30,18 @@ namespace SEScripts.ResourceExchanger2_5_0_189
 
         /** Default configuration *****************************************************************/
 
+        public bool AnyConstruct = false;
         public string DisplayLcdGroup = "Resource exchanger output";
         public string DrillsPayloadLightsGroup = "Payload indicators";
-        public bool AnyConstruct = false;
         public bool EnableDrills = true;
         public bool EnableGroups = true;
         public bool EnableOxygenGenerators = true;
         public bool EnableReactors = true;
         public bool EnableRefineries = true;
         public bool EnableTurrets = true;
-        public string ManagedBlocksGroup = "";
         public string GroupTagPattern = @"\bGR\d{1,3}\b";
         public MyItemType? LowestRefineryPriority = new MyItemType(OreType, "Stone");
+        public string ManagedBlocksGroup = "";
         public MyItemType? TopRefineryPriority = new MyItemType(OreType, "Iron");
 
         /** Implementation ************************************************************************/
@@ -108,106 +108,6 @@ namespace SEScripts.ResourceExchanger2_5_0_189
             WriteOutput(bs, stat);
         }
 
-        public void ReadConfig()
-        {
-            const string anyConstructComment = "\n Set to \"true\" to enable exchanging items with connected ships."
-                + "\n Keep \"false\" if blocks connected by connectors should not be affected.";
-            const string managedGroupComment = "\n Optional name of a group of blocks that will be affected"
-                + "\n by the script. By default all blocks connected to the grid are processed,"
-                + "\n but you can set this to force the script to affect only certain blocks.";
-            const string reactorsComment = "\n Enables exchanging uranium between reactors";
-            const string refineriesComment = "\n Enables exchanging ore between refineries and arc furnaces";
-            const string drillsComment = "\n Enables exchanging ore between drills and"
-                + "\n processing lights that indicates how much free space left in drills";
-            const string turretsComment = "\n Enables exchanging ammunition between turrets and launchers";
-            const string oxygenGeneratorsComment = "\n Enables exchanging ice between oxygen generators";
-            const string groupsComment = "\n Enables exchanging items in blocks of custom groups";
-            const string drillsPayloadLightsGroupComment = "\n Name of a group of lights that will be used as indicators of space"
-                + "\n left in drills. Both Interior Light and Spotlight are supported."
-                + "\n The lights will change colors to tell you how much free space left:"
-                + "\n White - All drills are connected to each other and they are empty."
-                + "\n Yellow - Drills are full in a half."
-                + "\n Red - Drills are almost full (95%)."
-                + "\n Purple - Less than 5 m³ of free space left."
-                + "\n Cyan - Some drills are not connected to each other.";
-            const string topRefineryPriorityComment = "\n Top priority item type to process in refineries"
-                + "\n and/or arc furnaces. The script will move an item of this type to"
-                + "\n the first slot of a refinery or arc furnace if it find that item"
-                + "\n in the refinery (or arc furnace) processing queue.";
-            const string lowestRefineryPriorityComment = "\n Lowest priority item type to process in refineries"
-                + "\n and/or arc furnaces. The script will move an item of this type to"
-                + "\n the last slot of a refinery or arc furnace if it find that item"
-                + "\n in the refinery (or arc furnace) processing queue.";
-            const string groupTagPatternComment = "\n Regular expression used to recognize groups";
-            const string displayLcdGroupComment = "\n Group of wide LCD screens that will act as debugger output for"
-                + "\n this script. You can name this screens as you wish, but pay attention"
-                + "\n that they will be used in alphabetical order according to their names.";
-
-            if (ReferenceEquals(Me.CustomData, _prevConfig))
-                return;
-
-            MyIniParseResult result;
-            var ini = new MyIni();
-            if (!ini.TryParse(Me.CustomData, out result))
-            {
-                Echo(String.Format("Err: invalid config in line {0}: {1}", result.LineNo, result.Error));
-                return;
-            }
-
-            ReadConfigBoolean(ini, nameof(AnyConstruct), ref AnyConstruct, anyConstructComment);
-            ReadConfigString(ini, nameof(ManagedBlocksGroup), ref ManagedBlocksGroup, managedGroupComment);
-            ReadConfigBoolean(ini, nameof(EnableReactors), ref EnableReactors, reactorsComment);
-            ReadConfigBoolean(ini, nameof(EnableRefineries), ref EnableRefineries, refineriesComment);
-            ReadConfigBoolean(ini, nameof(EnableDrills), ref EnableDrills, drillsComment);
-            ReadConfigBoolean(ini, nameof(EnableTurrets), ref EnableTurrets, turretsComment);
-            ReadConfigBoolean(ini, nameof(EnableOxygenGenerators), ref EnableOxygenGenerators, oxygenGeneratorsComment);
-            ReadConfigBoolean(ini, nameof(EnableGroups), ref EnableGroups, groupsComment);
-            ReadConfigString(ini, nameof(DrillsPayloadLightsGroup), ref DrillsPayloadLightsGroup, drillsPayloadLightsGroupComment);
-            ReadConfigItemType(ini, nameof(TopRefineryPriority), ref TopRefineryPriority, topRefineryPriorityComment);
-            ReadConfigItemType(ini, nameof(LowestRefineryPriority), ref LowestRefineryPriority, lowestRefineryPriorityComment);
-            ReadConfigString(ini, nameof(GroupTagPattern), ref GroupTagPattern, groupTagPatternComment);
-            ReadConfigString(ini, nameof(DisplayLcdGroup), ref DisplayLcdGroup, displayLcdGroupComment);
-
-            Echo("Configuration readed");
-            _prevConfig = Me.CustomData = ini.ToString();
-        }
-
-        public void ReadConfigBoolean(MyIni ini, string name, ref bool value, string comment)
-        {
-            var key = new MyIniKey(ConfigSection, name);
-            MyIniValue val = ini.Get(key);
-            bool tmp;
-            if (val.TryGetBoolean(out tmp))
-                value = tmp;
-            else
-                ini.Set(key, value);
-            ini.SetComment(key, comment);
-        }
-
-        public void ReadConfigString(MyIni ini, string name, ref string value, string comment)
-        {
-            var key = new MyIniKey(ConfigSection, name);
-            MyIniValue val = ini.Get(key);
-            string tmp;
-            if (val.TryGetString(out tmp))
-                value = tmp.Trim();
-            else
-                ini.Set(key, value);
-            ini.SetComment(key, comment);
-        }
-
-        public void ReadConfigItemType(MyIni ini, string name, ref MyItemType? value, string comment)
-        {
-            var key = new MyIniKey(ConfigSection, name);
-            MyIniValue val = ini.Get(key);
-            string tmp;
-            if (val.TryGetString(out tmp))
-                value = String.IsNullOrEmpty(tmp) ? null : MyItemType.Parse(tmp.Trim());
-            else
-                ini.Set(key, value.HasValue ? value.Value.ToString() : String.Empty);
-            ini.SetComment(key, comment);
-        }
-
         public void Save()
         { }
 
@@ -216,8 +116,8 @@ namespace SEScripts.ResourceExchanger2_5_0_189
         {
             if (group.Count < 2)
             {
-                stat.Output.Append("Cannot balance conveyor network ").Append(networkNumber + 1)
-                    .Append(" group ").Append(groupNumber + 1).Append(" \"").Append(groupName).AppendLine("\"")
+                stat.Output.Append("Cannot balance conveyor network ").Append(networkNumber)
+                    .Append(" group ").Append(groupNumber).Append(" \"").Append(groupName).AppendLine("\"")
                     .AppendLine("  because there is only one inventory.");
                 return; // nothing to do
             }
@@ -245,15 +145,15 @@ namespace SEScripts.ResourceExchanger2_5_0_189
 
             if (max.CurrentVolume < SmallNumber)
             {
-                stat.Output.Append("Cannot balance conveyor network ").Append(networkNumber + 1)
-                    .Append(" group ").Append(groupNumber + 1).Append(" \"").Append(groupName)
+                stat.Output.Append("Cannot balance conveyor network ").Append(networkNumber)
+                    .Append(" group ").Append(groupNumber).Append(" \"").Append(groupName)
                     .AppendLine("\"")
                     .AppendLine("  because of lack of items in it.");
                 return; // nothing to do
             }
 
-            stat.Output.Append("Balancing conveyor network ").Append(networkNumber + 1)
-                .Append(" group ").Append(groupNumber + 1)
+            stat.Output.Append("Balancing conveyor network ").Append(networkNumber)
+                .Append(" group ").Append(groupNumber)
                 .Append(" \"").Append(groupName).AppendLine("\"...");
 
             if (min == max)
@@ -412,8 +312,12 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 bool add = true;
                 foreach (var network in result)
                 {
-                    if (network.Inventories[0].Inventory.IsConnectedTo(wrp.Inventory)
-                        && wrp.Inventory.IsConnectedTo(network.Inventories[0].Inventory))
+                    var firstInv = network.Inventories[0];
+
+                    if (wrp.Block.CustomName.StartsWith("Refinery ") && firstInv.Block.CustomName.StartsWith("Refinery "))
+                        Test(wrp, firstInv);
+
+                    if (firstInv.Inventory.IsConnectedTo(wrp.Inventory) && wrp.Inventory.IsConnectedTo(firstInv.Inventory))
                     {
                         network.Inventories.Add(wrp);
                         add = false;
@@ -485,7 +389,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
             for (int i = itemsFrom.Count - 1; i >= 0; --i)
             {
                 MyInventoryItem item = itemsFrom[i];
-                
+
                 var data = Items.Get(stat, item.Type);
                 if (data == null)
                     continue;
@@ -500,7 +404,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
 
                 if (amountToMove == 0)
                     continue;
-                
+
                 decimal itemVolume;
                 bool success;
                 if (amountToMove <= item.Amount)
@@ -615,7 +519,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
             cpu /= Runtime.MaxInstructionCount;
             sb.Append("Complexity limit usage: ").Append(cpu.ToString("F2")).AppendLine("%");
 
-            sb.Append("Last run time: ").Append(Runtime.LastRunTimeMs.ToString("F1")).AppendLine(" ms");
+            sb.Append("Last run time: ").Append(Runtime.LastRunTimeMs.ToString("F3")).AppendLine(" ms");
 
             var tab = new char[42];
             for (int i = 0; i < 42; ++i)
@@ -648,7 +552,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                     if (invGroup != null)
                     {
                         foreach (var network in conveyorNetworks)
-                            BalanceInventories(stat, network.Inventories, network.No, 0, invGroup, filter);
+                            BalanceInventories(stat, network.Inventories, network.No, 1, invGroup, filter);
                     }
                     else
                     {
@@ -787,6 +691,145 @@ namespace SEScripts.ResourceExchanger2_5_0_189
             stat.Output.AppendLine(" drills payload indicators has been set.");
         }
 
+        private void ReadConfig()
+        {
+            const string anyConstructComment = "\n Set to \"true\" to enable exchanging items with connected ships."
+                + "\n Keep \"false\" if blocks connected by connectors should not be affected.";
+            const string managedGroupComment = "\n Optional name of a group of blocks that will be affected"
+                + "\n by the script. By default all blocks connected to the grid are processed,"
+                + "\n but you can set this to force the script to affect only certain blocks.";
+            const string reactorsComment = "\n Enables exchanging uranium between reactors";
+            const string refineriesComment = "\n Enables exchanging ore between refineries and arc furnaces";
+            const string drillsComment = "\n Enables exchanging ore between drills and"
+                + "\n processing lights that indicates how much free space left in drills";
+            const string turretsComment = "\n Enables exchanging ammunition between turrets and launchers";
+            const string oxygenGeneratorsComment = "\n Enables exchanging ice between oxygen generators";
+            const string groupsComment = "\n Enables exchanging items in blocks of custom groups";
+            const string drillsPayloadLightsGroupComment = "\n Name of a group of lights that will be used as indicators of space"
+                + "\n left in drills. Both Interior Light and Spotlight are supported."
+                + "\n The lights will change colors to tell you how much free space left:"
+                + "\n White - All drills are connected to each other and they are empty."
+                + "\n Yellow - Drills are full in a half."
+                + "\n Red - Drills are almost full (95%)."
+                + "\n Purple - Less than 5 m³ of free space left."
+                + "\n Cyan - Some drills are not connected to each other.";
+            const string topRefineryPriorityComment = "\n Top priority item type to process in refineries"
+                + "\n and/or arc furnaces. The script will move an item of this type to"
+                + "\n the first slot of a refinery or arc furnace if it find that item"
+                + "\n in the refinery (or arc furnace) processing queue.";
+            const string lowestRefineryPriorityComment = "\n Lowest priority item type to process in refineries"
+                + "\n and/or arc furnaces. The script will move an item of this type to"
+                + "\n the last slot of a refinery or arc furnace if it find that item"
+                + "\n in the refinery (or arc furnace) processing queue.";
+            const string groupTagPatternComment = "\n Regular expression used to recognize groups";
+            const string displayLcdGroupComment = "\n Group of wide LCD screens that will act as debugger output for"
+                + "\n this script. You can name this screens as you wish, but pay attention"
+                + "\n that they will be used in alphabetical order according to their names.";
+
+            if (ReferenceEquals(Me.CustomData, _prevConfig))
+                return;
+
+            MyIniParseResult result;
+            var ini = new MyIni();
+            if (!ini.TryParse(Me.CustomData, out result))
+            {
+                Echo(String.Format("Err: invalid config in line {0}: {1}", result.LineNo, result.Error));
+                return;
+            }
+
+            ReadConfigBoolean(ini, nameof(AnyConstruct), ref AnyConstruct, anyConstructComment);
+            ReadConfigString(ini, nameof(ManagedBlocksGroup), ref ManagedBlocksGroup, managedGroupComment);
+            ReadConfigBoolean(ini, nameof(EnableReactors), ref EnableReactors, reactorsComment);
+            ReadConfigBoolean(ini, nameof(EnableRefineries), ref EnableRefineries, refineriesComment);
+            ReadConfigBoolean(ini, nameof(EnableDrills), ref EnableDrills, drillsComment);
+            ReadConfigBoolean(ini, nameof(EnableTurrets), ref EnableTurrets, turretsComment);
+            ReadConfigBoolean(ini, nameof(EnableOxygenGenerators), ref EnableOxygenGenerators, oxygenGeneratorsComment);
+            ReadConfigBoolean(ini, nameof(EnableGroups), ref EnableGroups, groupsComment);
+            ReadConfigString(ini, nameof(DrillsPayloadLightsGroup), ref DrillsPayloadLightsGroup, drillsPayloadLightsGroupComment);
+            ReadConfigItemType(ini, nameof(TopRefineryPriority), ref TopRefineryPriority, topRefineryPriorityComment);
+            ReadConfigItemType(ini, nameof(LowestRefineryPriority), ref LowestRefineryPriority, lowestRefineryPriorityComment);
+            ReadConfigString(ini, nameof(GroupTagPattern), ref GroupTagPattern, groupTagPatternComment);
+            ReadConfigString(ini, nameof(DisplayLcdGroup), ref DisplayLcdGroup, displayLcdGroupComment);
+
+            Echo("Configuration readed");
+            _prevConfig = Me.CustomData = ini.ToString();
+        }
+
+        private void ReadConfigBoolean(MyIni ini, string name, ref bool value, string comment)
+        {
+            var key = new MyIniKey(ConfigSection, name);
+            MyIniValue val = ini.Get(key);
+            bool tmp;
+            if (val.TryGetBoolean(out tmp))
+                value = tmp;
+            else
+                ini.Set(key, value);
+            ini.SetComment(key, comment);
+        }
+
+        private void ReadConfigItemType(MyIni ini, string name, ref MyItemType? value, string comment)
+        {
+            var key = new MyIniKey(ConfigSection, name);
+            MyIniValue val = ini.Get(key);
+            string tmp;
+            if (val.TryGetString(out tmp))
+                value = String.IsNullOrEmpty(tmp) ? null : MyItemType.Parse(tmp.Trim());
+            else
+                ini.Set(key, value.HasValue ? value.Value.ToString() : String.Empty);
+            ini.SetComment(key, comment);
+        }
+
+        private void ReadConfigString(MyIni ini, string name, ref string value, string comment)
+        {
+            var key = new MyIniKey(ConfigSection, name);
+            MyIniValue val = ini.Get(key);
+            string tmp;
+            if (val.TryGetString(out tmp))
+                value = tmp.Trim();
+            else
+                ini.Set(key, value);
+            ini.SetComment(key, comment);
+        }
+
+        private void Test(InventoryWrapper ref5, InventoryWrapper ref6)
+        {
+            IMyRefinery a2, b2;
+            if (ref5 != null && ref6 != null)
+            {
+                a2 = (IMyRefinery)GridTerminalSystem.GetBlockWithName(ref5.Block.CustomName);
+                b2 = (IMyRefinery)GridTerminalSystem.GetBlockWithName(ref6.Block.CustomName);
+                var t3 = a2.EntityId == ref5.Block.EntityId;
+                Echo(t3 ? "T3 eq OK" : "T3 eq ERR");
+            }
+            else
+            {
+                a2 = (IMyRefinery)GridTerminalSystem.GetBlockWithName("Refinery 5");
+                b2 = (IMyRefinery)GridTerminalSystem.GetBlockWithName("Refinery 6");
+            }
+
+            if (a2 == null || b2 == null)
+                return;
+
+            var t1 = a2.InputInventory.IsConnectedTo(b2.InputInventory);
+            var t2 = a2.InputInventory.CanTransferItemTo(b2.InputInventory, TopRefineryPriority.Value);
+            var s = a2.CustomName + " " + b2.CustomName;
+            Echo("T1 " + s + (t1 ? " OK" : " ERR"));
+            Echo("T2 " + s + (t2 ? " OK" : " ERR"));
+
+            //var a = wrp.Block.CustomName;
+            //var b = network.Inventories[0].Block.CustomName;
+            //if (a.StartsWith("Refinery ") && b.StartsWith("Refinery "))
+            //{
+            //    Echo(network.Inventories[0].Inventory.IsConnectedTo(wrp.Inventory) ? b + " conn " + a : b + " nc " + a);
+            //    Echo(wrp.Inventory.IsConnectedTo(network.Inventories[0].Inventory) ? a + " conn " + b : a + " nc " + b);
+            //    var a2 = (IMyRefinery)GridTerminalSystem.GetBlockWithName("Refinery 2");
+            //    var b2 = (IMyRefinery)GridTerminalSystem.GetBlockWithName("Refinery 5");
+            //    Echo(a2.InputInventory.IsConnectedTo(b2.InputInventory) ? "conn" : "notc");
+            //    if (a == "Refinery 5")
+            //        Echo(wrp.Block == a2 ? "same" : "nots");
+            //}
+        }
+
         private void WriteOutput(BlockStore bs, Statistics stat)
         {
             const int linesPerDebugScreen = 17;
@@ -886,7 +929,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 if (!_program.EnableGroups)
                     return true;
 
-                var inv = InventoryWrapper.Create(_program, myCargoContainer);
+                var inv = InventoryWrapper.Create(_program, myCargoContainer, myCargoContainer.GetInventory());
                 if (inv != null)
                 {
                     CargoContainers.Add(inv);
@@ -904,7 +947,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 if (!_program.EnableDrills || !myDrill.UseConveyorSystem)
                     return true;
 
-                var inv = InventoryWrapper.Create(_program, myDrill);
+                var inv = InventoryWrapper.Create(_program, myDrill, myDrill.GetInventory());
                 if (inv != null)
                 {
                     Drills.Add(inv);
@@ -923,7 +966,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 if (!_program.EnableOxygenGenerators)
                     return true;
 
-                var inv = InventoryWrapper.Create(_program, myOxygenGenerator);
+                var inv = InventoryWrapper.Create(_program, myOxygenGenerator, myOxygenGenerator.GetInventory());
                 if (inv != null)
                 {
                     OxygenGenerators.Add(inv);
@@ -942,7 +985,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 if (!_program.EnableReactors || !myReactor.UseConveyorSystem)
                     return true;
 
-                var inv = InventoryWrapper.Create(_program, myReactor);
+                var inv = InventoryWrapper.Create(_program, myReactor, myReactor.GetInventory());
                 if (inv != null)
                 {
                     Reactors.Add(inv);
@@ -961,7 +1004,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 if (!_program.EnableRefineries || !myRefinery.UseConveyorSystem)
                     return true;
 
-                var inv = InventoryWrapper.Create(_program, myRefinery);
+                var inv = InventoryWrapper.Create(_program, myRefinery, myRefinery.InputInventory);
                 if (inv != null)
                 {
                     Refineries.Add(inv);
@@ -980,7 +1023,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 if (!_program.EnableTurrets || myTurret is IMyLargeInteriorTurret)
                     return true;
 
-                var inv = InventoryWrapper.Create(_program, myTurret);
+                var inv = InventoryWrapper.Create(_program, myTurret, myTurret.GetInventory());
                 if (inv != null)
                 {
                     Turrets.Add(inv);
@@ -1027,10 +1070,9 @@ namespace SEScripts.ResourceExchanger2_5_0_189
             public decimal MaxVolume;
             public decimal Percent;
 
-            public static InventoryWrapper Create(Program prog, IMyTerminalBlock block)
+            public static InventoryWrapper Create(Program prog, IMyTerminalBlock block, IMyInventory inv)
             {
-                var inv = block.GetInventory(0);
-                if (inv != null && inv.MaxVolume > 0)
+                if (inv.MaxVolume > 0)
                 {
                     var result = new InventoryWrapper();
                     result.Block = block;
@@ -1045,13 +1087,6 @@ namespace SEScripts.ResourceExchanger2_5_0_189
             public void CalculatePercent()
             {
                 Percent = CurrentVolume / MaxVolume;
-            }
-
-            public List<MyInventoryItem> GetItems(List<MyInventoryItem> list, Func<MyInventoryItem, bool> filter)
-            {
-                list.Clear();
-                Inventory.GetItems(list, filter);
-                return list;
             }
 
             public InventoryWrapper FilterItems(Program prog, Statistics stat, Func<MyInventoryItem, bool> filter)
@@ -1077,6 +1112,13 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 return this;
             }
 
+            public List<MyInventoryItem> GetItems(List<MyInventoryItem> list, Func<MyInventoryItem, bool> filter)
+            {
+                list.Clear();
+                Inventory.GetItems(list, filter);
+                return list;
+            }
+
             public InventoryWrapper LoadVolume()
             {
                 CurrentVolume = (decimal)Inventory.CurrentVolume;
@@ -1084,14 +1126,14 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 return this;
             }
 
-            public bool TransferItem(InventoryWrapper dst, int sourceItemIndex, VRage.MyFixedPoint amount)
-            {
-                return Inventory.TransferItemTo(dst.Inventory, sourceItemIndex, null, true, amount);
-            }
-
             public bool MoveItem(int sourceItemIndex, int targetItemIndex)
             {
                 return Inventory.TransferItemTo(Inventory, sourceItemIndex, targetItemIndex, false, null);
+            }
+
+            public bool TransferItem(InventoryWrapper dst, int sourceItemIndex, VRage.MyFixedPoint amount)
+            {
+                return Inventory.TransferItemTo(dst.Inventory, sourceItemIndex, null, true, amount);
             }
         }
 
@@ -1102,33 +1144,6 @@ namespace SEScripts.ResourceExchanger2_5_0_189
             public ItemDict()
             {
                 ItemInfoDict = new Dictionary<MyItemType, ItemInfo>();
-            }
-
-            public void Add(string mainType, string subtype, decimal mass, decimal volume, bool hasIntegralAmounts, bool isStackable)
-            {
-                var key = new MyItemType(mainType, subtype);
-                var value = new ItemInfo(ItemInfoDict.Count, mass, volume, hasIntegralAmounts, isStackable);
-                try
-                {
-                    ItemInfoDict.Add(key, value);
-                }
-                catch (ArgumentException ex)
-                {
-                    throw new InvalidOperationException("Item info for " + mainType + "/" + subtype + " already added", ex);
-                }
-            }
-
-            public ItemInfo Get(Statistics stat, MyItemType key)
-            {
-                ItemInfo data;
-                if (ItemInfoDict.TryGetValue(key, out data))
-                    return data;
-
-                stat.Output.Append("Volume to amount ratio for ");
-                stat.Output.Append(key);
-                stat.Output.AppendLine(" is not known.");
-                stat.MissingInfo.Add(key.ToString());
-                return null;
             }
 
             public static ItemDict BuildItemInfoDict()
@@ -1578,6 +1593,33 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 ret.Add(GasType, "HydrogenBottle", 30M, 120M, true, false); // Space Engineers
 
                 return ret;
+            }
+
+            public void Add(string mainType, string subtype, decimal mass, decimal volume, bool hasIntegralAmounts, bool isStackable)
+            {
+                var key = new MyItemType(mainType, subtype);
+                var value = new ItemInfo(ItemInfoDict.Count, mass, volume, hasIntegralAmounts, isStackable);
+                try
+                {
+                    ItemInfoDict.Add(key, value);
+                }
+                catch (ArgumentException ex)
+                {
+                    throw new InvalidOperationException("Item info for " + mainType + "/" + subtype + " already added", ex);
+                }
+            }
+
+            public ItemInfo Get(Statistics stat, MyItemType key)
+            {
+                ItemInfo data;
+                if (ItemInfoDict.TryGetValue(key, out data))
+                    return data;
+
+                stat.Output.Append("Volume to amount ratio for ");
+                stat.Output.Append(key);
+                stat.Output.AppendLine(" is not known.");
+                stat.MissingInfo.Add(key.ToString());
+                return null;
             }
         }
 
