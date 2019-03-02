@@ -131,13 +131,13 @@ namespace ItemInfoFinder
                 string modTitle;
                 if (modMap.TryGetValue(dt.ModId, out modTitle) && !String.IsNullOrEmpty(modTitle))
                 {
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "ItemInfo.Add({0}, \"{1}\", {2}M, {3}M, {4}, {5}); // {6}",
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "ret.Add({0}, \"{1}\", {2}M, {3}M, {4}, {5}); // {6}",
                         dt.TypeId.Alias, dt.SubtypeId, dt.Mass, dt.Volume, dt.HasIntegralAmounts ? "true" : "false", dt.IsStackable ? "true" : "false", modTitle);
                     modUsed.Add(dt.ModId);
                 }
                 else
                 {
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "ItemInfo.Add({0}, \"{1}\", {2}M, {3}M, {4}, {5});",
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "ret.Add({0}, \"{1}\", {2}M, {3}M, {4}, {5});",
                         dt.TypeId.Alias, dt.SubtypeId, dt.Mass, dt.Volume, dt.HasIntegralAmounts ? "true" : "false", dt.IsStackable ? "true" : "false");
                 }
                 sb.AppendLine();
