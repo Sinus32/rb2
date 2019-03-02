@@ -100,26 +100,26 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BottlesFiller\Program.cs" />
     <Compile Include="DoorAutoClose\Program.cs" />
-    <Compile Include="ItemMover\Program.cs" />
-    <Compile Include="MassRenamer\Program.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ResourceExchanger2_1_168\Program.cs" />
-    <Compile Include="ResourceExchanger2_1_144\Program.cs" />
-    <Compile Include="ResourceExchanger2_2_182\Program.cs" />
-    <Compile Include="ResourceExchanger2_3_0_186\Program.cs" />
-    <Compile Include="ResourceExchanger2_4_0_187\Program.cs" />
-    <Compile Include="ResourceExchanger2_4_1_188\Program.cs" />
-    <Compile Include="ResourceExchanger2_5_0_188\Program.cs" />
+    <Compile Include="ResourceExchanger2_5_0_189\Program.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="BottlesFiller\" />
     <Folder Include="DeadMansSwitch_1_0_186\" />
+    <Folder Include="ItemMover\" />
+    <Folder Include="MassRenamer\" />
     <Folder Include="ResourceExchanger2_1_139\" />
+    <Folder Include="ResourceExchanger2_1_144\" />
+    <Folder Include="ResourceExchanger2_1_168\" />
+    <Folder Include="ResourceExchanger2_2_182\" />
+    <Folder Include="ResourceExchanger2_3_0_186\" />
+    <Folder Include="ResourceExchanger2_4_0_187\" />
+    <Folder Include="ResourceExchanger2_4_1_188\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

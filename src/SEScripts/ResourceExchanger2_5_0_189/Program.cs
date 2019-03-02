@@ -15,11 +15,11 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
-namespace SEScripts.ResourceExchanger2_5_0_188
+namespace SEScripts.ResourceExchanger2_5_0_189
 {
     public class Program : MyGridProgram
     {
-        /// Resource Exchanger version 2.5.0 2019-03-01 for SE 1.189
+        /// Resource Exchanger version 2.5.0 2019-03-02 for SE 1.189
         /// Made by Sinus32
         /// http://steamcommunity.com/sharedfiles/filedetails/546221822
         ///
@@ -361,36 +361,37 @@ namespace SEScripts.ResourceExchanger2_5_0_188
 
             foreach (var inv in group)
             {
-                var items = inv.GetItems(stat.TmpItems1, null);
-                if (items.Count < 2)
+                if (inv.Inventory.ItemCount < 2)
                     continue;
 
-                if (topPriority.HasValue && !MyItemType.FromContent(items[0].Content).Equals(topPriority.Value))
+                var items = inv.GetItems(stat.TmpItems1, null);
+
+                if (topPriority.HasValue && !items[0].Type.Equals(topPriority.Value))
                 {
                     for (int i = 1; i < items.Count; ++i)
                     {
                         var item = items[i];
-                        if (MyItemType.FromContent(item.Content).Equals(topPriority.Value))
+                        if (item.Type.Equals(topPriority.Value))
                         {
-                            stat.Output.Append("Moving ").Append(topPriority.Value.SubtypeName).Append(" from ")
+                            stat.Output.Append("Moving ").Append(topPriority.Value.SubtypeId).Append(" from ")
                                 .Append(i + 1).Append(" slot to first slot of ").AppendLine(inv.Block.CustomName);
-                            inv.TransferItemTo(inv, i, 0, false, item.Amount);
+                            inv.MoveItem(i, 0);
                             stat.MovementsDone += 1;
                             break;
                         }
                     }
                 }
 
-                if (lowestPriority.HasValue && !MyItemType.FromContent(items[items.Count - 1].Content).Equals(lowestPriority.Value))
+                if (lowestPriority.HasValue && !items[items.Count - 1].Type.Equals(lowestPriority.Value))
                 {
                     for (int i = items.Count - 2; i >= 0; --i)
                     {
                         var item = items[i];
-                        if (MyItemType.FromContent(item.Content).Equals(lowestPriority.Value))
+                        if (item.Type.Equals(lowestPriority.Value))
                         {
-                            stat.Output.Append("Moving ").Append(lowestPriority.Value.SubtypeName).Append(" from ")
+                            stat.Output.Append("Moving ").Append(lowestPriority.Value.SubtypeId).Append(" from ")
                                 .Append(i + 1).Append(" slot to last slot of ").AppendLine(inv.Block.CustomName);
-                            inv.TransferItemTo(inv, i, items.Count, false, item.Amount);
+                            inv.MoveItem(i, items.Count);
                             stat.MovementsDone += 1;
                             break;
                         }
@@ -440,7 +441,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 return _groupIdToNameMap[groupId];
 
             groupId = new ulong[ItemInfo.ID_LENGTH];
-            foreach (var kv in ItemInfo.ItemInfoDict)
+            foreach (var kv in Items.ItemInfoDict)
             {
                 if (inv.CanItemsBeAdded(-1, kv.Key))
                 {
@@ -479,14 +480,13 @@ namespace SEScripts.ResourceExchanger2_5_0_188
 
             stat.Output.Append("Move ").Append(volumeAmountToMove).Append(" l. from ")
                 .Append(from.Block.CustomName).Append(" to ").AppendLine(to.Block.CustomName);
-            var itemFrom = from.GetItems(stat.TmpItems1, filter);
+            var itemsFrom = from.GetItems(stat.TmpItems1, filter);
 
-            for (int i = itemFrom.Count - 1; i >= 0; --i)
+            for (int i = itemsFrom.Count - 1; i >= 0; --i)
             {
-                MyInventoryItem item = itemFrom[i];
-
-                var key = MyItemType.FromContent(item.Content);
-                var data = ItemInfo.Get(stat, key);
+                MyInventoryItem item = itemsFrom[i];
+                
+                var data = Items.Get(stat, item.Type);
                 if (data == null)
                     continue;
 
@@ -500,30 +500,20 @@ namespace SEScripts.ResourceExchanger2_5_0_188
 
                 if (amountToMove == 0)
                     continue;
-
-                List<MyInventoryItem> itemsTo = to.Inventory.GetItems();
-                int targetItemIndex = 0;
-                while (targetItemIndex < itemsTo.Count)
-                {
-                    MyInventoryItem item2 = itemsTo[targetItemIndex];
-                    if (MyItemType.FromContent(item2.Content).Equals(key))
-                        break;
-                    ++targetItemIndex;
-                }
-
+                
                 decimal itemVolume;
                 bool success;
                 if (amountToMove <= item.Amount)
                 {
                     itemVolume = (decimal)amountToMove * data.Volume / 1000M;
-                    success = from.TransferItemTo(to, i, targetItemIndex, true, amountToMove);
+                    success = from.TransferItem(to, i, amountToMove);
                     stat.MovementsDone += 1;
                     stat.Output.Append("Move ").Append(amountToMove).Append(" -> ").AppendLine(success ? "success" : "failure");
                 }
                 else
                 {
                     itemVolume = (decimal)item.Amount * data.Volume / 1000M;
-                    success = from.TransferItemTo(to, i, targetItemIndex, true, item.Amount);
+                    success = from.TransferItem(to, i, item.Amount);
                     stat.MovementsDone += 1;
                     stat.Output.Append("Move all ").Append(item.Amount).Append(" -> ").AppendLine(success ? "success" : "failure");
                 }
@@ -804,7 +794,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
             if (bs.DebugScreen.Count == 0)
                 return;
 
-            bs.DebugScreen.Sort(MyTextPanelNameComparer.Instance);
+            bs.DebugScreen.Sort(new MyTextPanelNameComparer());
             string[] lines = stat.Output.ToString().Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
             int totalScreens = lines.Length + linesPerDebugScreen - 1;
@@ -1094,10 +1084,14 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 return this;
             }
 
-            public bool TransferItemTo(InventoryWrapper dst, int sourceItemIndex, int? targetItemIndex = null,
-                bool? stackIfPossible = null, VRage.MyFixedPoint? amount = null)
+            public bool TransferItem(InventoryWrapper dst, int sourceItemIndex, VRage.MyFixedPoint amount)
             {
-                return Inventory.TransferItemTo(dst.Inventory, sourceItemIndex, targetItemIndex, stackIfPossible, amount);
+                return Inventory.TransferItemTo(dst.Inventory, sourceItemIndex, null, true, amount);
+            }
+
+            public bool MoveItem(int sourceItemIndex, int targetItemIndex)
+            {
+                return Inventory.TransferItemTo(Inventory, sourceItemIndex, targetItemIndex, false, null);
             }
         }
 
@@ -1296,8 +1290,8 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 ret.Add(IngotType, "Trinium", 1M, 0.052M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
                 ret.Add(IngotType, "Tungsten", 1M, 0.52M, false, true); // (DX11)Mass Driver
                 ret.Add(IngotType, "Uranium", 1M, 0.052M, false, true); // Space Engineers
-                ret.Add(IngotType, "v2HydrogenGas", 2.1656M, 0.43M, false, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
-                ret.Add(IngotType, "v2OxygenGas", 4.664M, 0.9M, false, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+                ret.Add(IngotType, "v2HydrogenGas", 2.1656M, 0.43M, false, true); // [VisSE] [2019] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+                ret.Add(IngotType, "v2OxygenGas", 4.664M, 0.9M, false, true); // [VisSE] [2019] Hydro Reactors & Ice to Oxy Hydro Gasses V2
 
                 ret.Add(ComponentType, "AdvancedReactorBundle", 50M, 20M, true, true); // Tiered Thorium Reactors and Refinery (new)
                 ret.Add(ComponentType, "AegisLicense", 0.2M, 1M, true, true); // GSF Energy Weapons Pack
@@ -1348,7 +1342,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 ret.Add(ComponentType, "Motor", 24M, 8M, true, true); // Space Engineers
                 ret.Add(ComponentType, "Naquadah", 100M, 10M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
                 ret.Add(ComponentType, "Neutronium", 500M, 5M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
-                ret.Add(ComponentType, "PowerCell", 25M, 45M, true, true); // Space Engineers
+                ret.Add(ComponentType, "PowerCell", 25M, 40M, true, true); // Space Engineers
                 ret.Add(ComponentType, "PowerCoupler", 25M, 45M, true, true); // GSF Energy Weapons Pack
                 ret.Add(ComponentType, "productioncontrolcomponent", 40M, 15M, true, true); // (DX11) Double Sided Upgrade Modules
                 ret.Add(ComponentType, "PulseCannonConstructionBoxL", 10M, 100M, true, true); // GSF Energy Weapons Pack
@@ -1361,24 +1355,21 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 ret.Add(ComponentType, "Shield", 5M, 25M, true, true); // Energy shields (new modified version)
                 ret.Add(ComponentType, "ShieldFrequencyModule", 25M, 45M, true, true); // GSF Energy Weapons Pack
                 ret.Add(ComponentType, "SmallTube", 4M, 2M, true, true); // Space Engineers
-                ret.Add(ComponentType, "SolarCell", 8M, 20M, true, true); // Space Engineers
+                ret.Add(ComponentType, "SolarCell", 6M, 12M, true, true); // Space Engineers
                 ret.Add(ComponentType, "SteelPlate", 20M, 3M, true, true); // Space Engineers
                 ret.Add(ComponentType, "Superconductor", 15M, 8M, true, true); // Space Engineers
                 ret.Add(ComponentType, "TekMarLicense", 0.2M, 1M, true, true); // GSF Energy Weapons Pack
                 ret.Add(ComponentType, "Thrust", 40M, 10M, true, true); // Space Engineers
                 ret.Add(ComponentType, "TractorHD", 1500M, 200M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
                 ret.Add(ComponentType, "Trinium", 100M, 10M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
-                ret.Add(ComponentType, "Tritium", 3M, 3M, true, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+                ret.Add(ComponentType, "Tritium", 3M, 3M, true, true); // [VisSE] [2019] Hydro Reactors & Ice to Oxy Hydro Gasses V2
                 ret.Add(ComponentType, "TVSI_DiamondGlass", 40M, 8M, true, true); // TVSI-Tech Diamond Bonded Glass (Survival) [DX11]
                 ret.Add(ComponentType, "WaterTankComponent", 200M, 160M, true, true); // Industrial Centrifuge (stable/dev)
                 ret.Add(ComponentType, "ZPM", 50M, 60M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
 
                 ret.Add(AmmoType, "250shell", 128M, 64M, true, true); // [DEPRECATED] CSD Battlecannon
-                ret.Add(AmmoType, "300mmShell_AP", 35M, 25M, true, true); // Battle Cannon and Turrets (DX11)
                 ret.Add(AmmoType, "300mmShell_HE", 35M, 25M, true, true); // Battle Cannon and Turrets (DX11)
-                ret.Add(AmmoType, "88hekc", 16M, 16M, true, true); // CSD Battlecannon
                 ret.Add(AmmoType, "88shell", 16M, 16M, true, true); // [DEPRECATED] CSD Battlecannon
-                ret.Add(AmmoType, "900mmShell_AP", 210M, 75M, true, true); // Battle Cannon and Turrets (DX11)
                 ret.Add(AmmoType, "900mmShell_HE", 210M, 75M, true, true); // Battle Cannon and Turrets (DX11)
                 ret.Add(AmmoType, "Aden30x113", 35M, 16M, true, true); // Battle Cannon and Turrets (DX11)
                 ret.Add(AmmoType, "AFmagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
@@ -1418,14 +1409,13 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 ret.Add(AmmoType, "HeavyPhaserPulseAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "HeavySWDisruptorBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "HighDamageGatlingAmmo", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
-                ret.Add(AmmoType, "ISM_FusionAmmo", 35M, 10M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-                ret.Add(AmmoType, "ISM_GrendelAmmo", 35M, 2M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-                ret.Add(AmmoType, "ISM_Hellfire", 45M, 60M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-                ret.Add(AmmoType, "ISM_LongbowAmmo", 35M, 2M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-                ret.Add(AmmoType, "ISM_MinigunAmmo", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-                ret.Add(AmmoType, "ISMNeedles", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-                ret.Add(AmmoType, "ISMTracer", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - BROKEN]
-                ret.Add(AmmoType, "LargeKlingonCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
+                ret.Add(AmmoType, "ISM_FusionAmmo", 35M, 10M, true, true); // ISM Mega Mod Pack [DX11 - Bringing it back]
+                ret.Add(AmmoType, "ISM_GrendelAmmo", 35M, 2M, true, true); // ISM Mega Mod Pack [DX11 - Bringing it back]
+                ret.Add(AmmoType, "ISM_Hellfire", 45M, 60M, true, true); // ISM Mega Mod Pack [DX11 - Bringing it back]
+                ret.Add(AmmoType, "ISM_LongbowAmmo", 35M, 2M, true, true); // ISM Mega Mod Pack [DX11 - Bringing it back]
+                ret.Add(AmmoType, "ISM_MinigunAmmo", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - Bringing it back]
+                ret.Add(AmmoType, "ISMNeedles", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - Bringing it back]
+                ret.Add(AmmoType, "ISMTracer", 35M, 16M, true, true); // ISM Mega Mod Pack [DX11 - Bringing it back]
                 ret.Add(AmmoType, "K_CS_DarkLance", 15M, 0.25M, true, true); // SpinalWeaponry
                 ret.Add(AmmoType, "K_CS_DarkLance_Red", 15M, 0.25M, true, true); // SpinalWeaponry
                 ret.Add(AmmoType, "K_CS_SG_Eye", 1M, 0.25M, true, true); // SpinalWeaponry
@@ -1495,10 +1485,6 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 ret.Add(AmmoType, "NATO_25x184mm", 35M, 16M, true, true); // Space Engineers
                 ret.Add(AmmoType, "NATO_5p56x45mm", 0.45M, 0.2M, true, true); // Space Engineers
                 ret.Add(AmmoType, "NiFeDUSlugMagazineLZM", 45M, 50M, true, true); // Revived Large Ship Railguns (With penetration damage!)
-                ret.Add(AmmoType, "Phaser2Charge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-                ret.Add(AmmoType, "Phaser2ChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-                ret.Add(AmmoType, "PhaserCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-                ret.Add(AmmoType, "PhaserChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
                 ret.Add(AmmoType, "NukeSiloMissile", 90M, 150M, true, true); // rearth's Advanced Combat Systems
                 ret.Add(AmmoType, "OKI122mmAmmo", 150M, 120M, true, true); // OKI Grand Weapons Bundle (DX11)
                 ret.Add(AmmoType, "OKI230mmAmmo", 800M, 800M, true, true); // OKI Grand Weapons Bundle (DX11)
@@ -1526,9 +1512,6 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 ret.Add(AmmoType, "RB_NATO_125x920mm", 875M, 160M, true, true); // RB Weapon Collection [DX11]
                 ret.Add(AmmoType, "RB_Rocket100mm", 11.25M, 15M, true, true); // RB Weapon Collection [DX11]
                 ret.Add(AmmoType, "RB_Rocket400mm", 180M, 240M, true, true); // RB Weapon Collection [DX11]
-                ret.Add(AmmoType, "RomulanCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-                ret.Add(AmmoType, "RomulanChargeLarge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
-                ret.Add(AmmoType, "SmallKlingonCharge", 1M, 5M, true, true); // Star Trek Weapon Pack 2.0 (Working Sound)
                 ret.Add(AmmoType, "RG_RG_ammo", 45M, 60M, true, true); // RG_RailGun
                 ret.Add(AmmoType, "romulanphase", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
                 ret.Add(AmmoType, "RomulanTorp", 45M, 50M, true, true); // Star Trek Weapons Pack
@@ -1554,8 +1537,8 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 ret.Add(AmmoType, "tng_quantum_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
                 ret.Add(AmmoType, "TOS", 35M, 16M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "TOSPhaserBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "TritiumMissile", 72M, 60M, true, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
-                ret.Add(AmmoType, "TritiumShot", 3M, 3M, true, true); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+                ret.Add(AmmoType, "TritiumMissile", 72M, 60M, true, true); // [VisSE] [2019] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+                ret.Add(AmmoType, "TritiumShot", 3M, 3M, true, true); // [VisSE] [2019] Hydro Reactors & Ice to Oxy Hydro Gasses V2
                 ret.Add(AmmoType, "TungstenBolt", 4812M, 250M, true, true); // (DX11)Mass Driver
                 ret.Add(AmmoType, "Type10", 35M, 16M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "Type12", 35M, 16M, true, true); // Star Trek Weapons Pack
@@ -1580,7 +1563,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 ret.Add(GunType, "RapidFireAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
                 ret.Add(GunType, "RG_RG_Item", 5M, 24M, true, false); // RG_RailGun
                 ret.Add(GunType, "Staff", 3M, 16M, true, false); // [New Version] Stargate Modpack (Server admin block filtering)
-                ret.Add(GunType, "TritiumAutomaticRifleItem", 6M, 21M, true, false); // [VisSE] [2018] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+                ret.Add(GunType, "TritiumAutomaticRifleItem", 6M, 21M, true, false); // [VisSE] [2019] Hydro Reactors & Ice to Oxy Hydro Gasses V2
                 ret.Add(GunType, "UltimateAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
                 ret.Add(GunType, "Welder2Item", 5M, 8M, true, false); // Space Engineers
                 ret.Add(GunType, "Welder3Item", 5M, 8M, true, false); // Space Engineers
@@ -1642,8 +1625,6 @@ namespace SEScripts.ResourceExchanger2_5_0_188
 
         internal class MyTextPanelNameComparer : IComparer<IMyTextPanel>
         {
-            public readonly IComparer<IMyTextPanel> Instance = new MyTextPanelNameComparer();
-
             public int Compare(IMyTextPanel x, IMyTextPanel y)
             {
                 return String.Compare(x.CustomName, y.CustomName, true);
@@ -1654,7 +1635,7 @@ namespace SEScripts.ResourceExchanger2_5_0_188
         {
             public readonly HashSet<string> MissingInfo;
             public readonly StringBuilder Output;
-            public readonly List<MyInventoryItem> TmpItems1, TmpItems2;
+            public readonly List<MyInventoryItem> TmpItems1;
             public string DrillsPayloadStr;
             public bool DrillsVolumeWarning;
             public int MovementsDone;
@@ -1666,7 +1647,6 @@ namespace SEScripts.ResourceExchanger2_5_0_188
                 Output = new StringBuilder();
                 MissingInfo = new HashSet<string>();
                 TmpItems1 = new List<MyInventoryItem>();
-                TmpItems2 = new List<MyInventoryItem>();
             }
         }
     }
