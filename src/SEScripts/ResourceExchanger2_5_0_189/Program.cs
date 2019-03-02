@@ -57,23 +57,30 @@ namespace SEScripts.ResourceExchanger2_5_0_189
         private const string OxygenType = "MyObjectBuilder_OxygenContainerObject";
         private const decimal SmallNumber = 0.000003M;
         private readonly int[] _avgMovements;
-        private readonly Dictionary<MyItemType, ulong[]> _blockToGroupIdMap;
-        private readonly Dictionary<ulong[], string> _groupIdToNameMap;
+        private readonly Dictionary<MyDefinitionId, List<MyItemType>> _blockMap;
         private int _cycleNumber = 0;
         private object _prevConfig;
 
         public Program()
         {
-            _blockToGroupIdMap = new Dictionary<MyItemType, ulong[]>();
-            _groupIdToNameMap = new Dictionary<ulong[], string>(new LongArrayComparer());
-            _avgMovements = new int[0x10];
             Items = ItemDict.BuildItemInfoDict();
+            _blockMap = new Dictionary<MyDefinitionId, List<MyItemType>>();
+            _avgMovements = new int[0x10];
 
             Runtime.UpdateFrequency = UpdateFrequency.Update100;
         }
 
         public void Main(string argument, UpdateType updateSource)
         {
+            var l = new List<MyItemType>();
+            var b = (IMyRefinery)GridTerminalSystem.GetBlockWithName("Refinery 5");
+            Echo("b");
+            b.InputInventory.GetAcceptedItems(l, null);
+            Echo("ai " + l.Count);
+
+            //Test(null, null);
+            //return;
+
             ReadConfig();
 
             var bs = new BlockStore(this);
@@ -82,16 +89,16 @@ namespace SEScripts.ResourceExchanger2_5_0_189
 
             ProcessBlocks("Balancing reactors", EnableReactors, bs.Reactors, stat, exclude: bs.AllGroupedInventories);
             ProcessBlocks("Balancing refineries", EnableRefineries, bs.Refineries, stat, exclude: bs.AllGroupedInventories);
-            var dcn = ProcessBlocks("Balancing drills", EnableDrills, bs.Drills, stat, invGroup: "drills", exclude: bs.AllGroupedInventories);
+            var dcn = ProcessBlocks("Balancing drills", EnableDrills, bs.Drills, stat, exclude: bs.AllGroupedInventories);
             stat.NotConnectedDrillsFound = dcn > 1;
             ProcessBlocks("Balancing turrets", EnableTurrets, bs.Turrets, stat, exclude: bs.AllGroupedInventories);
-            ProcessBlocks("Balancing oxygen gen.", EnableOxygenGenerators, bs.OxygenGenerators, stat, invGroup: "oxygen generators",
+            ProcessBlocks("Balancing oxygen gen.", EnableOxygenGenerators, bs.OxygenGenerators, stat,
                 exclude: bs.AllGroupedInventories, filter: item => item.Type.TypeId == OreType);
 
             if (EnableGroups)
             {
                 foreach (var kv in bs.Groups)
-                    ProcessBlocks("Balancing group " + kv.Key, true, kv.Value, stat, invGroup: kv.Key);
+                    ProcessBlocks("Balancing group " + kv.Key, true, kv.Value, stat);
             }
             else
             {
@@ -112,12 +119,12 @@ namespace SEScripts.ResourceExchanger2_5_0_189
         { }
 
         private void BalanceInventories(Statistics stat, List<InventoryWrapper> group, int networkNumber,
-            int groupNumber, string groupName, Func<MyInventoryItem, bool> filter)
+            string groupName, Func<MyInventoryItem, bool> filter)
         {
             if (group.Count < 2)
             {
                 stat.Output.Append("Cannot balance conveyor network ").Append(networkNumber)
-                    .Append(" group ").Append(groupNumber).Append(" \"").Append(groupName).AppendLine("\"")
+                    .Append(" group \"").Append(groupName).AppendLine("\"")
                     .AppendLine("  because there is only one inventory.");
                 return; // nothing to do
             }
@@ -146,15 +153,14 @@ namespace SEScripts.ResourceExchanger2_5_0_189
             if (max.CurrentVolume < SmallNumber)
             {
                 stat.Output.Append("Cannot balance conveyor network ").Append(networkNumber)
-                    .Append(" group ").Append(groupNumber).Append(" \"").Append(groupName)
+                    .Append(" group \"").Append(groupName)
                     .AppendLine("\"")
                     .AppendLine("  because of lack of items in it.");
                 return; // nothing to do
             }
 
             stat.Output.Append("Balancing conveyor network ").Append(networkNumber)
-                .Append(" group ").Append(groupNumber)
-                .Append(" \"").Append(groupName).AppendLine("\"...");
+                .Append(" group \"").Append(groupName).AppendLine("\"...");
 
             if (min == max)
             {
@@ -234,23 +240,50 @@ namespace SEScripts.ResourceExchanger2_5_0_189
             return bs;
         }
 
-        private List<InventoryGroup> DivideByBlockType(ConveyorNetwork network)
+        private List<InventoryGroup> DivideBlocks(ICollection<InventoryWrapper> inventories, HashSet<InventoryWrapper> exclude)
         {
-            var groupMap = new Dictionary<string, InventoryGroup>();
+            const string MY_OBJECT_BUILDER = "MyObjectBuilder_";
 
-            foreach (var inv in network.Inventories)
+            var result = new List<InventoryGroup>();
+
+            foreach (var wrp1 in inventories)
             {
-                InventoryGroup group;
-                if (!groupMap.TryGetValue(inv.GroupName, out group))
+                if (exclude != null && exclude.Contains(wrp1))
+                    continue;
+
+                bool add = true;
+                foreach (var network in result)
                 {
-                    group = new InventoryGroup(groupMap.Count + 1, inv.GroupName);
-                    groupMap.Add(inv.GroupName, group);
+                    if (!ReferenceEquals(network.AcceptedItems, wrp1.AcceptedItems))
+                        continue;
+
+                    var wrp2 = network.Inventories[0];
+
+                    //if (wrp1.AcceptedItems.Count == 0)
+
+                    //if (wrp1.Block.CustomName.StartsWith("Refinery ") && wrp2.Block.CustomName.StartsWith("Refinery "))
+                    //    Test(wrp1, wrp2);
+
+                    if (wrp2.Inventory.CanTransferItemTo(wrp1.Inventory, wrp2.AcceptedItems[0]))
+                    {
+                        network.Inventories.Add(wrp1);
+                        add = false;
+                        break;
+                    }
                 }
-                group.Inventories.Add(inv);
+
+                if (add)
+                {
+                    var name = wrp1.Block.BlockDefinition.ToString();
+                    if (name.StartsWith(MY_OBJECT_BUILDER))
+                        name = '$' + name.Substring(MY_OBJECT_BUILDER.Length);
+
+                    var network = new InventoryGroup(result.Count + 1, name, wrp1.AcceptedItems);
+                    network.Inventories.Add(wrp1);
+                    result.Add(network);
+                }
             }
 
-            var result = new List<InventoryGroup>(groupMap.Count);
-            result.AddRange(groupMap.Values);
             return result;
         }
 
@@ -300,77 +333,31 @@ namespace SEScripts.ResourceExchanger2_5_0_189
             }
         }
 
-        private List<ConveyorNetwork> FindConveyorNetworks(ICollection<InventoryWrapper> inventories, HashSet<InventoryWrapper> exclude)
+        private List<MyItemType> FindAcceptedItems(MyDefinitionId def, IMyInventory inv)
         {
-            var result = new List<ConveyorNetwork>();
+            List<MyItemType> result;
+            if (_blockMap.TryGetValue(def, out result))
+                return result;
 
-            foreach (var wrp in inventories)
+            result = new List<MyItemType>();
+            //inv.GetAcceptedItems(result, t => true);
+            foreach (var key in Items.ItemInfoDict.Keys)
             {
-                if (exclude != null && exclude.Contains(wrp))
-                    continue;
+                if (inv.CanItemsBeAdded(-1, key))
+                    result.Add(key);
+            }
 
-                bool add = true;
-                foreach (var network in result)
+            foreach (var list in _blockMap.Values)
+            {
+                if (Enumerable.SequenceEqual(result, list))
                 {
-                    var firstInv = network.Inventories[0];
-
-                    if (wrp.Block.CustomName.StartsWith("Refinery ") && firstInv.Block.CustomName.StartsWith("Refinery "))
-                        Test(wrp, firstInv);
-
-                    if (firstInv.Inventory.IsConnectedTo(wrp.Inventory) && wrp.Inventory.IsConnectedTo(firstInv.Inventory))
-                    {
-                        network.Inventories.Add(wrp);
-                        add = false;
-                        break;
-                    }
-                }
-
-                if (add)
-                {
-                    var network = new ConveyorNetwork(result.Count + 1);
-                    network.Inventories.Add(wrp);
-                    result.Add(network);
+                    _blockMap[def] = list;
+                    return list;
                 }
             }
 
+            _blockMap[def] = result;
             return result;
-        }
-
-        private string FindInvGroupName(MyItemType def, IMyInventory inv)
-        {
-            const string MY_OBJECT_BUILDER = "MyObjectBuilder_";
-
-            ulong[] groupId;
-            if (_blockToGroupIdMap.TryGetValue(def, out groupId))
-                return _groupIdToNameMap[groupId];
-
-            groupId = new ulong[ItemInfo.ID_LENGTH];
-            foreach (var kv in Items.ItemInfoDict)
-            {
-                if (inv.CanItemsBeAdded(-1, kv.Key))
-                {
-                    for (int i = 0; i < ItemInfo.ID_LENGTH; ++i)
-                        groupId[i] |= kv.Value.Id[i];
-                }
-            }
-
-            string result;
-            if (_groupIdToNameMap.TryGetValue(groupId, out result))
-            {
-                _blockToGroupIdMap.Add(def, groupId);
-                return result;
-            }
-            else
-            {
-                var fullType = def.ToString();
-                result = fullType.StartsWith(MY_OBJECT_BUILDER)
-                ? '$' + fullType.Substring(MY_OBJECT_BUILDER.Length)
-                : fullType;
-
-                _groupIdToNameMap.Add(groupId, result);
-                _blockToGroupIdMap.Add(def, groupId);
-                return result;
-            }
         }
 
         private VRage.MyFixedPoint MoveVolume(Statistics stat, InventoryWrapper from, InventoryWrapper to,
@@ -537,7 +524,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
             Echo(sb.ToString());
         }
 
-        private int ProcessBlocks(string msg, bool enable, ICollection<InventoryWrapper> blocks, Statistics stat, string invGroup = null,
+        private int ProcessBlocks(string msg, bool enable, ICollection<InventoryWrapper> blocks, Statistics stat,
             HashSet<InventoryWrapper> exclude = null, Func<MyInventoryItem, bool> filter = null)
         {
             stat.Output.Append(msg);
@@ -545,21 +532,12 @@ namespace SEScripts.ResourceExchanger2_5_0_189
             {
                 if (blocks.Count >= 2)
                 {
-                    var conveyorNetworks = FindConveyorNetworks(blocks, exclude);
+                    var conveyorNetworks = DivideBlocks(blocks, exclude);
                     stat.NumberOfNetworks += conveyorNetworks.Count;
                     stat.Output.Append(": ").Append(conveyorNetworks.Count).AppendLine(" conveyor networks found");
 
-                    if (invGroup != null)
-                    {
-                        foreach (var network in conveyorNetworks)
-                            BalanceInventories(stat, network.Inventories, network.No, 1, invGroup, filter);
-                    }
-                    else
-                    {
-                        foreach (var network in conveyorNetworks)
-                            foreach (var group in DivideByBlockType(network))
-                                BalanceInventories(stat, group.Inventories, network.No, group.No, group.Name, filter);
-                    }
+                    foreach (var network in conveyorNetworks)
+                        BalanceInventories(stat, network.Inventories, network.No, network.Name, filter);
 
                     return conveyorNetworks.Count;
                 }
@@ -812,9 +790,17 @@ namespace SEScripts.ResourceExchanger2_5_0_189
 
             var t1 = a2.InputInventory.IsConnectedTo(b2.InputInventory);
             var t2 = a2.InputInventory.CanTransferItemTo(b2.InputInventory, TopRefineryPriority.Value);
+
+            var l1 = new List<MyItemType>();
+            a2.InputInventory.GetAcceptedItems(l1, null);
+            var l2 = new List<MyItemType>();
+            b2.InputInventory.GetAcceptedItems(l2, null);
+            var t4 = Enumerable.SequenceEqual(l1, l2);
+
             var s = a2.CustomName + " " + b2.CustomName;
             Echo("T1 " + s + (t1 ? " OK" : " ERR"));
             Echo("T2 " + s + (t2 ? " OK" : " ERR"));
+            Echo("T4 " + s + (t4 ? " OK" : " ERR"));
 
             //var a = wrp.Block.CustomName;
             //var b = network.Inventories[0].Block.CustomName;
@@ -929,7 +915,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 if (!_program.EnableGroups)
                     return true;
 
-                var inv = InventoryWrapper.Create(_program, myCargoContainer, myCargoContainer.GetInventory());
+                var inv = InvWrp(myCargoContainer, myCargoContainer.GetInventory());
                 if (inv != null)
                 {
                     CargoContainers.Add(inv);
@@ -947,7 +933,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 if (!_program.EnableDrills || !myDrill.UseConveyorSystem)
                     return true;
 
-                var inv = InventoryWrapper.Create(_program, myDrill, myDrill.GetInventory());
+                var inv = InvWrp(myDrill, myDrill.GetInventory());
                 if (inv != null)
                 {
                     Drills.Add(inv);
@@ -966,7 +952,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 if (!_program.EnableOxygenGenerators)
                     return true;
 
-                var inv = InventoryWrapper.Create(_program, myOxygenGenerator, myOxygenGenerator.GetInventory());
+                var inv = InvWrp(myOxygenGenerator, myOxygenGenerator.GetInventory());
                 if (inv != null)
                 {
                     OxygenGenerators.Add(inv);
@@ -985,7 +971,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 if (!_program.EnableReactors || !myReactor.UseConveyorSystem)
                     return true;
 
-                var inv = InventoryWrapper.Create(_program, myReactor, myReactor.GetInventory());
+                var inv = InvWrp(myReactor, myReactor.GetInventory());
                 if (inv != null)
                 {
                     Reactors.Add(inv);
@@ -1004,7 +990,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 if (!_program.EnableRefineries || !myRefinery.UseConveyorSystem)
                     return true;
 
-                var inv = InventoryWrapper.Create(_program, myRefinery, myRefinery.InputInventory);
+                var inv = InvWrp(myRefinery, myRefinery.InputInventory);
                 if (inv != null)
                 {
                     Refineries.Add(inv);
@@ -1023,7 +1009,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 if (!_program.EnableTurrets || myTurret is IMyLargeInteriorTurret)
                     return true;
 
-                var inv = InventoryWrapper.Create(_program, myTurret, myTurret.GetInventory());
+                var inv = InvWrp(myTurret, myTurret.GetInventory());
                 if (inv != null)
                 {
                     Turrets.Add(inv);
@@ -1033,55 +1019,49 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 }
                 return true;
             }
-        }
 
-        internal class ConveyorNetwork
-        {
-            public List<InventoryWrapper> Inventories;
-            public int No;
-
-            public ConveyorNetwork(int no)
+            private InventoryWrapper InvWrp(IMyTerminalBlock block, IMyInventory inv)
             {
-                No = no;
-                Inventories = new List<InventoryWrapper>();
+                if (inv.MaxVolume > 0)
+                {
+                    var accepted = _program.FindAcceptedItems(block.BlockDefinition, inv);
+                    if (accepted.Count > 0)
+                        return new InventoryWrapper(block, inv, accepted);
+                }
+                return null;
             }
         }
 
         internal class InventoryGroup
         {
+            public List<MyItemType> AcceptedItems;
             public List<InventoryWrapper> Inventories;
             public string Name;
             public int No;
 
-            public InventoryGroup(int no, string name)
+            public InventoryGroup(int no, string name, List<MyItemType> acceptedItems)
             {
                 No = no;
                 Name = name;
+                AcceptedItems = acceptedItems;
                 Inventories = new List<InventoryWrapper>();
             }
         }
 
         internal class InventoryWrapper
         {
-            public IMyTerminalBlock Block;
+            public readonly List<MyItemType> AcceptedItems;
+            public readonly IMyTerminalBlock Block;
+            public readonly IMyInventory Inventory;
             public decimal CurrentVolume;
-            public string GroupName;
-            public IMyInventory Inventory;
             public decimal MaxVolume;
             public decimal Percent;
 
-            public static InventoryWrapper Create(Program prog, IMyTerminalBlock block, IMyInventory inv)
+            public InventoryWrapper(IMyTerminalBlock block, IMyInventory inventory, List<MyItemType> acceptedItems)
             {
-                if (inv.MaxVolume > 0)
-                {
-                    var result = new InventoryWrapper();
-                    result.Block = block;
-                    result.Inventory = inv;
-                    result.GroupName = prog.FindInvGroupName(block.BlockDefinition, inv);
-
-                    return result;
-                }
-                return null;
+                Block = block;
+                Inventory = inventory;
+                AcceptedItems = acceptedItems;
             }
 
             public void CalculatePercent()
@@ -1598,7 +1578,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
             public void Add(string mainType, string subtype, decimal mass, decimal volume, bool hasIntegralAmounts, bool isStackable)
             {
                 var key = new MyItemType(mainType, subtype);
-                var value = new ItemInfo(ItemInfoDict.Count, mass, volume, hasIntegralAmounts, isStackable);
+                var value = new ItemInfo(mass, volume, hasIntegralAmounts, isStackable);
                 try
                 {
                     ItemInfoDict.Add(key, value);
@@ -1625,43 +1605,17 @@ namespace SEScripts.ResourceExchanger2_5_0_189
 
         internal class ItemInfo
         {
-            public const int ID_LENGTH = 7;
             public readonly bool HasIntegralAmounts;
-            public readonly ulong[] Id;
             public readonly bool IsStackable;
             public readonly decimal Mass;
             public readonly decimal Volume;
 
-            public ItemInfo(int itemInfoNo, decimal mass, decimal volume, bool hasIntegralAmounts, bool isStackable)
+            public ItemInfo(decimal mass, decimal volume, bool hasIntegralAmounts, bool isStackable)
             {
-                Id = new ulong[ID_LENGTH];
-                Id[itemInfoNo >> 6] = 1ul << (itemInfoNo & 0x3F);
                 Mass = mass;
                 Volume = volume;
                 HasIntegralAmounts = hasIntegralAmounts;
                 IsStackable = isStackable;
-            }
-        }
-
-        internal class LongArrayComparer : IEqualityComparer<ulong[]>
-        {
-            public bool Equals(ulong[] x, ulong[] y)
-            {
-                //return System.Linq.Enumerable.SequenceEqual<ulong>(x, y);
-                if (x.Length != y.Length)
-                    return false;
-                for (int i = 0; i < x.Length; ++i)
-                    if (x[i] != y[i])
-                        return false;
-                return true;
-            }
-
-            public int GetHashCode(ulong[] obj)
-            {
-                ulong result = 0ul;
-                for (int i = 0; i < obj.Length; ++i)
-                    result += obj[i];
-                return (int)result + (int)(result >> 32);
             }
         }
 
