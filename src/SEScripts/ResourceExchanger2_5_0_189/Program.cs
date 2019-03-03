@@ -19,7 +19,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
 {
     public class Program : MyGridProgram
     {
-        /// Resource Exchanger version 2.5.0 2019-03-02 for SE 1.189
+        /// Resource Exchanger version 2.5.0 2019-03-05 for SE 1.189
         /// Made by Sinus32
         /// http://steamcommunity.com/sharedfiles/filedetails/546221822
         ///
@@ -55,7 +55,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
         private const string IngotType = "MyObjectBuilder_Ingot";
         private const string OreType = "MyObjectBuilder_Ore";
         private const string OxygenType = "MyObjectBuilder_OxygenContainerObject";
-        private const decimal SmallNumber = 0.000003M;
+        private const decimal SmallNumber = 0.000005M;
         private readonly int[] _avgMovements;
         private readonly Dictionary<MyDefinitionId, List<MyItemType>> _blockMap;
         private int _cycleNumber = 0;
@@ -72,15 +72,6 @@ namespace SEScripts.ResourceExchanger2_5_0_189
 
         public void Main(string argument, UpdateType updateSource)
         {
-            var l = new List<MyItemType>();
-            var b = (IMyRefinery)GridTerminalSystem.GetBlockWithName("Refinery 5");
-            Echo("b");
-            b.InputInventory.GetAcceptedItems(l, null);
-            Echo("ai " + l.Count);
-
-            //Test(null, null);
-            //return;
-
             ReadConfig();
 
             var bs = new BlockStore(this);
@@ -118,7 +109,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
         public void Save()
         { }
 
-        private void BalanceInventories(Statistics stat, List<InventoryWrapper> group, int networkNumber,
+        private void BalanceInventories(Statistics stat, List<BlockWrapper> group, int networkNumber,
             string groupName, Func<MyInventoryItem, bool> filter)
         {
             if (group.Count < 2)
@@ -129,18 +120,10 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 return; // nothing to do
             }
 
-            if (filter != null)
-            {
-                foreach (var wrp in group)
-                    wrp.LoadVolume().FilterItems(this, stat, filter).CalculatePercent();
-            }
-            else
-            {
-                foreach (var wrp in group)
-                    wrp.LoadVolume().CalculatePercent();
-            }
+            foreach (var wrp in group)
+                wrp.LoadVolume(this, stat, filter);
 
-            InventoryWrapper min = group[0], max = group[0];
+            BlockWrapper min = group[0], max = group[0];
             for (int i = 1; i < group.Count; ++i)
             {
                 var dt = group[i];
@@ -240,7 +223,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
             return bs;
         }
 
-        private List<InventoryGroup> DivideBlocks(ICollection<InventoryWrapper> inventories, HashSet<InventoryWrapper> exclude)
+        private List<InventoryGroup> DivideBlocks(ICollection<BlockWrapper> inventories, HashSet<BlockWrapper> exclude)
         {
             const string MY_OBJECT_BUILDER = "MyObjectBuilder_";
 
@@ -252,21 +235,13 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                     continue;
 
                 bool add = true;
-                foreach (var network in result)
+                for (int n = result.Count - 1; n >= 0; --n)
                 {
-                    if (!ReferenceEquals(network.AcceptedItems, wrp1.AcceptedItems))
-                        continue;
-
-                    var wrp2 = network.Inventories[0];
-
-                    //if (wrp1.AcceptedItems.Count == 0)
-
-                    //if (wrp1.Block.CustomName.StartsWith("Refinery ") && wrp2.Block.CustomName.StartsWith("Refinery "))
-                    //    Test(wrp1, wrp2);
-
-                    if (wrp2.Inventory.CanTransferItemTo(wrp1.Inventory, wrp2.AcceptedItems[0]))
+                    var network = result[n];
+                    var wrp2 = network.Blocks[0];
+                    if (ReferenceEquals(wrp1.AcceptedItems, wrp2.AcceptedItems) && wrp1.GetInventory().IsConnectedTo(wrp2.GetInventory()))
                     {
-                        network.Inventories.Add(wrp1);
+                        network.Blocks.Add(wrp1);
                         add = false;
                         break;
                     }
@@ -276,10 +251,10 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 {
                     var name = wrp1.Block.BlockDefinition.ToString();
                     if (name.StartsWith(MY_OBJECT_BUILDER))
-                        name = '$' + name.Substring(MY_OBJECT_BUILDER.Length);
+                        name = name.Substring(MY_OBJECT_BUILDER.Length);
 
-                    var network = new InventoryGroup(result.Count + 1, name, wrp1.AcceptedItems);
-                    network.Inventories.Add(wrp1);
+                    var network = new InventoryGroup(result.Count + 1, name);
+                    network.Blocks.Add(wrp1);
                     result.Add(network);
                 }
             }
@@ -287,17 +262,19 @@ namespace SEScripts.ResourceExchanger2_5_0_189
             return result;
         }
 
-        private void EnforceItemPriority(List<InventoryWrapper> group, Statistics stat, MyItemType? topPriority, MyItemType? lowestPriority)
+        private void EnforceItemPriority(List<BlockWrapper> group, Statistics stat, MyItemType? topPriority, MyItemType? lowestPriority)
         {
             if (topPriority == null && lowestPriority == null)
                 return;
 
-            foreach (var inv in group)
+            foreach (var wrp in group)
             {
-                if (inv.Inventory.ItemCount < 2)
+                var inv = wrp.GetInventory();
+                if (inv.ItemCount < 2)
                     continue;
 
-                var items = inv.GetItems(stat.TmpItems1, null);
+                var items = stat.EmptyTempItemList();
+                inv.GetItems(items, null);
 
                 if (topPriority.HasValue && !items[0].Type.Equals(topPriority.Value))
                 {
@@ -307,8 +284,8 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                         if (item.Type.Equals(topPriority.Value))
                         {
                             stat.Output.Append("Moving ").Append(topPriority.Value.SubtypeId).Append(" from ")
-                                .Append(i + 1).Append(" slot to first slot of ").AppendLine(inv.Block.CustomName);
-                            inv.MoveItem(i, 0);
+                                .Append(i + 1).Append(" slot to first slot of ").AppendLine(wrp.Block.CustomName);
+                            inv.TransferItemTo(inv, i, 0, false, null);
                             stat.MovementsDone += 1;
                             break;
                         }
@@ -323,8 +300,8 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                         if (item.Type.Equals(lowestPriority.Value))
                         {
                             stat.Output.Append("Moving ").Append(lowestPriority.Value.SubtypeId).Append(" from ")
-                                .Append(i + 1).Append(" slot to last slot of ").AppendLine(inv.Block.CustomName);
-                            inv.MoveItem(i, items.Count);
+                                .Append(i + 1).Append(" slot to last slot of ").AppendLine(wrp.Block.CustomName);
+                            inv.TransferItemTo(inv, i, items.Count, false, null);
                             stat.MovementsDone += 1;
                             break;
                         }
@@ -360,7 +337,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
             return result;
         }
 
-        private VRage.MyFixedPoint MoveVolume(Statistics stat, InventoryWrapper from, InventoryWrapper to,
+        private VRage.MyFixedPoint MoveVolume(Statistics stat, BlockWrapper from, BlockWrapper to,
             VRage.MyFixedPoint volumeAmountToMove, Func<MyInventoryItem, bool> filter)
         {
             if (volumeAmountToMove == 0)
@@ -371,12 +348,15 @@ namespace SEScripts.ResourceExchanger2_5_0_189
 
             stat.Output.Append("Move ").Append(volumeAmountToMove).Append(" l. from ")
                 .Append(from.Block.CustomName).Append(" to ").AppendLine(to.Block.CustomName);
-            var itemsFrom = from.GetItems(stat.TmpItems1, filter);
+
+            var itemsFrom = stat.EmptyTempItemList();
+            var fromInv = from.GetInventory();
+            var destInv = to.GetInventory();
+            fromInv.GetItems(itemsFrom, filter);
 
             for (int i = itemsFrom.Count - 1; i >= 0; --i)
             {
                 MyInventoryItem item = itemsFrom[i];
-
                 var data = Items.Get(stat, item.Type);
                 if (data == null)
                     continue;
@@ -397,14 +377,14 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 if (amountToMove <= item.Amount)
                 {
                     itemVolume = (decimal)amountToMove * data.Volume / 1000M;
-                    success = from.TransferItem(to, i, amountToMove);
+                    success = fromInv.TransferItemTo(destInv, item, amountToMove);
                     stat.MovementsDone += 1;
                     stat.Output.Append("Move ").Append(amountToMove).Append(" -> ").AppendLine(success ? "success" : "failure");
                 }
                 else
                 {
                     itemVolume = (decimal)item.Amount * data.Volume / 1000M;
-                    success = from.TransferItem(to, i, item.Amount);
+                    success = fromInv.TransferItemTo(destInv, item, null);
                     stat.MovementsDone += 1;
                     stat.Output.Append("Move all ").Append(item.Amount).Append(" -> ").AppendLine(success ? "success" : "failure");
                 }
@@ -524,8 +504,8 @@ namespace SEScripts.ResourceExchanger2_5_0_189
             Echo(sb.ToString());
         }
 
-        private int ProcessBlocks(string msg, bool enable, ICollection<InventoryWrapper> blocks, Statistics stat,
-            HashSet<InventoryWrapper> exclude = null, Func<MyInventoryItem, bool> filter = null)
+        private int ProcessBlocks(string msg, bool enable, ICollection<BlockWrapper> blocks, Statistics stat,
+            HashSet<BlockWrapper> exclude = null, Func<MyInventoryItem, bool> filter = null)
         {
             stat.Output.Append(msg);
             if (enable)
@@ -537,7 +517,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                     stat.Output.Append(": ").Append(conveyorNetworks.Count).AppendLine(" conveyor networks found");
 
                     foreach (var network in conveyorNetworks)
-                        BalanceInventories(stat, network.Inventories, network.No, network.Name, filter);
+                        BalanceInventories(stat, network.Blocks, network.No, network.Name, filter);
 
                     return conveyorNetworks.Count;
                 }
@@ -554,7 +534,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
             }
         }
 
-        private void ProcessDrillsLights(List<InventoryWrapper> drills, List<IMyLightingBlock> lights, Statistics stat)
+        private void ProcessDrillsLights(List<BlockWrapper> drills, List<IMyLightingBlock> lights, Statistics stat)
         {
             VRage.MyFixedPoint warningLevelInCubicMetersLeft = 5;
             Func<Color> step0 = () => new Color(255, 255, 255);
@@ -583,8 +563,9 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 var drillsCurrentVolume = VRage.MyFixedPoint.Zero;
                 foreach (var drill in drills)
                 {
-                    drillsMaxVolume += drill.Inventory.MaxVolume;
-                    drillsCurrentVolume += drill.Inventory.CurrentVolume;
+                    var inv = drill.GetInventory();
+                    drillsMaxVolume += inv.MaxVolume;
+                    drillsCurrentVolume += inv.CurrentVolume;
                 }
 
                 if (drillsMaxVolume > 0)
@@ -769,53 +750,6 @@ namespace SEScripts.ResourceExchanger2_5_0_189
             ini.SetComment(key, comment);
         }
 
-        private void Test(InventoryWrapper ref5, InventoryWrapper ref6)
-        {
-            IMyRefinery a2, b2;
-            if (ref5 != null && ref6 != null)
-            {
-                a2 = (IMyRefinery)GridTerminalSystem.GetBlockWithName(ref5.Block.CustomName);
-                b2 = (IMyRefinery)GridTerminalSystem.GetBlockWithName(ref6.Block.CustomName);
-                var t3 = a2.EntityId == ref5.Block.EntityId;
-                Echo(t3 ? "T3 eq OK" : "T3 eq ERR");
-            }
-            else
-            {
-                a2 = (IMyRefinery)GridTerminalSystem.GetBlockWithName("Refinery 5");
-                b2 = (IMyRefinery)GridTerminalSystem.GetBlockWithName("Refinery 6");
-            }
-
-            if (a2 == null || b2 == null)
-                return;
-
-            var t1 = a2.InputInventory.IsConnectedTo(b2.InputInventory);
-            var t2 = a2.InputInventory.CanTransferItemTo(b2.InputInventory, TopRefineryPriority.Value);
-
-            var l1 = new List<MyItemType>();
-            a2.InputInventory.GetAcceptedItems(l1, null);
-            var l2 = new List<MyItemType>();
-            b2.InputInventory.GetAcceptedItems(l2, null);
-            var t4 = Enumerable.SequenceEqual(l1, l2);
-
-            var s = a2.CustomName + " " + b2.CustomName;
-            Echo("T1 " + s + (t1 ? " OK" : " ERR"));
-            Echo("T2 " + s + (t2 ? " OK" : " ERR"));
-            Echo("T4 " + s + (t4 ? " OK" : " ERR"));
-
-            //var a = wrp.Block.CustomName;
-            //var b = network.Inventories[0].Block.CustomName;
-            //if (a.StartsWith("Refinery ") && b.StartsWith("Refinery "))
-            //{
-            //    Echo(network.Inventories[0].Inventory.IsConnectedTo(wrp.Inventory) ? b + " conn " + a : b + " nc " + a);
-            //    Echo(wrp.Inventory.IsConnectedTo(network.Inventories[0].Inventory) ? a + " conn " + b : a + " nc " + b);
-            //    var a2 = (IMyRefinery)GridTerminalSystem.GetBlockWithName("Refinery 2");
-            //    var b2 = (IMyRefinery)GridTerminalSystem.GetBlockWithName("Refinery 5");
-            //    Echo(a2.InputInventory.IsConnectedTo(b2.InputInventory) ? "conn" : "notc");
-            //    if (a == "Refinery 5")
-            //        Echo(wrp.Block == a2 ? "same" : "nots");
-            //}
-        }
-
         private void WriteOutput(BlockStore bs, Statistics stat)
         {
             const int linesPerDebugScreen = 17;
@@ -845,30 +779,30 @@ namespace SEScripts.ResourceExchanger2_5_0_189
         {
             public readonly Program _program;
             public readonly HashSet<IMyCubeGrid> AllGrids;
-            public readonly HashSet<InventoryWrapper> AllGroupedInventories;
-            public readonly List<InventoryWrapper> CargoContainers;
+            public readonly HashSet<BlockWrapper> AllGroupedInventories;
+            public readonly List<BlockWrapper> CargoContainers;
             public readonly List<IMyTextPanel> DebugScreen;
-            public readonly List<InventoryWrapper> Drills;
+            public readonly List<BlockWrapper> Drills;
             public readonly List<IMyLightingBlock> DrillsPayloadLights;
-            public readonly Dictionary<string, HashSet<InventoryWrapper>> Groups;
-            public readonly List<InventoryWrapper> OxygenGenerators;
-            public readonly List<InventoryWrapper> Reactors;
-            public readonly List<InventoryWrapper> Refineries;
-            public readonly List<InventoryWrapper> Turrets;
+            public readonly Dictionary<string, HashSet<BlockWrapper>> Groups;
+            public readonly List<BlockWrapper> OxygenGenerators;
+            public readonly List<BlockWrapper> Reactors;
+            public readonly List<BlockWrapper> Refineries;
+            public readonly List<BlockWrapper> Turrets;
             private System.Text.RegularExpressions.Regex _groupTagPattern;
 
             public BlockStore(Program program)
             {
                 _program = program;
                 DebugScreen = new List<IMyTextPanel>();
-                Reactors = new List<InventoryWrapper>();
-                OxygenGenerators = new List<InventoryWrapper>();
-                Refineries = new List<InventoryWrapper>();
-                Drills = new List<InventoryWrapper>();
-                Turrets = new List<InventoryWrapper>();
-                CargoContainers = new List<InventoryWrapper>();
-                Groups = new Dictionary<string, HashSet<InventoryWrapper>>();
-                AllGroupedInventories = new HashSet<InventoryWrapper>();
+                Reactors = new List<BlockWrapper>();
+                OxygenGenerators = new List<BlockWrapper>();
+                Refineries = new List<BlockWrapper>();
+                Drills = new List<BlockWrapper>();
+                Turrets = new List<BlockWrapper>();
+                CargoContainers = new List<BlockWrapper>();
+                Groups = new Dictionary<string, HashSet<BlockWrapper>>();
+                AllGroupedInventories = new HashSet<BlockWrapper>();
                 AllGrids = new HashSet<IMyCubeGrid>();
                 DrillsPayloadLights = new List<IMyLightingBlock>();
             }
@@ -883,7 +817,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                     || CollectOxygenGenerator(block as IMyGasGenerator);
             }
 
-            private void AddToGroup(InventoryWrapper inv)
+            private void AddToGroup(BlockWrapper inv)
             {
                 const string MatchNothingExpr = @"a^";
 
@@ -896,10 +830,10 @@ namespace SEScripts.ResourceExchanger2_5_0_189
 
                 foreach (System.Text.RegularExpressions.Match dt in _groupTagPattern.Matches(inv.Block.CustomName))
                 {
-                    HashSet<InventoryWrapper> tmp;
+                    HashSet<BlockWrapper> tmp;
                     if (!Groups.TryGetValue(dt.Value, out tmp))
                     {
-                        tmp = new HashSet<InventoryWrapper>();
+                        tmp = new HashSet<BlockWrapper>();
                         Groups.Add(dt.Value, tmp);
                     }
                     tmp.Add(inv);
@@ -915,12 +849,12 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 if (!_program.EnableGroups)
                     return true;
 
-                var inv = InvWrp(myCargoContainer, myCargoContainer.GetInventory());
-                if (inv != null)
+                var wrp = InvWrp(myCargoContainer, myCargoContainer.GetInventory());
+                if (wrp != null)
                 {
-                    CargoContainers.Add(inv);
+                    CargoContainers.Add(wrp);
                     AllGrids.Add(myCargoContainer.CubeGrid);
-                    AddToGroup(inv);
+                    AddToGroup(wrp);
                 }
                 return true;
             }
@@ -933,13 +867,13 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 if (!_program.EnableDrills || !myDrill.UseConveyorSystem)
                     return true;
 
-                var inv = InvWrp(myDrill, myDrill.GetInventory());
-                if (inv != null)
+                var wrp = InvWrp(myDrill, myDrill.GetInventory());
+                if (wrp != null)
                 {
-                    Drills.Add(inv);
+                    Drills.Add(wrp);
                     AllGrids.Add(myDrill.CubeGrid);
                     if (_program.EnableGroups)
-                        AddToGroup(inv);
+                        AddToGroup(wrp);
                 }
                 return true;
             }
@@ -952,13 +886,13 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 if (!_program.EnableOxygenGenerators)
                     return true;
 
-                var inv = InvWrp(myOxygenGenerator, myOxygenGenerator.GetInventory());
-                if (inv != null)
+                var wrp = InvWrp(myOxygenGenerator, myOxygenGenerator.GetInventory());
+                if (wrp != null)
                 {
-                    OxygenGenerators.Add(inv);
+                    OxygenGenerators.Add(wrp);
                     AllGrids.Add(myOxygenGenerator.CubeGrid);
                     if (_program.EnableGroups)
-                        AddToGroup(inv);
+                        AddToGroup(wrp);
                 }
                 return true;
             }
@@ -971,13 +905,13 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 if (!_program.EnableReactors || !myReactor.UseConveyorSystem)
                     return true;
 
-                var inv = InvWrp(myReactor, myReactor.GetInventory());
-                if (inv != null)
+                var wrp = InvWrp(myReactor, myReactor.GetInventory());
+                if (wrp != null)
                 {
-                    Reactors.Add(inv);
+                    Reactors.Add(wrp);
                     AllGrids.Add(myReactor.CubeGrid);
                     if (_program.EnableGroups)
-                        AddToGroup(inv);
+                        AddToGroup(wrp);
                 }
                 return true;
             }
@@ -990,13 +924,13 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 if (!_program.EnableRefineries || !myRefinery.UseConveyorSystem)
                     return true;
 
-                var inv = InvWrp(myRefinery, myRefinery.InputInventory);
-                if (inv != null)
+                var wrp = InvWrp(myRefinery, myRefinery.InputInventory);
+                if (wrp != null)
                 {
-                    Refineries.Add(inv);
+                    Refineries.Add(wrp);
                     AllGrids.Add(myRefinery.CubeGrid);
                     if (_program.EnableGroups)
-                        AddToGroup(inv);
+                        AddToGroup(wrp);
                 }
                 return true;
             }
@@ -1009,111 +943,120 @@ namespace SEScripts.ResourceExchanger2_5_0_189
                 if (!_program.EnableTurrets || myTurret is IMyLargeInteriorTurret)
                     return true;
 
-                var inv = InvWrp(myTurret, myTurret.GetInventory());
-                if (inv != null)
+                var wrp = InvWrp(myTurret, myTurret.GetInventory());
+                if (wrp != null)
                 {
-                    Turrets.Add(inv);
+                    Turrets.Add(wrp);
                     AllGrids.Add(myTurret.CubeGrid);
                     if (_program.EnableGroups)
-                        AddToGroup(inv);
+                        AddToGroup(wrp);
                 }
                 return true;
             }
 
-            private InventoryWrapper InvWrp(IMyTerminalBlock block, IMyInventory inv)
+            private BlockWrapper InvWrp(IMyTerminalBlock block, IMyInventory inv)
             {
-                if (inv.MaxVolume > 0)
+                if (inv != null && inv.MaxVolume > 0)
                 {
                     var accepted = _program.FindAcceptedItems(block.BlockDefinition, inv);
                     if (accepted.Count > 0)
-                        return new InventoryWrapper(block, inv, accepted);
+                        return new BlockWrapper(block, accepted);
+                }
+                return null;
+            }
+
+            private BlockWrapper InvWrp(IMyProductionBlock block, IMyInventory inv)
+            {
+                if (inv != null && inv.MaxVolume > 0)
+                {
+                    var accepted = _program.FindAcceptedItems(block.BlockDefinition, inv);
+                    if (accepted.Count > 0)
+                        return new BlockWrapperProd(block, accepted);
                 }
                 return null;
             }
         }
 
-        internal class InventoryGroup
-        {
-            public List<MyItemType> AcceptedItems;
-            public List<InventoryWrapper> Inventories;
-            public string Name;
-            public int No;
-
-            public InventoryGroup(int no, string name, List<MyItemType> acceptedItems)
-            {
-                No = no;
-                Name = name;
-                AcceptedItems = acceptedItems;
-                Inventories = new List<InventoryWrapper>();
-            }
-        }
-
-        internal class InventoryWrapper
+        internal class BlockWrapper
         {
             public readonly List<MyItemType> AcceptedItems;
             public readonly IMyTerminalBlock Block;
-            public readonly IMyInventory Inventory;
             public decimal CurrentVolume;
             public decimal MaxVolume;
             public decimal Percent;
 
-            public InventoryWrapper(IMyTerminalBlock block, IMyInventory inventory, List<MyItemType> acceptedItems)
+            public BlockWrapper(IMyTerminalBlock block, List<MyItemType> acceptedItems)
             {
                 Block = block;
-                Inventory = inventory;
                 AcceptedItems = acceptedItems;
             }
 
-            public void CalculatePercent()
+            public virtual IMyInventory GetInventory()
             {
-                Percent = CurrentVolume / MaxVolume;
+                return Block.GetInventory();
             }
 
-            public InventoryWrapper FilterItems(Program prog, Statistics stat, Func<MyInventoryItem, bool> filter)
+            public void LoadVolume(Program prog, Statistics stat, Func<MyInventoryItem, bool> filter)
             {
-                decimal volumeBlocked = 0.0M;
-                Inventory.GetItems(null, item =>
+                var inv = GetInventory();
+                CurrentVolume = (decimal)inv.CurrentVolume;
+                MaxVolume = (decimal)inv.MaxVolume;
+
+                if (filter != null)
                 {
-                    if (!filter(item))
+                    decimal volumeBlocked = 0.0M;
+                    inv.GetItems(null, item =>
                     {
-                        var data = prog.Items.Get(stat, item.Type);
-                        if (data != null)
-                            volumeBlocked += (decimal)item.Amount * data.Volume / 1000M;
+                        if (!filter(item))
+                        {
+                            var data = prog.Items.Get(stat, item.Type);
+                            if (data != null)
+                                volumeBlocked += (decimal)item.Amount * data.Volume / 1000M;
+                        }
+                        return false;
+                    });
+
+                    if (volumeBlocked > 0.0M)
+                    {
+                        CurrentVolume -= volumeBlocked;
+                        MaxVolume -= volumeBlocked;
+                        stat.Output.Append("volumeBlocked ").AppendLine(volumeBlocked.ToString("N6"));
                     }
-                    return false;
-                });
-
-                if (volumeBlocked > 0.0M)
-                {
-                    CurrentVolume -= volumeBlocked;
-                    MaxVolume -= volumeBlocked;
-                    stat.Output.Append("volumeBlocked ").AppendLine(volumeBlocked.ToString("N6"));
                 }
-                return this;
-            }
 
-            public List<MyInventoryItem> GetItems(List<MyInventoryItem> list, Func<MyInventoryItem, bool> filter)
-            {
-                list.Clear();
-                Inventory.GetItems(list, filter);
-                return list;
-            }
-
-            public InventoryWrapper LoadVolume()
-            {
-                CurrentVolume = (decimal)Inventory.CurrentVolume;
-                MaxVolume = (decimal)Inventory.MaxVolume;
-                return this;
+                Percent = CurrentVolume / MaxVolume;
             }
 
             public bool MoveItem(int sourceItemIndex, int targetItemIndex)
             {
-                return Inventory.TransferItemTo(Inventory, sourceItemIndex, targetItemIndex, false, null);
+                var inv = GetInventory();
+                return inv.TransferItemTo(inv, sourceItemIndex, targetItemIndex, false, null);
             }
+        }
 
-            public bool TransferItem(InventoryWrapper dst, int sourceItemIndex, VRage.MyFixedPoint amount)
+        internal class BlockWrapperProd : BlockWrapper
+        {
+            public BlockWrapperProd(IMyProductionBlock block, List<MyItemType> acceptedItems)
+                : base(block, acceptedItems)
+            { }
+
+            public override IMyInventory GetInventory()
             {
-                return Inventory.TransferItemTo(dst.Inventory, sourceItemIndex, null, true, amount);
+                return ((IMyProductionBlock)Block).InputInventory;
+            }
+        }
+
+        internal class InventoryGroup
+        {
+            public List<BlockWrapper> Blocks;
+            public string Name;
+            public int No;
+
+            public InventoryGroup(int no, string name)
+            {
+                No = no;
+                Name = name;
+                Blocks = new List<BlockWrapper>();
             }
         }
 
@@ -1631,7 +1574,7 @@ namespace SEScripts.ResourceExchanger2_5_0_189
         {
             public readonly HashSet<string> MissingInfo;
             public readonly StringBuilder Output;
-            public readonly List<MyInventoryItem> TmpItems1;
+            public readonly List<MyInventoryItem> _tmpItems;
             public string DrillsPayloadStr;
             public bool DrillsVolumeWarning;
             public int MovementsDone;
@@ -1642,7 +1585,13 @@ namespace SEScripts.ResourceExchanger2_5_0_189
             {
                 Output = new StringBuilder();
                 MissingInfo = new HashSet<string>();
-                TmpItems1 = new List<MyInventoryItem>();
+                _tmpItems = new List<MyInventoryItem>();
+            }
+
+            public List<MyInventoryItem> EmptyTempItemList()
+            {
+                _tmpItems.Clear();
+                return _tmpItems;
             }
         }
     }
