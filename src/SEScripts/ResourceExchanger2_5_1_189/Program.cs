@@ -66,7 +66,7 @@ namespace SEScripts.ResourceExchanger2_5_1_189
         {
             Items = ItemDict.BuildItemInfoDict();
             _blockMap = new Dictionary<MyDefinitionId, List<MyItemType>>();
-            _avgMovements = new int[0x10];
+            _avgMovements = new int[0x08];
 
             //Runtime.UpdateFrequency = UpdateFrequency.Update100;
         }
@@ -75,46 +75,43 @@ namespace SEScripts.ResourceExchanger2_5_1_189
         {
             ReadConfig();
 
-            BlockStore bs;
             var stat = new Statistics();
-            if (_blockStore == null || (_cycleNumber & 0x0f) == 0)
+            BlockStore bs = CollectTerminals(stat, (_cycleNumber & 0x0f) > 0);
+            if (bs == null)
             {
-                bs = new BlockStore(this);
-                CollectTerminals(bs, stat, false);
-            }
-            else
-            {
-                bs = _blockStore;
-                CollectTerminals(bs, stat, true);
+                PrintOnlineStatus(bs, stat);
+                return;
             }
 
-            ProcessBlocks("Balancing reactors", EnableReactors, bs.Reactors, stat, exclude: bs.AllGroupedInventories);
-            ProcessBlocks("Balancing refineries", EnableRefineries, bs.Refineries, stat, exclude: bs.AllGroupedInventories);
-            var dcn = ProcessBlocks("Balancing drills", EnableDrills, bs.Drills, stat, exclude: bs.AllGroupedInventories);
-            stat.NotConnectedDrillsFound = dcn > 1;
-            ProcessBlocks("Balancing turrets", EnableTurrets, bs.Turrets, stat, exclude: bs.AllGroupedInventories);
-            ProcessBlocks("Balancing oxygen gen.", EnableOxygenGenerators, bs.OxygenGenerators, stat,
-                exclude: bs.AllGroupedInventories, filter: item => item.Type.TypeId == OreType);
-
-            if (EnableGroups)
+            if (Runtime.CurrentInstructionCount < (Runtime.MaxInstructionCount >> 1))
             {
-                foreach (var kv in bs.Groups)
-                    ProcessBlocks("Balancing group " + kv.Key, true, kv.Value, stat);
-            }
-            else
-            {
-                stat.Output.AppendLine("Balancing groups: disabled");
-            }
+                ProcessBlocks("Balancing reactors", EnableReactors, bs.Reactors, stat, exclude: bs.AllGroupedInventories);
+                ProcessBlocks("Balancing refineries", EnableRefineries, bs.Refineries, stat, exclude: bs.AllGroupedInventories);
+                var dcn = ProcessBlocks("Balancing drills", EnableDrills, bs.Drills, stat, exclude: bs.AllGroupedInventories);
+                stat.NotConnectedDrillsFound = dcn > 1;
+                ProcessBlocks("Balancing turrets", EnableTurrets, bs.Turrets, stat, exclude: bs.AllGroupedInventories);
+                ProcessBlocks("Balancing oxygen gen.", EnableOxygenGenerators, bs.OxygenGenerators, stat,
+                    exclude: bs.AllGroupedInventories, filter: item => item.Type.TypeId == OreType);
 
-            if (EnableRefineries)
-                EnforceItemPriority(bs.Refineries, stat, TopRefineryPriority, LowestRefineryPriority);
+                if (EnableGroups)
+                {
+                    foreach (var kv in bs.Groups)
+                        ProcessBlocks("Balancing group " + kv.Key, true, kv.Value, stat);
+                }
+                else
+                {
+                    stat.Output.AppendLine("Balancing groups: disabled");
+                }
 
-            if (dcn >= 1)
-                ProcessDrillsLights(bs.Drills, bs.DrillsPayloadLights, stat);
+                if (EnableRefineries)
+                    EnforceItemPriority(bs.Refineries, stat, TopRefineryPriority, LowestRefineryPriority);
+
+                if (dcn >= 1)
+                    ProcessDrillsLights(bs.Drills, bs.DrillsPayloadLights, stat);
+            }
 
             PrintOnlineStatus(bs, stat);
             WriteOutput(bs, stat);
-            _blockStore = bs;
         }
 
         public void Save()
@@ -186,14 +183,17 @@ namespace SEScripts.ResourceExchanger2_5_1_189
             MoveVolume(stat, max, min, (VRage.MyFixedPoint)toMove, filter);
         }
 
-        private BlockStore CollectTerminals(BlockStore bs, Statistics stat, bool refreshReferences)
+        private BlockStore CollectTerminals(Statistics stat, bool refreshReferences)
         {
-            if (refreshReferences)
+            BlockStore bs;
+            if (refreshReferences && _blockStore != null)
             {
+                bs = _blockStore;
                 bs.RefreshReferences(stat);
             }
             else
             {
+                bs = new BlockStore(this);
                 stat.DiscoveryDone = true;
                 var blocks = new List<IMyTerminalBlock>();
                 Func<IMyTerminalBlock, bool> myTerminalBlockFilter = b => b.IsFunctional && (AnyConstruct || b.IsSameConstructAs(Me));
@@ -211,8 +211,13 @@ namespace SEScripts.ResourceExchanger2_5_1_189
                         group.GetBlocksOfType(blocks, myTerminalBlockFilter);
                 }
 
+                var top = Runtime.MaxInstructionCount;
+                top -= top >> 2;
                 foreach (var dt in blocks)
-                    bs.Collect(dt);
+                {
+                    if (bs.Collect(dt) && Runtime.CurrentInstructionCount > top)
+                        return null;
+                }
 
                 if (!String.IsNullOrEmpty(DisplayLcdGroup))
                 {
@@ -227,6 +232,7 @@ namespace SEScripts.ResourceExchanger2_5_1_189
                     if (group != null)
                         group.GetBlocksOfType<IMyLightingBlock>(bs.DrillsPayloadLights, myTerminalBlockFilter);
                 }
+                _blockStore = bs;
             }
 
             Func<ICollection, bool, string> countOrNA = (c, e) => e ? c.Count.ToString() : "n/a";
@@ -420,87 +426,93 @@ namespace SEScripts.ResourceExchanger2_5_1_189
         private void PrintOnlineStatus(BlockStore bs, Statistics stat)
         {
             var sb = new StringBuilder(4096);
-
-            var blocksAffected = bs.Reactors.Count
-                + bs.Refineries.Count
-                + bs.Drills.Count
-                + bs.Turrets.Count
-                + bs.OxygenGenerators.Count
-                + bs.CargoContainers.Count;
-
-            sb.Append("Grids connected: ").Append(bs.AllGrids.Count).AppendLine(AnyConstruct ? " (AC)" : " (SC)");
-            sb.Append("Conveyor networks: ").Append(stat.NumberOfNetworks).AppendLine();
-            if (stat.DiscoveryDone)
-                sb.AppendLine("Block discovery done");
-            sb.Append("Blocks affected: ").Append(blocksAffected).AppendLine();
-
-            sb.Append("reactors: ");
-            if (bs.Reactors.Count != 0)
-                sb.Append(bs.Reactors.Count);
-            else
-                sb.Append(EnableReactors ? "0" : "OFF");
-
-            sb.Append(", refineries: ");
-            if (bs.Refineries.Count != 0)
-                sb.Append(bs.Refineries.Count);
-            else
-                sb.Append(EnableRefineries ? "0" : "OFF");
-
-            sb.AppendLine().Append("drills: ");
-            if (bs.Drills.Count != 0)
-                sb.Append(bs.Drills.Count);
-            else
-                sb.Append(EnableDrills ? "0" : "OFF");
-
-            sb.Append(", turrets: ");
-            if (bs.Turrets.Count != 0)
-                sb.Append(bs.Turrets.Count);
-            else
-                sb.Append(EnableTurrets ? "0" : "OFF");
-
-            sb.Append(", o. gen.: ");
-            if (bs.OxygenGenerators.Count != 0)
-                sb.Append(bs.OxygenGenerators.Count);
-            else
-                sb.Append(EnableOxygenGenerators ? "0" : "OFF");
-
-            sb.AppendLine().Append("cargo cont.: ");
-            if (bs.CargoContainers.Count != 0)
-                sb.Append(bs.CargoContainers.Count);
-            else
-                sb.Append(EnableGroups ? "0" : "OFF");
-
-            sb.Append(", groups: ");
-            if (bs.Groups.Count != 0)
-                sb.Append(bs.Groups.Count);
-            else
-                sb.Append(EnableGroups ? "0" : "OFF");
-
-            sb.AppendLine();
-
-            if (bs.Drills.Count != 0)
+            if (bs == null)
             {
-                if (stat.NotConnectedDrillsFound)
-                    sb.AppendLine("Warn: Some drills are not connected");
-
-                sb.Append("Drills payload: ").Append(stat.DrillsPayloadStr ?? "N/A");
-                if (stat.DrillsVolumeWarning)
-                    sb.AppendLine((_cycleNumber & 0x01) == 0 ? "%  !" : "% ! !");
-                else
-                    sb.AppendLine("%");
+                sb.AppendLine("Initialization in progress...");
             }
+            else
+            {
+                var blocksAffected = bs.Reactors.Count
+                    + bs.Refineries.Count
+                    + bs.Drills.Count
+                    + bs.Turrets.Count
+                    + bs.OxygenGenerators.Count
+                    + bs.CargoContainers.Count;
 
-            if (stat.MissingInfo.Count > 0)
-                sb.Append("Err: missing volume information for ").AppendLine(String.Join(", ", stat.MissingInfo));
+                sb.Append("Grids connected: ").Append(bs.AllGrids.Count).AppendLine(AnyConstruct ? " (AC)" : " (SC)");
+                sb.Append("Conveyor networks: ").Append(stat.NumberOfNetworks).AppendLine();
+                if (stat.DiscoveryDone)
+                    sb.AppendLine("Block discovery done");
+                sb.Append("Blocks affected: ").Append(blocksAffected).AppendLine();
 
-            _avgMovements[_cycleNumber & 0x0F] = stat.MovementsDone;
-            var samples = Math.Min(_cycleNumber + 1, 0x10);
-            double avg = 0;
-            for (int i = 0; i < samples; ++i)
-                avg += _avgMovements[i];
-            avg /= samples;
+                sb.Append("reactors: ");
+                if (bs.Reactors.Count != 0)
+                    sb.Append(bs.Reactors.Count);
+                else
+                    sb.Append(EnableReactors ? "0" : "OFF");
 
-            sb.Append("Avg. movements: ").Append(avg.ToString("F2")).Append(" (last ").Append(samples).AppendLine(" runs)");
+                sb.Append(", refineries: ");
+                if (bs.Refineries.Count != 0)
+                    sb.Append(bs.Refineries.Count);
+                else
+                    sb.Append(EnableRefineries ? "0" : "OFF");
+
+                sb.AppendLine().Append("drills: ");
+                if (bs.Drills.Count != 0)
+                    sb.Append(bs.Drills.Count);
+                else
+                    sb.Append(EnableDrills ? "0" : "OFF");
+
+                sb.Append(", turrets: ");
+                if (bs.Turrets.Count != 0)
+                    sb.Append(bs.Turrets.Count);
+                else
+                    sb.Append(EnableTurrets ? "0" : "OFF");
+
+                sb.Append(", o. gen.: ");
+                if (bs.OxygenGenerators.Count != 0)
+                    sb.Append(bs.OxygenGenerators.Count);
+                else
+                    sb.Append(EnableOxygenGenerators ? "0" : "OFF");
+
+                sb.AppendLine().Append("cargo cont.: ");
+                if (bs.CargoContainers.Count != 0)
+                    sb.Append(bs.CargoContainers.Count);
+                else
+                    sb.Append(EnableGroups ? "0" : "OFF");
+
+                sb.Append(", groups: ");
+                if (bs.Groups.Count != 0)
+                    sb.Append(bs.Groups.Count);
+                else
+                    sb.Append(EnableGroups ? "0" : "OFF");
+
+                sb.AppendLine();
+
+                if (bs.Drills.Count != 0)
+                {
+                    if (stat.NotConnectedDrillsFound)
+                        sb.AppendLine("Warn: Some drills are not connected");
+
+                    sb.Append("Drills payload: ").Append(stat.DrillsPayloadStr ?? "N/A");
+                    if (stat.DrillsVolumeWarning)
+                        sb.AppendLine((_cycleNumber & 0x01) == 0 ? "%  !" : "% ! !");
+                    else
+                        sb.AppendLine("%");
+                }
+
+                if (stat.MissingInfo.Count > 0)
+                    sb.Append("Err: missing volume information for ").AppendLine(String.Join(", ", stat.MissingInfo));
+
+                _avgMovements[_cycleNumber & 0x07] = stat.MovementsDone;
+                var samples = Math.Min(_cycleNumber + 1, 0x08);
+                double avg = 0;
+                for (int i = 0; i < samples; ++i)
+                    avg += _avgMovements[i];
+                avg /= samples;
+
+                sb.Append("Avg. movements: ").Append(avg.ToString("F2")).Append(" (last ").Append(samples).AppendLine(" runs)");
+            }
 
             float cpu = Runtime.CurrentInstructionCount * 100;
             cpu /= Runtime.MaxInstructionCount;
@@ -817,9 +829,9 @@ namespace SEScripts.ResourceExchanger2_5_1_189
                 DrillsPayloadLights = new List<IMyLightingBlock>();
             }
 
-            public void Collect(IMyTerminalBlock block)
+            public bool Collect(IMyTerminalBlock block)
             {
-                var collected = CollectContainer(block as IMyCargoContainer)
+                return CollectContainer(block as IMyCargoContainer)
                     || CollectRefinery(block as IMyRefinery)
                     || CollectReactor(block as IMyReactor)
                     || CollectDrill(block as IMyShipDrill)
