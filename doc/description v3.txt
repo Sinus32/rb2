@@ -15,37 +15,36 @@ This script also supports all reactors, refineries, oxygen generators, turrets a
 
 [h1]Installation guide[/h1]
 
-[b]1. Basic setup for stations and ships except mining ships:[/b]
-1. Place a Programmable Block
-2. Load Resource Exchanger 2 into the Programmable Block
-3. Done
-- The script runs automatically. If you want to stop it just turn PB off.
-- [b]Do not set up any timer blocks to run the script![/b]
+[b]1. Basic setup for stations:[/b]
+1. Place a Programmable Block.
+2. Load Resource Exchanger 2 into the Programmable Block.
+3. Done.
+The script runs automatically, timer blocks are not required. If you want to stop it just turn PB off.
 
 [b]2. Setup for mining ships:[/b]
-1. Place a Programmable Block
-2. Load Resource Exchanger 2 into the Programmable Block
-3. Place some interior lights and/or spotlight
-6. Add the lights into group called "[b]Payload indicators[/b]" (the name is case-sensitive)
-7. Done
+1. Place a Programmable Block.
+2. Load Resource Exchanger 2 into the Programmable Block.
+3. Place some interior lights and/or spotlight.
+4. Add the lights into group called "[b]Payload indicators[/b]" (the name is case-sensitive).
+5. Done.
+The lights from the group will change color when drills become full of ores and there will be no more space left in containers.
 
-[b]3. (Optional) Setup of debugger screens:[/b]
-- Applies to both stations and ships
+[b]3. Setting up custom groups:[/b]
+1. Add a group tag to selected blocks.
+2. Done.
+- You can create custom groups of blocks to balance. The only thing you have to do is to put a group tag in the name of blocks.
+- Cargo containers are also supported.
+- Group tag consists of letters "GR" followed by one up to three digits. For eg. GR1, GR123, GR005. Group tag have to be separated from other words, so for eg. a name "CargoGR1" will not work, but "Cargo GR1" and "Cargo [GR1]" will do.
+- One block can belong to more than one group, and blocks in a group don't have to be of the same type.
+- A block that belong to at least one group is excluded from normal resource balancing, and balances it's resource only within the group or groups.
+
+[b]4. Optional setup of debugger screens:[/b]
 1. Place some wide LCD Panels
 2. Add the panels into a group called "Resource exchanger output"
 3. Name the panels as you wish.
-- Each panel will show (by default) exactly 17 lines of text.
-- First panel will show first 17 lines, second will show next 17 lines and so on.
+- Each panel will show exactly 17 lines of text, the first will show first 17 lines, second will show next 17 lines and so on.
 - Panels are used in alphabetical order according to their names.
 - Displayed text tells what the script exactly does at the moment.
-
-[b]4. (Optional) Setting up groups:[/b]
-- Applies to both stations and ships
-- You can create custom groups of blocks to balance. The only thing you have to do is to put a group tag in the name of block.
-- Cargo containers are also supported.
-- Group tag consists of letters "GR" followed by one up to three digits. For eg. GR1, GR123, GR005. Group tag have to be separated from other words, so for eg. a name "CargoGR1" will not work, but "Cargo GR1" and "Cargo [GR1]" will do.
-- One block can belong to more than one group, and blocks in a group don't have to be the same type.
-- A block that belong to at least one group is excluded from normal resource balancing, and balances it's resource only within the group or groups.
 
 [h1]Details:[/h1]
 
@@ -54,11 +53,10 @@ It will distribute available resources across blocks evenly, relative to capacit
 
 The script is able to fully recognize and distinguish different kinds of reactors, refineries, arc furnaces and other blocks, even blocks from mods. So it will not move items to inventories that cannot hold that items.
 For example:
-- the script will move uranium between small and large reactors because it know that they both can accept uranium
-- the script will move ore between refineries and refineries from mods if it know that they can process the same ores
-- the script will not move ore from refineries into arc furnaces because arc furnaces cannot process all ores that refineries can
-- the script will not move ore from arc furnaces into refineries because arc furnaces process ores more efficiently than refineries
-- the script will not move stone between refineries and stone crushers (from mods) because stone crushers cannot process all ores that refineries can
+- The script will move uranium between small and large reactors because it know that they both can accept uranium.
+- The script will move ore between refineries and refineries from mods if it know that they can process the same ores.
+- The script will not move ore from refineries into basic refineries, or in the opposite direction, because basic refineries cannot process all ores that refineries can.
+- The script will not move stone between refineries and stone crushers (from mods) because stone crushers cannot process all ores that refineries can.
 
 Resource Exchanger will also move ice between oxygen generators, but will not move bottles. Only ice is balanced.
 
@@ -67,41 +65,21 @@ The script also avoids turrets and launchers from running out of ammunition, as 
 [h1]Resource Exchanger has two features especially designed for mining ships:[/h1]
 1. Exchanging ores in drills when all cargo containers are full, so you can use whole space in drills inventories.
 2. Built-in system that will tell you how much free space remains in the drills by changing color of certain interior lights or spotlights. In order to use it just build some interior lights or spotlight on your ship and add them to a new group called "[b]Payload indicators[/b]".
-(you can change the group name in the script's configuration section)
 The lights you've set up will change color into one of the following:
 White - All drills are connected to each other and they are empty.
 Yellow - Drills are full in a half.
 Red - Drills are almost (95%) full.
 Purple - Less than 5,000 l. of free space left (you can change that amount also in the script's configuration section).
 Cyan - Some drills are not connected to each other (this is an error state).
-(you can also change colors in configuration section)
 
 One more thing: Resource Exchanger will move iron to the first slot and stone to the last slot in refineries.
-You can change priorities or disable this feature in configuration section.
+You can change priorities or disable this feature in configuration.
 
 [h1]Configuration:[/h1]
 
-[b]1. Limiting blocks that are processed:[/b]
-By default the script processes all blocks connected to grid. If you want to limit it only to certain blocks you have to create a group, name it as you wish and add all blocks you want process to it. Then you have to tell the script how your group is called by changing variable:
-[i]public const string MANAGED_BLOCKS_GROUP = null;[/i]
-into
-[i]public const string MANAGED_BLOCKS_GROUP = "The group";[/i]
-You would use this to prevent balancing uranium between station and ships connected by connectors blocks.
-
-[b]2. Disabling some functionality:[/b]
-If you want to disable some features change any variables of ENABLE_<STH> into false depending of which feature you want to disable.
-
-[b]3. Setting up top and lowest priority for refineries and arc furnaces:[/b]
-The script moves the top priority item to first, and lowest priority item to last slot of refinery or arc furnace.
-By default iron has top priority and stone has lowest priority.
-You can change that by changing variables TopRefineryPriority and LowestRefineryPriority for example into [i]LowestRefineryPriority = new ItemType(OreType, SCRAP);[/i]
-supported names are: ARC_FUEL, COBALT, DENSE_STEEL_PLATE, GOLD, ICE, IRON, MAGNESIUM, NICKEL, PLATINUM, SCRAP, SILICON, SILVER, STONE and URANIUM.
-If you want to disable this feature set one or both variables to null.
-
-[b]4. Changing name of debuggers screens LCDs[/b]
-To change a name of group of LCDs that shows debugger information you have to change variable called [i]DISPLAY_LCD_GROUP[/i] (read more below about setting up debugger screens)
-
-[b]5. Many more... Check the "Configuration section" in the script[/b]
+The script's configuration is stored in custom data of the Programmable Block.
+You can use it to enable or disable some functionalities of the script.
+Just check the PB's custom data after running the script.
 
 [h1]Other notes:[/h1]
 
