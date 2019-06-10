@@ -183,6 +183,16 @@ namespace SEScripts.ResourceExchanger2_5_2_190
             MoveVolume(stat, max, min, (VRage.MyFixedPoint)toMove, filter);
         }
 
+        private bool BlockFilter_HasInventory(IMyTerminalBlock block)
+        {
+            return block.IsFunctional && block.HasInventory && (AnyConstruct || block.IsSameConstructAs(Me));
+        }
+
+        private bool BlockFilter_IsFunctional(IMyTerminalBlock block)
+        {
+            return block.IsFunctional && (AnyConstruct || block.IsSameConstructAs(Me));
+        }
+
         private BlockStore CollectTerminals(Statistics stat, bool refreshReferences)
         {
             BlockStore bs;
@@ -196,11 +206,10 @@ namespace SEScripts.ResourceExchanger2_5_2_190
                 bs = new BlockStore(this);
                 stat.DiscoveryDone = true;
                 var blocks = new List<IMyTerminalBlock>();
-                Func<IMyTerminalBlock, bool> myTerminalBlockFilter = b => b.IsFunctional && (AnyConstruct || b.IsSameConstructAs(Me));
 
                 if (String.IsNullOrEmpty(ManagedBlocksGroup))
                 {
-                    GridTerminalSystem.GetBlocksOfType(blocks, myTerminalBlockFilter);
+                    GridTerminalSystem.GetBlocksOfType(blocks, BlockFilter_HasInventory);
                 }
                 else
                 {
@@ -208,7 +217,7 @@ namespace SEScripts.ResourceExchanger2_5_2_190
                     if (group == null)
                         stat.Output.Append("Error: a group ").Append(ManagedBlocksGroup).AppendLine(" has not been found");
                     else
-                        group.GetBlocksOfType(blocks, myTerminalBlockFilter);
+                        group.GetBlocksOfType(blocks, BlockFilter_HasInventory);
                 }
 
                 var top = Runtime.MaxInstructionCount;
@@ -223,14 +232,14 @@ namespace SEScripts.ResourceExchanger2_5_2_190
                 {
                     var group = GridTerminalSystem.GetBlockGroupWithName(DisplayLcdGroup);
                     if (group != null)
-                        group.GetBlocksOfType<IMyTextPanel>(bs.DebugScreen, myTerminalBlockFilter);
+                        group.GetBlocksOfType<IMyTextPanel>(bs.DebugScreen, BlockFilter_IsFunctional);
                 }
 
                 if (!String.IsNullOrEmpty(DrillsPayloadLightsGroup))
                 {
                     var group = GridTerminalSystem.GetBlockGroupWithName(DrillsPayloadLightsGroup);
                     if (group != null)
-                        group.GetBlocksOfType<IMyLightingBlock>(bs.DrillsPayloadLights, myTerminalBlockFilter);
+                        group.GetBlocksOfType<IMyLightingBlock>(bs.DrillsPayloadLights, BlockFilter_IsFunctional);
                 }
                 _blockStore = bs;
             }
@@ -786,13 +795,13 @@ namespace SEScripts.ResourceExchanger2_5_2_190
 
             for (int i = 0; i < bs.DebugScreen.Count; ++i)
             {
-                var screen = bs.DebugScreen[i];
+                var screen = (IMyTextSurface)bs.DebugScreen[i];
                 var sb = new StringBuilder();
                 int firstLine = i * linesPerDebugScreen;
                 for (int j = 0; j < linesPerDebugScreen && firstLine + j < lines.Length; ++j)
                     sb.AppendLine(lines[firstLine + j].Trim());
-                screen.WritePublicText(sb.ToString());
-                screen.ShowPublicTextOnScreen();
+                screen.ContentType = VRage.Game.GUI.TextPanel.ContentType.TEXT_AND_IMAGE;
+                screen.WriteText(sb);
             }
         }
 
