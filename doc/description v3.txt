@@ -39,12 +39,13 @@ The lights from the group will change color when drills become full of ores and 
 - A block that belong to at least one group is excluded from normal resource balancing, and balances it's resource only within the group or groups.
 
 [b]4. Optional setup of debugger screens:[/b]
+0. Usually you do not need to setup this.
 1. Place some wide LCD Panels
 2. Add the panels into a group called "Resource exchanger output"
 3. Name the panels as you wish.
 - Each panel will show exactly 17 lines of text, the first will show first 17 lines, second will show next 17 lines and so on.
 - Panels are used in alphabetical order according to their names.
-- Displayed text tells what the script exactly does at the moment.
+- Displayed text contains mainly debugging information about actions taken by the script.
 
 [h1]Details:[/h1]
 

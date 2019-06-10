@@ -15,11 +15,11 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
-namespace SEScripts.ResourceExchanger2_5_2_190
+namespace SEScriptsDotnet.ResourceExchanger2_5_2_191
 {
     public class Program : MyGridProgram
     {
-        /// Resource Exchanger version 2.5.2 2019-04-?? for SE 1.190
+        /// Resource Exchanger version 2.5.2 2019-06-10 for SE 1.191
         /// Made by Sinus32
         /// http://steamcommunity.com/sharedfiles/filedetails/546221822
         ///
@@ -183,16 +183,6 @@ namespace SEScripts.ResourceExchanger2_5_2_190
             MoveVolume(stat, max, min, (VRage.MyFixedPoint)toMove, filter);
         }
 
-        private bool BlockFilter_HasInventory(IMyTerminalBlock block)
-        {
-            return block.IsFunctional && block.HasInventory && (AnyConstruct || block.IsSameConstructAs(Me));
-        }
-
-        private bool BlockFilter_IsFunctional(IMyTerminalBlock block)
-        {
-            return block.IsFunctional && (AnyConstruct || block.IsSameConstructAs(Me));
-        }
-
         private BlockStore CollectTerminals(Statistics stat, bool refreshReferences)
         {
             BlockStore bs;
@@ -209,7 +199,7 @@ namespace SEScripts.ResourceExchanger2_5_2_190
 
                 if (String.IsNullOrEmpty(ManagedBlocksGroup))
                 {
-                    GridTerminalSystem.GetBlocksOfType(blocks, BlockFilter_HasInventory);
+                    GridTerminalSystem.GetBlocksOfType(blocks, hasInventory);
                 }
                 else
                 {
@@ -217,7 +207,7 @@ namespace SEScripts.ResourceExchanger2_5_2_190
                     if (group == null)
                         stat.Output.Append("Error: a group ").Append(ManagedBlocksGroup).AppendLine(" has not been found");
                     else
-                        group.GetBlocksOfType(blocks, BlockFilter_HasInventory);
+                        group.GetBlocksOfType(blocks, hasInventory);
                 }
 
                 var top = Runtime.MaxInstructionCount;
@@ -232,19 +222,18 @@ namespace SEScripts.ResourceExchanger2_5_2_190
                 {
                     var group = GridTerminalSystem.GetBlockGroupWithName(DisplayLcdGroup);
                     if (group != null)
-                        group.GetBlocksOfType<IMyTextPanel>(bs.DebugScreen, BlockFilter_IsFunctional);
+                        group.GetBlocksOfType<IMyTextPanel>(bs.DebugScreen, isFunctional);
                 }
 
                 if (!String.IsNullOrEmpty(DrillsPayloadLightsGroup))
                 {
                     var group = GridTerminalSystem.GetBlockGroupWithName(DrillsPayloadLightsGroup);
                     if (group != null)
-                        group.GetBlocksOfType<IMyLightingBlock>(bs.DrillsPayloadLights, BlockFilter_IsFunctional);
+                        group.GetBlocksOfType<IMyLightingBlock>(bs.DrillsPayloadLights, isFunctional);
                 }
                 _blockStore = bs;
             }
 
-            Func<ICollection, bool, string> countOrNA = (c, e) => e ? c.Count.ToString() : "n/a";
             stat.Output.Append("Resource exchanger 2.5.2. Blocks managed:")
                 .Append(" reactors: ").Append(countOrNA(bs.Reactors, EnableReactors))
                 .Append(", refineries: ").Append(countOrNA(bs.Refineries, EnableRefineries)).AppendLine(",")
@@ -254,6 +243,10 @@ namespace SEScripts.ResourceExchanger2_5_2_190
                 .Append(", cargo cont.: ").Append(countOrNA(bs.CargoContainers, EnableGroups))
                 .Append(", custom groups: ").Append(countOrNA(bs.Groups, EnableGroups)).AppendLine();
             return bs;
+
+            string countOrNA(ICollection c, bool e) => e ? c.Count.ToString() : "n/a";
+            bool hasInventory(IMyTerminalBlock block) => block.IsFunctional && block.HasInventory && (AnyConstruct || block.IsSameConstructAs(Me));
+            bool isFunctional(IMyTerminalBlock block) => block.IsFunctional && (AnyConstruct || block.IsSameConstructAs(Me));
         }
 
         private List<InventoryGroup> DivideBlocks(ICollection<BlockWrapper> inventories, HashSet<BlockWrapper> exclude)
@@ -567,11 +560,11 @@ namespace SEScripts.ResourceExchanger2_5_2_190
         private void ProcessDrillsLights(List<BlockWrapper> drills, List<IMyLightingBlock> lights, Statistics stat)
         {
             VRage.MyFixedPoint warningLevelInCubicMetersLeft = 5;
-            Func<Color> step0 = () => new Color(255, 255, 255);
-            Func<Color> step1 = () => new Color(255, 255, 0);
-            Func<Color> step2 = () => new Color(255, 0, 0);
-            Func<Color> warn = () => (_cycleNumber & 0x1) == 0 ? new Color(128, 0, 128) : new Color(128, 0, 64);
-            Func<Color> err = () => (_cycleNumber & 0x1) == 0 ? new Color(0, 128, 128) : new Color(0, 64, 128);
+            Color step0() => new Color(255, 255, 255);
+            Color step1() => new Color(255, 255, 0);
+            Color step2() => new Color(255, 0, 0);
+            Color warn() => (_cycleNumber & 0x1) == 0 ? new Color(128, 0, 128) : new Color(128, 0, 64);
+            Color err() => (_cycleNumber & 0x1) == 0 ? new Color(0, 128, 128) : new Color(0, 64, 128);
 
             if (lights.Count == 0)
             {
