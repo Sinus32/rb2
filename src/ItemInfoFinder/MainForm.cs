@@ -24,9 +24,8 @@ namespace ItemInfoFinder
             var infoFinder = new InfoFinder();
             try
             {
-                infoFinder.FindItemsInFiles(@"D:\SteamLibrary\steamapps\common\SpaceEngineers\Content\Data", "*.sbc");
-                infoFinder.FindItemsInZipFiles(@"D:\SteamLibrary\steamapps\workshop\content\244850", "*_legacy.bin", SearchOption.AllDirectories, @"data\", ".sbc");
-                //infoFinder.FindItemsInZipFiles(@"C:\Users\Sinus\AppData\Roaming\SpaceEngineers\Mods", "*.sbm", SearchOption.TopDirectoryOnly, @"data\", ".sbc");
+                infoFinder.FindItemsInFiles(@"C:\Program Files (x86)\Steam\steamapps\common\SpaceEngineers\Content\Data", "*.sbc");
+                infoFinder.FindItemsInZipFiles(@"C:\Program Files (x86)\Steam\steamapps\workshop\content\244850", "*_legacy.bin", SearchOption.AllDirectories, @"data\", ".sbc");
                 infoFinder.DownloadModData();
                 OutputText.Text = infoFinder.GetOutputText();
                 OutputText.SelectAll();
