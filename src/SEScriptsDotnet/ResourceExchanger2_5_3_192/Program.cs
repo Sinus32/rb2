@@ -56,6 +56,10 @@ namespace SEScriptsDotnet.ResourceExchanger2_5_3_192
         private const string OreType = "MyObjectBuilder_Ore";
         private const string OxygenType = "MyObjectBuilder_OxygenContainerObject";
         private const decimal SmallNumber = 0.000005M;
+        private const string Consumable = "MyObjectBuilder_ConsumableItem";
+        private const string Datapad = "MyObjectBuilder_Datapad";
+        private const string Package = "MyObjectBuilder_Package";
+        private const string Physical = "MyObjectBuilder_PhysicalObject";
         private readonly int[] _avgMovements;
         private readonly Dictionary<MyDefinitionId, List<MyItemType>> _blockMap;
         private BlockStore _blockStore = null;
@@ -1177,140 +1181,140 @@ namespace SEScriptsDotnet.ResourceExchanger2_5_3_192
             {
                 var ret = new ItemDict();
 
-                ret.Add(OreType, "[CM] Cattierite (Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[CM] Cohenite (Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[CM] Dense Iron (Fe+)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[CM] Glaucodot (Fe,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[CM] Heazlewoodite (Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[CM] Iron (Fe)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[CM] Kamacite (Fe,Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[CM] Pyrite (Fe,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[CM] Taenite (Fe,Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[EI] Autunite (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[EI] Carnotite (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[EI] Uraniaurite (U,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[PM] Chlorargyrite (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[PM] Cooperite (Ni,Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[PM] Electrum (Au,Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[PM] Galena (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[PM] Niggliite (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[PM] Petzite (Ag,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[PM] Porphyry (Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[PM] Sperrylite (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[S] Akimotoite (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[S] Dolomite (Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[S] Hapkeite (Fe,Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[S] Icy Stone", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[S] Olivine (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[S] Quartz (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[S] Sinoite (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "[S] Wadsleyite (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Akimotoite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Akimotoite (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Autunite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Autunite (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "[CM] Cattierite (Co)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[CM] Cohenite (Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[CM] Dense Iron (Fe+)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[CM] Glaucodot (Fe,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[CM] Heazlewoodite (Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[CM] Iron (Fe)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[CM] Kamacite (Fe,Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[CM] Pyrite (Fe,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[CM] Taenite (Fe,Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[EI] Autunite (U)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[EI] Carnotite (U)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[EI] Uraniaurite (U,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[PM] Chlorargyrite (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[PM] Cooperite (Ni,Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[PM] Electrum (Au,Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[PM] Galena (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[PM] Niggliite (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[PM] Petzite (Ag,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[PM] Porphyry (Au)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[PM] Sperrylite (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[S] Akimotoite (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[S] Dolomite (Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[S] Hapkeite (Fe,Si)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[S] Icy Stone", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[S] Olivine (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[S] Quartz (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[S] Sinoite (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "[S] Wadsleyite (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Akimotoite", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Akimotoite (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Autunite", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Autunite (U)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
                 ret.Add(OreType, "Carbon", 1M, 0.37M, false, true); // Graphene Armor [Core] [Beta]
-                ret.Add(OreType, "Carnotite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Carnotite (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Cattierite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Cattierite (Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Chlorargyrite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Chlorargyrite (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Carnotite", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Carnotite (U)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Cattierite", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Cattierite (Co)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Chlorargyrite", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Chlorargyrite (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
                 ret.Add(OreType, "Cobalt", 1M, 0.37M, false, true); // Space Engineers
-                ret.Add(OreType, "Cohenite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Cohenite (Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Cooperite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Cooperite (Ni,Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Dense Iron", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Cohenite", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Cohenite (Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Cooperite", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Cooperite (Ni,Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Dense Iron", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
                 ret.Add(OreType, "Deuterium", 1.5M, 0.5M, false, true); // Deuterium Fusion Reactors
-                ret.Add(OreType, "Dolomite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Dolomite (Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Electrum", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Electrum (Au,Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Galena", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Galena (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Glaucodot", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Glaucodot (Fe,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Dolomite", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Dolomite (Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Electrum", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Electrum (Au,Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Galena", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Galena (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Glaucodot", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Glaucodot (Fe,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
                 ret.Add(OreType, "Gold", 1M, 0.37M, false, true); // Space Engineers
-                ret.Add(OreType, "Hapkeite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Hapkeite (Fe,Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Heazlewoodite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Heazlewoodite (Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Hapkeite", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Hapkeite (Fe,Si)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Heazlewoodite", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Heazlewoodite (Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
                 ret.Add(OreType, "Helium", 1M, 5.6M, false, true); // (DX11)Mass Driver
                 ret.Add(OreType, "Ice", 1M, 0.37M, false, true); // Space Engineers
-                ret.Add(OreType, "Icy Stone", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Icy Stone", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
                 ret.Add(OreType, "Iron", 1M, 0.37M, false, true); // Space Engineers
-                ret.Add(OreType, "Kamacite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Kamacite (Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Kamacite", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Kamacite (Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
                 ret.Add(OreType, "Magnesium", 1M, 0.37M, false, true); // Space Engineers
                 ret.Add(OreType, "Naquadah", 1M, 0.37M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
                 ret.Add(OreType, "Neutronium", 1M, 0.37M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
                 ret.Add(OreType, "Nickel", 1M, 0.37M, false, true); // Space Engineers
-                ret.Add(OreType, "Niggliite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Niggliite (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Olivine", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Olivine (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Niggliite", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Niggliite (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Olivine", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Olivine (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
                 ret.Add(OreType, "Organic", 1M, 0.37M, false, true); // Space Engineers
-                ret.Add(OreType, "Petzite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Petzite (Au,Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Petzite", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Petzite (Au,Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
                 ret.Add(OreType, "Platinum", 1M, 0.37M, false, true); // Space Engineers
-                ret.Add(OreType, "Porphyry", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Porphyry (Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Pyrite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Pyrite (Fe,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Quartz", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Quartz (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Porphyry", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Porphyry (Au)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Pyrite", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Pyrite (Fe,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Quartz", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Quartz (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
                 ret.Add(OreType, "Scrap", 1M, 0.254M, false, true); // Space Engineers
                 ret.Add(OreType, "Silicon", 1M, 0.37M, false, true); // Space Engineers
                 ret.Add(OreType, "Silver", 1M, 0.37M, false, true); // Space Engineers
-                ret.Add(OreType, "Sinoite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Sinoite (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Sperrylite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Sperrylite (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Sinoite", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Sinoite (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Sperrylite", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Sperrylite (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
                 ret.Add(OreType, "Stone", 1M, 0.37M, false, true); // Space Engineers
-                ret.Add(OreType, "Taenite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Taenite (Fe,Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Thorium", 1M, 0.9M, false, true); // Tiered Thorium Reactors and Refinery (new)
+                ret.Add(OreType, "Taenite", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Taenite (Fe,Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Thorium", 1M, 0.9M, false, true); // Tiered Thorium Reactors and Refinery
                 ret.Add(OreType, "Trinium", 1M, 0.37M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
                 ret.Add(OreType, "Tungsten", 1M, 0.47M, false, true); // (DX11)Mass Driver
-                ret.Add(OreType, "Uraniaurite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Uraniaurite (U,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Uraniaurite", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Uraniaurite (U,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
                 ret.Add(OreType, "Uranium", 1M, 0.37M, false, true); // Space Engineers
-                ret.Add(OreType, "Wadsleyite", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Wadsleyite (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Акимотит (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Аутунит (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Вадселит (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Галенит (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Глаукодот (Fe,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Доломит (Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Камасит (Fe,Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Карнотит (U)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Катьерит (Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Кварц (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Когенит (Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Куперит (Ni,Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Ледяной камень", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Нигглиит (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Оливин (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Петцит (Ag,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Пирит (Fe,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Плотное железо (Fe+)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Порфир (Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Синоит (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Сперрилит (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Таенит (Fe,Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Ураниурит (U,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Хапкеит (Fe,Si)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Хизлевудит (Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Хлораргирит (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
-                ret.Add(OreType, "Электрум (Au,Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.1
+                ret.Add(OreType, "Wadsleyite", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Wadsleyite (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Акимотит (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Аутунит (U)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Вадселит (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Галенит (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Глаукодот (Fe,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Доломит (Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Камасит (Fe,Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Карнотит (U)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Катьерит (Co)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Кварц (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Когенит (Ni,Co)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Куперит (Ni,Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Ледяной камень", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Нигглиит (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Оливин (Si,Mg)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Петцит (Ag,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Пирит (Fe,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Плотное железо (Fe+)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Порфир (Au)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Синоит (Si)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Сперрилит (Pt)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Таенит (Fe,Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Ураниурит (U,Au)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Хапкеит (Fe,Si)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Хизлевудит (Ni)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Хлораргирит (Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
+                ret.Add(OreType, "Электрум (Au,Ag)", 1M, 0.37M, false, true); // Better Stone v7.0.3b [Survival Ready]
 
-                ret.Add(IngotType, "Carbon", 1M, 0.052M, false, true); // TVSI-Tech Diamond Bonded Glass (Survival) [DX11]
+                ret.Add(IngotType, "Carbon", 1M, 0.025M, false, true); // Graphene Armor [Core] [Beta]
                 ret.Add(IngotType, "Cobalt", 1M, 0.112M, false, true); // Space Engineers
                 ret.Add(IngotType, "Gold", 1M, 0.052M, false, true); // Space Engineers
                 ret.Add(IngotType, "HeavyH2OIngot", 2M, 1M, false, true); // Deuterium Fusion Reactors
-                ret.Add(IngotType, "HeavyWater", 5M, 0.052M, false, true); // GSF Energy Weapons Pack
+                ret.Add(IngotType, "HeavyWater", 5M, 0.052M, false, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
                 ret.Add(IngotType, "Iron", 1M, 0.127M, false, true); // Space Engineers
                 ret.Add(IngotType, "K_HSR_Nanites_Gel", 0.001M, 0.001M, false, true); // HSR
                 ret.Add(IngotType, "LiquidHelium", 1M, 4.6M, false, true); // (DX11)Mass Driver
@@ -1327,16 +1331,16 @@ namespace SEScriptsDotnet.ResourceExchanger2_5_3_192
                 ret.Add(IngotType, "Stone", 1M, 0.37M, false, true); // Space Engineers
                 ret.Add(IngotType, "SuitFuel", 0.0003M, 0.052M, false, true); // Independent Survival
                 ret.Add(IngotType, "SuitRTGPellet", 1.0M, 0.052M, false, true); // Independent Survival
-                ret.Add(IngotType, "Thorium", 2M, 0.5M, false, true); // Thorium Reactor Kit
-                ret.Add(IngotType, "ThoriumIngot", 3M, 20M, false, true); // Tiered Thorium Reactors and Refinery (new)
+                ret.Add(IngotType, "ThoriumIngot", 3M, 20M, false, true); // Tiered Thorium Reactors and Refinery
                 ret.Add(IngotType, "Trinium", 1M, 0.052M, false, true); // [New Version] Stargate Modpack (Server admin block filtering)
                 ret.Add(IngotType, "Tungsten", 1M, 0.52M, false, true); // (DX11)Mass Driver
                 ret.Add(IngotType, "Uranium", 1M, 0.052M, false, true); // Space Engineers
-                ret.Add(IngotType, "v2HydrogenGas", 2.1656M, 0.43M, false, true); // [VisSE] [2019] Hydro Reactors & Ice to Oxy Hydro Gasses V2
-                ret.Add(IngotType, "v2OxygenGas", 4.664M, 0.9M, false, true); // [VisSE] [2019] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+                ret.Add(IngotType, "v2HydrogenGas", 2.1656M, 0.43M, false, true); // [VisSE] [Old] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+                ret.Add(IngotType, "v2OxygenGas", 4.664M, 0.9M, false, true); // [VisSE] [Old] Hydro Reactors & Ice to Oxy Hydro Gasses V2
 
-                ret.Add(ComponentType, "AdvancedReactorBundle", 50M, 20M, true, true); // Tiered Thorium Reactors and Refinery (new)
-                ret.Add(ComponentType, "AegisLicense", 0.2M, 1M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "AdvancedReactorBundle", 50M, 20M, true, true); // Tiered Thorium Reactors and Refinery
+                ret.Add(ComponentType, "AdvancedThrustModule", 80M, 30M, true, true); // Tiered Engine Super Pack
+                ret.Add(ComponentType, "AegisLicense", 0.2M, 1M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
                 ret.Add(ComponentType, "Aggitator", 40M, 10M, true, true); // Star Trek - Weapons Tech [WIP]
                 ret.Add(ComponentType, "AlloyPlate", 30M, 3M, true, true); // Industrial Centrifuge (stable/dev)
                 ret.Add(ComponentType, "ampHD", 10M, 15.5M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
@@ -1345,18 +1349,18 @@ namespace SEScriptsDotnet.ResourceExchanger2_5_3_192
                 ret.Add(ComponentType, "AzimuthSupercharger", 10M, 9M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
                 ret.Add(ComponentType, "BulletproofGlass", 15M, 8M, true, true); // Space Engineers
                 ret.Add(ComponentType, "Canvas", 15M, 8M, true, true); // Space Engineers
-                ret.Add(ComponentType, "CapacitorBank", 25M, 45M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "CapacitorBank", 25M, 45M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
                 ret.Add(ComponentType, "Computer", 0.2M, 1M, true, true); // Space Engineers
                 ret.Add(ComponentType, "ConductorMagnets", 900M, 200M, true, true); // (DX11)Mass Driver
                 ret.Add(ComponentType, "Construction", 8M, 2M, true, true); // Space Engineers
-                ret.Add(ComponentType, "CoolingHeatsink", 25M, 45M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "CoolingHeatsink", 25M, 45M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
                 ret.Add(ComponentType, "DenseSteelPlate", 200M, 30M, true, true); // Arc Reactor Pack [DX-11 Ready]
                 ret.Add(ComponentType, "Detector", 5M, 6M, true, true); // Space Engineers
                 ret.Add(ComponentType, "Display", 8M, 6M, true, true); // Space Engineers
                 ret.Add(ComponentType, "Drone", 200M, 60M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
                 ret.Add(ComponentType, "DT-MiniSolarCell", 0.08M, 0.2M, true, true); // }DT{ Modpack
                 ret.Add(ComponentType, "Explosives", 2M, 2M, true, true); // Space Engineers
-                ret.Add(ComponentType, "FocusPrysm", 25M, 45M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "FocusPrysm", 25M, 45M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
                 ret.Add(ComponentType, "Girder", 6M, 2M, true, true); // Space Engineers
                 ret.Add(ComponentType, "GrapheneAerogelFilling", 0.160M, 2.9166M, true, true); // Graphene Armor [Core] [Beta]
                 ret.Add(ComponentType, "GrapheneNanotubes", 0.01M, 0.1944M, true, true); // Graphene Armor [Core] [Beta]
@@ -1371,9 +1375,10 @@ namespace SEScriptsDotnet.ResourceExchanger2_5_3_192
                 ret.Add(ComponentType, "K_HSR_Mainframe", 15M, 0.01M, true, true); // HSR
                 ret.Add(ComponentType, "K_HSR_Nanites", 0.01M, 0.001M, true, true); // HSR
                 ret.Add(ComponentType, "K_HSR_RailComponents", 3M, 0.01M, true, true); // HSR
+                ret.Add(ComponentType, "largehydrogeninjector", 40M, 15M, true, true); // Tiered Engine Super Pack
                 ret.Add(ComponentType, "LargeTube", 25M, 38M, true, true); // Space Engineers
-                ret.Add(ComponentType, "LaserConstructionBoxL", 10M, 100M, true, true); // GSF Energy Weapons Pack
-                ret.Add(ComponentType, "LaserConstructionBoxS", 5M, 50M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "LaserConstructionBoxL", 10M, 100M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
+                ret.Add(ComponentType, "LaserConstructionBoxS", 5M, 50M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
                 ret.Add(ComponentType, "Magna", 100M, 15M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
                 ret.Add(ComponentType, "Magnetron", 10M, 0.5M, true, true); // EM Thruster
                 ret.Add(ComponentType, "MagnetronComponent", 50M, 20M, true, true); // Deuterium Fusion Reactors
@@ -1385,28 +1390,29 @@ namespace SEScriptsDotnet.ResourceExchanger2_5_3_192
                 ret.Add(ComponentType, "Naquadah", 100M, 10M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
                 ret.Add(ComponentType, "Neutronium", 500M, 5M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
                 ret.Add(ComponentType, "PowerCell", 25M, 40M, true, true); // Space Engineers
-                ret.Add(ComponentType, "PowerCoupler", 25M, 45M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "PowerCoupler", 25M, 45M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
                 ret.Add(ComponentType, "productioncontrolcomponent", 40M, 15M, true, true); // (DX11) Double Sided Upgrade Modules
-                ret.Add(ComponentType, "PulseCannonConstructionBoxL", 10M, 100M, true, true); // GSF Energy Weapons Pack
-                ret.Add(ComponentType, "PulseCannonConstructionBoxS", 5M, 50M, true, true); // GSF Energy Weapons Pack
-                ret.Add(ComponentType, "PWMCircuit", 25M, 45M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "PulseCannonConstructionBoxL", 10M, 100M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
+                ret.Add(ComponentType, "PulseCannonConstructionBoxS", 5M, 50M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
+                ret.Add(ComponentType, "PWMCircuit", 25M, 45M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
                 ret.Add(ComponentType, "RadioCommunication", 8M, 70M, true, true); // Space Engineers
                 ret.Add(ComponentType, "Reactor", 25M, 8M, true, true); // Space Engineers
-                ret.Add(ComponentType, "SafetyBypass", 25M, 45M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "SafetyBypass", 25M, 45M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
                 ret.Add(ComponentType, "Scrap", 2M, 2M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
                 ret.Add(ComponentType, "Shield", 5M, 25M, true, true); // Energy shields (new modified version)
-                ret.Add(ComponentType, "ShieldFrequencyModule", 25M, 45M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "ShieldFrequencyModule", 25M, 45M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
                 ret.Add(ComponentType, "SmallTube", 4M, 2M, true, true); // Space Engineers
                 ret.Add(ComponentType, "SolarCell", 6M, 12M, true, true); // Space Engineers
                 ret.Add(ComponentType, "SteelPlate", 20M, 3M, true, true); // Space Engineers
                 ret.Add(ComponentType, "Superconductor", 15M, 8M, true, true); // Space Engineers
-                ret.Add(ComponentType, "TekMarLicense", 0.2M, 1M, true, true); // GSF Energy Weapons Pack
+                ret.Add(ComponentType, "TekMarLicense", 0.2M, 1M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
                 ret.Add(ComponentType, "Thrust", 40M, 10M, true, true); // Space Engineers
                 ret.Add(ComponentType, "TractorHD", 1500M, 200M, true, true); // (Discontinued)Maglock Surface Docking Clamps V2.0
                 ret.Add(ComponentType, "Trinium", 100M, 10M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
-                ret.Add(ComponentType, "Tritium", 3M, 3M, true, true); // [VisSE] [2019] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+                ret.Add(ComponentType, "Tritium", 3M, 3M, true, true); // [VisSE] [Old] Hydro Reactors & Ice to Oxy Hydro Gasses V2
                 ret.Add(ComponentType, "TVSI_DiamondGlass", 40M, 8M, true, true); // TVSI-Tech Diamond Bonded Glass (Survival) [DX11]
                 ret.Add(ComponentType, "WaterTankComponent", 200M, 160M, true, true); // Industrial Centrifuge (stable/dev)
+                ret.Add(ComponentType, "ZoneChip", 0.250M, 0.2M, true, true); // Space Engineers
                 ret.Add(ComponentType, "ZPM", 50M, 60M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
 
                 ret.Add(AmmoType, "250shell", 128M, 64M, true, true); // [DEPRECATED] CSD Battlecannon
@@ -1415,7 +1421,6 @@ namespace SEScriptsDotnet.ResourceExchanger2_5_3_192
                 ret.Add(AmmoType, "900mmShell_HE", 210M, 75M, true, true); // Battle Cannon and Turrets (DX11)
                 ret.Add(AmmoType, "Aden30x113", 35M, 16M, true, true); // Battle Cannon and Turrets (DX11)
                 ret.Add(AmmoType, "AFmagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
-                ret.Add(AmmoType, "ARPhaserPulseAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "AZ_Missile_AA", 45M, 60M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
                 ret.Add(AmmoType, "AZ_Missile200mm", 45M, 60M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
                 ret.Add(AmmoType, "BatteryCannonAmmo1", 50M, 50M, true, true); // MWI - Weapon Collection (DX11)
@@ -1423,33 +1428,21 @@ namespace SEScriptsDotnet.ResourceExchanger2_5_3_192
                 ret.Add(AmmoType, "BigBertha", 3600M, 2800M, true, true); // Battle Cannon and Turrets (DX11)
                 ret.Add(AmmoType, "BlasterCell", 1M, 1M, true, true); // [SEI] Weapon Pack DX11
                 ret.Add(AmmoType, "Bofors40mm", 36M, 28M, true, true); // Battle Cannon and Turrets (DX11)
-                ret.Add(AmmoType, "Class10PhotonTorp", 45M, 50M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "Class1LaserBeamCharge", 35M, 16M, true, true); // GSF Energy Weapons Pack
+                ret.Add(AmmoType, "Class1LaserBeamCharge", 35M, 16M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
                 ret.Add(AmmoType, "ConcreteMix", 2M, 2M, true, true); // Concrete Tool - placing voxels in survival
                 ret.Add(AmmoType, "crystalline_microcapacitor", 25M, 16M, true, true); // Star Trek - Weapons Tech [WIP]
                 ret.Add(AmmoType, "crystalline_nanocapacitor", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
-                ret.Add(AmmoType, "D7DisruptorBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "discovery_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
-                ret.Add(AmmoType, "DisruptorBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "DisruptorPulseAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "Eikester_Missile120mm", 25M, 30M, true, true); // (DX11) Small Missile Turret
                 ret.Add(AmmoType, "Eikester_Nuke", 1800M, 8836M, true, true); // (DX11) Nuke Launcher [WiP]
                 ret.Add(AmmoType, "EmergencyBlasterMagazine", 0.45M, 0.2M, true, true); // Independent Survival
-                ret.Add(AmmoType, "EnormousPhaserBeamAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "EnormousPhaserBeamAmmo_LR", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "Eq_GenericEnergyMag", 35M, 16M, true, true); // HSR
                 ret.Add(AmmoType, "federationphase", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
                 ret.Add(AmmoType, "Flak130mm", 2M, 3M, true, true); // [SEI] Weapon Pack DX11
                 ret.Add(AmmoType, "Flak200mm", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
                 ret.Add(AmmoType, "Flak500mm", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
-                ret.Add(AmmoType, "GuidedMissileTargeterAmmoMagazine", 100M, 100M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "HDTCannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
                 ret.Add(AmmoType, "heavy_photon_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
-                ret.Add(AmmoType, "HeavyDisruptorPulseAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "HeavyPhaserBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "HeavyPhaserBeamAmmo_LR", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "HeavyPhaserPulseAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "HeavySWDisruptorBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "HighDamageGatlingAmmo", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
                 ret.Add(AmmoType, "ISM_FusionAmmo", 35M, 10M, true, true); // ISM Mega Mod Pack [DX11 - Bringing it back]
                 ret.Add(AmmoType, "ISM_GrendelAmmo", 35M, 2M, true, true); // ISM Mega Mod Pack [DX11 - Bringing it back]
@@ -1492,99 +1485,67 @@ namespace SEScriptsDotnet.ResourceExchanger2_5_3_192
                 ret.Add(AmmoType, "K_HSR_SG_ElectroBlade", 3M, 0.1M, true, true); // HSR
                 ret.Add(AmmoType, "K_HSR_SG_Zeus", 15M, 0.1M, true, true); // HSR
                 ret.Add(AmmoType, "K_SpinalLaser_Beam_True", 0M, 1M, true, true); // SpinalWeaponry
-                ret.Add(AmmoType, "LargePhotonTorp", 45M, 50M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "LargeShipShotGunAmmo", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
                 ret.Add(AmmoType, "LargeShotGunAmmoTracer", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
-                ret.Add(AmmoType, "LargeTrikobaltCharge", 45M, 50M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "LaserAmmo", 0.001M, 0.01M, true, true); // (DX11)Laser Turret
                 ret.Add(AmmoType, "LaserArrayFlakMagazine", 45M, 30M, true, true); // White Dwarf - Directed Energy Platform [DX11]
                 ret.Add(AmmoType, "LaserArrayShellMagazine", 45M, 120M, true, true); // White Dwarf - Directed Energy Platform [DX11]
                 ret.Add(AmmoType, "Liquid Naquadah", 0.25M, 0.1M, true, true); // [New Version] Stargate Modpack (Server admin block filtering)
                 ret.Add(AmmoType, "LittleDavid", 360M, 280M, true, true); // Battle Cannon and Turrets (DX11)
-                ret.Add(AmmoType, "MagazineCitadelBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
-                ret.Add(AmmoType, "MagazineFighterDualLightBlaster", 1M, 20M, true, true); // GSF Energy Weapons Pack
-                ret.Add(AmmoType, "MagazineLargeBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
-                ret.Add(AmmoType, "MagazineMediumBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
-                ret.Add(AmmoType, "MagazineNovaTorpedoPowerCellRed", 1M, 20M, true, true); // GSF Energy Weapons Pack
-                ret.Add(AmmoType, "MagazineSmallBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
-                ret.Add(AmmoType, "MagazineSmallThorMissilePowerCellOrange", 1M, 20M, true, true); // GSF Energy Weapons Pack
-                ret.Add(AmmoType, "MagazineSmallTorpedoPowerCellRed", 1M, 20M, true, true); // GSF Energy Weapons Pack
-                ret.Add(AmmoType, "MagazineThorMissilePowerCellOrange", 1M, 20M, true, true); // GSF Energy Weapons Pack
-                ret.Add(AmmoType, "MagazineTMLargeBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
-                ret.Add(AmmoType, "MagazineTMMedBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
-                ret.Add(AmmoType, "MagazineTMSiegeBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
-                ret.Add(AmmoType, "MagazineTMSmallBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack
+                ret.Add(AmmoType, "MagazineCitadelBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
+                ret.Add(AmmoType, "MagazineFighterDualLightBlaster", 1M, 20M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
+                ret.Add(AmmoType, "MagazineLargeBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
+                ret.Add(AmmoType, "MagazineMediumBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
+                ret.Add(AmmoType, "MagazineNovaTorpedoPowerCellRed", 1M, 20M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
+                ret.Add(AmmoType, "MagazineSmallBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
+                ret.Add(AmmoType, "MagazineSmallThorMissilePowerCellOrange", 1M, 20M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
+                ret.Add(AmmoType, "MagazineSmallTorpedoPowerCellRed", 1M, 20M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
+                ret.Add(AmmoType, "MagazineThorMissilePowerCellOrange", 1M, 20M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
+                ret.Add(AmmoType, "MagazineTMLargeBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
+                ret.Add(AmmoType, "MagazineTMMedBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
+                ret.Add(AmmoType, "MagazineTMSiegeBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
+                ret.Add(AmmoType, "MagazineTMSmallBlasterTurret", 35M, 16M, true, true); // GSF Energy Weapons Pack <Currently Broken working on refactor>
                 ret.Add(AmmoType, "MedBlaster", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
                 ret.Add(AmmoType, "MinotaurAmmo", 360M, 128M, true, true); // (DX11)Minotaur Cannon
                 ret.Add(AmmoType, "Missile200mm", 45M, 60M, true, true); // Space Engineers
-                ret.Add(AmmoType, "Mk14PhaserBeamAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "Mk15PhaserBeamAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "MK1CannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
                 ret.Add(AmmoType, "MK2CannonAmmo", 150M, 100M, true, true); // MWI - Weapon Collection (DX11)
                 ret.Add(AmmoType, "MK3CannonMagazineAP", 100M, 100M, true, true); // MWI - Weapon Collection (DX11)
                 ret.Add(AmmoType, "MK3CannonMagazineHE", 300M, 100M, true, true); // MWI - Weapon Collection (DX11)
-                ret.Add(AmmoType, "Mk6PhaserBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "NATO_25x184mm", 35M, 16M, true, true); // Space Engineers
                 ret.Add(AmmoType, "NATO_5p56x45mm", 0.45M, 0.2M, true, true); // Space Engineers
-                ret.Add(AmmoType, "NiFeDUSlugMagazineLZM", 45M, 50M, true, true); // Revived Large Ship Railguns (With penetration damage!)
+                ret.Add(AmmoType, "NiFeDUSlugMagazineLZM", 45M, 50M, true, true); // Revived Large Ship Railguns (With penetration and shield damage!)
                 ret.Add(AmmoType, "NukeSiloMissile", 90M, 150M, true, true); // rearth's Advanced Combat Systems
-                ret.Add(AmmoType, "OKI122mmAmmo", 150M, 120M, true, true); // OKI Grand Weapons Bundle (DX11)
-                ret.Add(AmmoType, "OKI230mmAmmo", 800M, 800M, true, true); // OKI Grand Weapons Bundle (DX11)
-                ret.Add(AmmoType, "OKI23mmAmmo", 100M, 50M, true, true); // OKI Grand Weapons Bundle (DX11)
-                ret.Add(AmmoType, "OKI50mmAmmo", 200M, 60M, true, true); // OKI Grand Weapons Bundle (DX11)
-                ret.Add(AmmoType, "OKIObserverMAG", 1M, 1M, true, true); // OKI Grand Weapons Bundle (DX11)
-                ret.Add(AmmoType, "OSPhaserAmmo", 30.0M, 15.0M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "OSPhotonTorp", 30M, 60M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "PhaseCannonAmmo", 12.0M, 3.0M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "PhaserBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "PhaserBeamAmmo_LR", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "PhaserLanceAmmo", 984.0M, 850.0M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "PhaserLanceAmmo_LR", 984.0M, 850.0M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "PhaserLanceTurretAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "PhaserPulseAmmo", 250.0M, 100.0M, true, true); // Star Trek Weapons Pack
+                ret.Add(AmmoType, "OKI122mmAmmo", 150M, 120M, true, true); // OKI Grand Weapons Bundle
+                ret.Add(AmmoType, "OKI230mmAmmo", 800M, 800M, true, true); // OKI Grand Weapons Bundle
+                ret.Add(AmmoType, "OKI23mmAmmo", 100M, 50M, true, true); // OKI Grand Weapons Bundle
+                ret.Add(AmmoType, "OKI50mmAmmo", 200M, 60M, true, true); // OKI Grand Weapons Bundle
+                ret.Add(AmmoType, "OKIObserverMAG", 1M, 1M, true, true); // OKI Grand Weapons Bundle
                 ret.Add(AmmoType, "photon_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
                 ret.Add(AmmoType, "Plasma_Hydrogen", 4M, 6M, true, true); // [SEI] Weapon Pack DX11
-                ret.Add(AmmoType, "PlasmaBeamAmmo", 0.1M, 0.5M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "PlasmaCutterCell", 1M, 1M, true, true); // [SEI] Weapon Pack DX11
                 ret.Add(AmmoType, "PlasmaMissile", 30M, 50M, true, true); // rearth's Advanced Combat Systems
-                ret.Add(AmmoType, "PolaronBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "PolaronPulseAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "QuantenTorpedoLarge", 45M, 50M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "quantum_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
                 ret.Add(AmmoType, "RB_NATO_125x920mm", 875M, 160M, true, true); // RB Weapon Collection [DX11]
                 ret.Add(AmmoType, "RB_Rocket100mm", 11.25M, 15M, true, true); // RB Weapon Collection [DX11]
                 ret.Add(AmmoType, "RB_Rocket400mm", 180M, 240M, true, true); // RB Weapon Collection [DX11]
                 ret.Add(AmmoType, "RG_RG_ammo", 45M, 60M, true, true); // RG_RailGun
                 ret.Add(AmmoType, "romulanphase", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
-                ret.Add(AmmoType, "RomulanTorp", 45M, 50M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "small_discovery_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
                 ret.Add(AmmoType, "small_federationphase", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
-                ret.Add(AmmoType, "SmallDisruptorBeamAmmo", 12.0M, 3.0M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "SmallPhaserBeamAmmo", 12.0M, 3.0M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "SmallPhotonTorp", 12M, 8M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "SmallPlasmaBeamAmmo", 0.1M, 0.5M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "SmallPolaronBeamAmmo", 12.0M, 3.0M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "SmallShotGunAmmo", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
                 ret.Add(AmmoType, "SmallShotGunAmmoTracer", 50M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
                 ret.Add(AmmoType, "SniperRoundHighSpeedLowDamage", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
                 ret.Add(AmmoType, "SniperRoundHighSpeedLowDamageSmallShip", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
                 ret.Add(AmmoType, "SniperRoundLowSpeedHighDamage", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
                 ret.Add(AmmoType, "SniperRoundLowSpeedHighDamageSmallShip", 35M, 16M, true, true); // Small Ship Mega Mod Pack [100% DX-11 Ready]
-                ret.Add(AmmoType, "SpartialTorp", 45M, 50M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "SWDisruptorBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "TankCannonAmmoSEM4", 35M, 16M, true, true); // Azimuth Complete Mega Mod Pack~(DX-11 Ready)
                 ret.Add(AmmoType, "TelionAF_PMagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
                 ret.Add(AmmoType, "TelionAMMagazine", 35M, 16M, true, true); // MWI - Weapon Collection (DX11)
-                ret.Add(AmmoType, "TMPPhaserAmmo", 30.0M, 15.0M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "tng_quantum_torpedo", 5M, 3.2M, true, true); // Star Trek - Weapons Tech [WIP]
-                ret.Add(AmmoType, "TOS", 35M, 16M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "TOSPhaserBeamAmmo", 25.0M, 10.0M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "TritiumMissile", 72M, 60M, true, true); // [VisSE] [2019] Hydro Reactors & Ice to Oxy Hydro Gasses V2
-                ret.Add(AmmoType, "TritiumShot", 3M, 3M, true, true); // [VisSE] [2019] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+                ret.Add(AmmoType, "TritiumMissile", 72M, 60M, true, true); // [VisSE] [Old] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+                ret.Add(AmmoType, "TritiumShot", 3M, 3M, true, true); // [VisSE] [Old] Hydro Reactors & Ice to Oxy Hydro Gasses V2
                 ret.Add(AmmoType, "TungstenBolt", 4812M, 250M, true, true); // (DX11)Mass Driver
-                ret.Add(AmmoType, "Type10", 35M, 16M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "Type12", 35M, 16M, true, true); // Star Trek Weapons Pack
-                ret.Add(AmmoType, "Type8", 35M, 16M, true, true); // Star Trek Weapons Pack
                 ret.Add(AmmoType, "Vulcan20x102", 35M, 16M, true, true); // Battle Cannon and Turrets (DX11)
 
                 ret.Add(GunType, "AngleGrinder2Item", 3M, 20M, true, false); // Space Engineers
@@ -1605,7 +1566,7 @@ namespace SEScriptsDotnet.ResourceExchanger2_5_3_192
                 ret.Add(GunType, "RapidFireAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
                 ret.Add(GunType, "RG_RG_Item", 5M, 24M, true, false); // RG_RailGun
                 ret.Add(GunType, "Staff", 3M, 16M, true, false); // [New Version] Stargate Modpack (Server admin block filtering)
-                ret.Add(GunType, "TritiumAutomaticRifleItem", 6M, 21M, true, false); // [VisSE] [2019] Hydro Reactors & Ice to Oxy Hydro Gasses V2
+                ret.Add(GunType, "TritiumAutomaticRifleItem", 6M, 21M, true, false); // [VisSE] [Old] Hydro Reactors & Ice to Oxy Hydro Gasses V2
                 ret.Add(GunType, "UltimateAutomaticRifleItem", 3M, 14M, true, false); // Space Engineers
                 ret.Add(GunType, "Welder2Item", 5M, 8M, true, false); // Space Engineers
                 ret.Add(GunType, "Welder3Item", 5M, 8M, true, false); // Space Engineers
@@ -1618,6 +1579,15 @@ namespace SEScriptsDotnet.ResourceExchanger2_5_3_192
 
                 ret.Add(GasType, "GrapheneHydrogenBottle", 20M, 100M, true, false); // Graphene Armor [Core] [Beta]
                 ret.Add(GasType, "HydrogenBottle", 30M, 120M, true, false); // Space Engineers
+
+                ret.Add(Consumable, "Medkit", 10M, 12M, true, true); // Space Engineers
+                ret.Add(Consumable, "Powerkit", 9M, 9M, true, true); // Space Engineers
+
+                ret.Add(Datapad, "Datapad", 0.2M, 0.4M, true, false); // Space Engineers
+
+                ret.Add(Package, "Package", 100M, 125M, true, false); // Space Engineers
+
+                ret.Add(Physical, "SpaceCredit", 0.001M, 0.001M, true, true); // Space Engineers
 
                 return ret;
             }

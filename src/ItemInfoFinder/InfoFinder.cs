@@ -5,7 +5,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 
 namespace ItemInfoFinder
@@ -24,7 +23,11 @@ namespace ItemInfoFinder
                  new MainType("AmmoMagazine", 4, "AmmoType", true, true),
                  new MainType("PhysicalGunObject", 5, "GunType", true, false),
                  new MainType("OxygenContainerObject", 6, "OxygenType", true, false),
-                 new MainType("GasContainerObject", 7, "GasType" ,true, false),
+                 new MainType("GasContainerObject", 7, "GasType", true, false),
+                 new MainType("ConsumableItem", 8, "Consumable", true, true),
+                 new MainType("Datapad", 9, "Datapad", true, false),
+                 new MainType("Package", 10, "Package", true, false),
+                 new MainType("PhysicalObject", 11, "Physical", true, true),
             };
 
             _typeMap = types.ToDictionary(q => q.Name);
