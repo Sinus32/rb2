@@ -1,12 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
+using System.Configuration;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ItemInfoFinder
@@ -24,8 +19,11 @@ namespace ItemInfoFinder
             var infoFinder = new InfoFinder();
             try
             {
-                infoFinder.FindItemsInFiles(@"C:\Program Files (x86)\Steam\steamapps\common\SpaceEngineers\Content\Data", "*.sbc");
-                infoFinder.FindItemsInZipFiles(@"C:\Program Files (x86)\Steam\steamapps\workshop\content\244850", "*_legacy.bin", SearchOption.AllDirectories, @"data\", ".sbc");
+                var steamLibraryDirectory = ConfigurationManager.AppSettings.Get("SteamLibraryDirectory");
+                var seDataDir = Path.Combine(steamLibraryDirectory, Consts.SeDataDir);
+                infoFinder.FindItemsInFiles(seDataDir, Consts.DataFilePattern);
+                var seModsDir = Path.Combine(steamLibraryDirectory, Consts.SeModsDir);
+                infoFinder.FindItemsInZipFiles(seModsDir, Consts.ModFilePattern, SearchOption.AllDirectories, Consts.ModFileInnerPath, Consts.ModFileInnerExtension);
                 infoFinder.DownloadModData();
                 OutputText.Text = infoFinder.GetOutputText();
                 OutputText.SelectAll();
