@@ -8,6 +8,8 @@ namespace ItemInfoFinder
 {
     public partial class MainForm : Form
     {
+        private const string LibraryPath = @"D:\SteamLibrary\steamapps\";
+
         public MainForm()
         {
             InitializeComponent();
