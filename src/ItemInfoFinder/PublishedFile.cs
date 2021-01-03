@@ -45,6 +45,9 @@ namespace ItemInfoFinder
         [XmlElement("title")]
         public string Title { get; set; }
 
+        [XmlIgnore]
+        public string BaseTitle { get; set; }
+
         [XmlElement("description")]
         public string Description { get; set; }
 
