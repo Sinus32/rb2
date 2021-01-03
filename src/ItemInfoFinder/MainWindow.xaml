@@ -1,0 +1,14 @@
+﻿<Window x:Class="ItemInfoFinder.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:resx="clr-namespace:ItemInfoFinder.Translations"
+    xmlns:local="clr-namespace:ItemInfoFinder"
+    mc:Ignorable="d"
+    Title="{x:Static resx:Strings.WindowTitle}" Height="550" Width="900" ResizeMode="CanResizeWithGrip"
+    Initialized="Window_Initialized" Closed="Window_Closed">
+  <DockPanel>
+    <TextBox IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding OutputText}" VerticalScrollBarVisibility="Auto" />
+  </DockPanel>
+</Window>

@@ -88,6 +88,11 @@ namespace ItemInfoFinder
             public string Tag { get; set; }
         }
 
+        public override string ToString()
+        {
+            return String.Format("{0}: {1}", PublishedFileId, Title);
+        }
+
         public class DateTimeNode : IXmlSerializable
         {
             public DateTime? Value { get; set; }

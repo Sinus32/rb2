@@ -26,5 +26,10 @@ namespace ItemInfoFinder
         public string Name { get; }
 
         public int Order { get; }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }

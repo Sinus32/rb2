@@ -36,5 +36,10 @@ namespace ItemInfoFinder
         {
             get { return TypeId.IsStackable; }
         }
+
+        public override string ToString()
+        {
+            return String.Format("{0}/{1} modId:", TypeId, SubtypeId, ModId);
+        }
     }
 }
