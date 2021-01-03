@@ -80,6 +80,20 @@ namespace ItemInfoFinder
             return result;
         }
 
+        protected string GetBaseTitle(string title)
+        {
+            if (title == null)
+                return null;
+
+            var arr = title.ToCharArray();
+            var length = arr.Length;
+            RemoveTag(arr, ref length, '(', ')');
+            RemoveTag(arr, ref length, '[', ']');
+            RemoveTag(arr, ref length, '<', '>');
+            RemoveSubsequent(arr, ref length, ' ');
+            return new string(arr, 0, length).Trim();
+        }
+
         private void ReadResponse(XmlDocument resp)
         {
             if (Debugger.IsAttached)
@@ -112,6 +126,7 @@ namespace ItemInfoFinder
                         try
                         {
                             var item = (PublishedFileNode)ser.Deserialize(reader);
+                            item.BaseTitle = GetBaseTitle(item.Title);
                             Data.Add(item);
                         }
                         catch (Exception)
@@ -122,6 +137,83 @@ namespace ItemInfoFinder
                     }
                 }
             }
+        }
+
+        private int RemoveCharacters(char[] arr, int length, int startPos, int endPos)
+        {
+            var removedLength = endPos - startPos;
+            for (var j = endPos; j < length; ++j)
+                arr[j - removedLength] = arr[j];
+            return removedLength;
+        }
+
+        private void RemoveSubsequent(char[] arr, ref int length, char character)
+        {
+            int startPos = -1;
+            for (int i = 0; i < length; ++i)
+            {
+                if (startPos == -1)
+                {
+                    if (arr[i] == character)
+                    {
+                        startPos = i;
+                        continue;
+                    }
+                }
+                else
+                {
+                    if (arr[i] != character)
+                    {
+                        if (startPos + 1 < i)
+                        {
+                            var removedLength = RemoveCharacters(arr, length, startPos, i - 1);
+                            length -= removedLength;
+                            i -= removedLength;
+                        }
+                        startPos = -1;
+                    }
+                }
+            }
+        }
+
+        private void RemoveTag(char[] arr, ref int length, char startChar, char endChar)
+        {
+            int startPos = -1;
+            for (int i = 0; i < length; ++i)
+            {
+                if (arr[i] == startChar)
+                {
+                    startPos = i;
+                    continue;
+                }
+                if (arr[i] == endChar)
+                {
+                    if (ShouldRemoveTag(arr, startPos + 1, i))
+                    {
+                        var removedLength = RemoveCharacters(arr, length, startPos, i + 1);
+                        length -= removedLength;
+                        i -= removedLength;
+                    }
+                    startPos = -1;
+                }
+            }
+        }
+
+        private bool ShouldRemoveTag(char[] arr, int startPos, int endPos)
+        {
+            var str = new string(arr, startPos, endPos - startPos);
+            return String.IsNullOrWhiteSpace(str)
+                || str.Contains("dx11", StringComparison.OrdinalIgnoreCase)
+                || str.Contains("dx-11", StringComparison.OrdinalIgnoreCase)
+                || str.Contains("dx 11", StringComparison.OrdinalIgnoreCase)
+                || str.Contains("wip", StringComparison.OrdinalIgnoreCase)
+                || str.Contains("outdated", StringComparison.OrdinalIgnoreCase)
+                || str.Contains("deprecated", StringComparison.OrdinalIgnoreCase)
+                || str.Contains("discontinued", StringComparison.OrdinalIgnoreCase)
+                || str.Contains("alpha", StringComparison.OrdinalIgnoreCase)
+                || str.Contains("beta", StringComparison.OrdinalIgnoreCase)
+                || str.Contains("fixed", StringComparison.OrdinalIgnoreCase)
+                || str.Contains("version", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

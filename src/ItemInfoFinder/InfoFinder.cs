@@ -54,7 +54,7 @@ namespace ItemInfoFinder
             var modUsed = new HashSet<long>();
             if (mods != null)
             {
-                mods.Data.Sort((a, b) => String.Compare(a.Title, b.Title, true));
+                mods.Data.Sort((a, b) => String.Compare(a.BaseTitle, b.BaseTitle, true));
                 foreach (var dt in mods.Data)
                     modMap.Add(dt.PublishedFileId, dt.Title);
             }
@@ -70,7 +70,7 @@ namespace ItemInfoFinder
                 {
                     if (dt.Mass == prev.Mass && dt.Volume == prev.Volume)
                         continue;
-                    sb.Append("duplicate: ");
+                    sb.Append("[duplicate] ");
                 }
                 prev = dt;
 
@@ -126,10 +126,10 @@ namespace ItemInfoFinder
             var result = x.TypeId.Order - y.TypeId.Order;
             if (result != 0)
                 return result;
-            result = String.Compare(x.SubtypeId, y.SubtypeId);
+            result = String.Compare(x.SubtypeId, y.SubtypeId, StringComparison.OrdinalIgnoreCase);
             if (result != 0)
                 return result;
-            return (int)x.ModId - (int)y.ModId;
+            return (int)(x.ModId & 0xfffffff) - (int)(y.ModId & 0xfffffff);
         }
 
         private bool ProcessFileParseNodes(XmlNode parentNode, long modId)
