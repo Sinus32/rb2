@@ -12,7 +12,7 @@ namespace ItemInfoFinder
 {
     public class WorkshopItemInfo
     {
-        private const string API_KEY = "9D15AF36A08F5131B61680F64BA4D73E";
+        private const string API_KEY = "BA5096947F528D3F34159C8C728729F6";
         private const string GET_PUBLISHED_FILE_DETAILS_URL = "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/";
 
         public WorkshopItemInfo()
@@ -80,7 +80,7 @@ namespace ItemInfoFinder
             return result;
         }
 
-        protected string GetBaseTitle(string title)
+        internal string GetBaseTitle(string title)
         {
             if (title == null)
                 return null;

@@ -54,17 +54,9 @@ namespace Tests
         [InlineData("White Dwarf - Directed Energy Platform [DX11]", "White Dwarf - Directed Energy Platform")]
         public void GetBaseTitleTest(string title, string expected)
         {
-            var wii = new WorkshopItemInfoTestAdapter();
-            var result = wii.TestGetBaseTitle(title);
+            var wii = new WorkshopItemInfo();
+            var result = wii.GetBaseTitle(title);
             Assert.Equal(expected, result);
-        }
-
-        private class WorkshopItemInfoTestAdapter : WorkshopItemInfo
-        {
-            public string TestGetBaseTitle(string title)
-            {
-                return base.GetBaseTitle(title);
-            }
         }
     }
 }

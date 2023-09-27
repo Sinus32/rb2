@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <LangVersion>6</LangVersion>
-    <Platforms>AnyCPU;x64</Platforms>
+    <LangVersion>7.3</LangVersion>
+    <Platforms>x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -76,19 +76,12 @@
     <Reference Include="VRage.Steam">
       <HintPath>$(SteamLibraryDirectory)\common\SpaceEngineers\Bin64\VRage.Steam.dll</HintPath>
     </Reference>
+    <Reference Include="VRage.Steam">
+      <HintPath>$(SteamLibraryDirectory)\common\SpaceEngineers\Bin64\VRage.UserInterface.dll</HintPath>
+    </Reference>
     <Reference Include="VRage.XmlSerializers">
       <HintPath>$(SteamLibraryDirectory)\common\SpaceEngineers\Bin64\VRage.XmlSerializers.dll</HintPath>
     </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="ResourceExchanger2_5_2_191\Program.cs" />
-    <Compile Remove="ResourceExchanger2_5_3_192\Program.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="ResourceExchanger2_5_2_191\Program.cs" />
-    <None Include="ResourceExchanger2_5_3_192\Program.cs" />
   </ItemGroup>
 
 </Project>
